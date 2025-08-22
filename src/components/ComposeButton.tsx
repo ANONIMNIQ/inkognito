@@ -14,7 +14,7 @@ const ComposeButton: React.FC<ComposeButtonProps> = ({ onClick, isVisible }) => 
       onClick={onClick}
       variant="secondary"
       className={cn(
-        "fixed bottom-8 right-8 z-50 h-14 w-14 rounded-full bg-white/50 dark:bg-gray-800/50 backdrop-blur-lg shadow-lg transition-all duration-300 ease-in-out",
+        "fixed bottom-8 z-50 h-14 w-14 rounded-full bg-white/50 dark:bg-gray-800/50 backdrop-blur-lg shadow-lg transition-all duration-300 ease-in-out right-8 md:right-[calc((100vw-48rem)/2+3rem)]",
         "hover:scale-110 active:scale-95",
         isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"
       )}
