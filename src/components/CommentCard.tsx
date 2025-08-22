@@ -47,10 +47,10 @@ const CommentCard: React.FC<CommentCardProps> = ({ comment, isEditing = false, e
             value={editedContent}
             onChange={(e) => onContentChange(e.target.value)}
             rows={2}
-            className={cn("resize-none", textColor, "border-gray-300 dark:border-gray-700")}
+            className={cn("resize-none font-serif", textColor, "border-gray-300 dark:border-gray-700")}
           />
         ) : (
-          <p className={cn("text-sm", textColor)}>{comment.content}</p>
+          <p className={cn("text-sm font-serif", textColor)}>{comment.content}</p>
         )}
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
           {formatDistanceToNow(comment.timestamp, { addSuffix: true })}

@@ -162,10 +162,10 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
                   <Input
                     value={editedConfessionTitle}
                     onChange={(e) => setEditedConfessionTitle(e.target.value)}
-                    className={cn("text-lg font-semibold", textColor, placeholderColor, borderColor)}
+                    className={cn("text-lg font-semibold font-serif", textColor, placeholderColor, borderColor)}
                   />
                 ) : (
-                  <Button variant="link" className={cn("p-0 h-auto text-left text-lg font-semibold hover:no-underline", textColor)}>
+                  <Button variant="link" className={cn("p-0 h-auto text-left text-lg font-semibold hover:no-underline font-serif", textColor)}>
                     {confession.title}
                   </Button>
                 )}
@@ -183,11 +183,11 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
                 <Textarea
                   value={editedConfessionContent}
                   onChange={(e) => setEditedConfessionContent(e.target.value)}
-                  className={cn("whitespace-pre-wrap", textColor, placeholderColor, borderColor)}
+                  className={cn("whitespace-pre-wrap font-serif", textColor, placeholderColor, borderColor)}
                   rows={5}
                 />
               ) : (
-                <p className={cn("whitespace-pre-wrap", textColor)}>{confession.content}</p>
+                <p className={cn("whitespace-pre-wrap font-serif", textColor)}>{confession.content}</p>
               )}
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Posted {formatDistanceToNow(new Date(confession.created_at), { addSuffix: true })}
@@ -248,7 +248,7 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
                               <AlertDialogAction onClick={() => onDeleteComment(comment.id)} variant="secondary" className="text-red-500">Delete</AlertDialogAction>
-                            </AlertDialogFooter>
+                            </Footer>
                           </AlertDialogContent>
                         </AlertDialog>
                       </>
