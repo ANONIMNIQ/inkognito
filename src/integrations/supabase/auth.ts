@@ -19,20 +19,26 @@ export const useSession = () => {
   const [loading, setLoading] = useState(true); // Initial state is true
 
   const fetchUserProfile = useCallback(async (userId: string) => {
-    const { data: profileData, error: profileError } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
+    try {
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
 
-    if (profileError && profileError.code !== 'PGRST116') { // PGRST116 means no rows found
-      console.error("Error fetching profile:", profileError);
-      toast.error("Failed to load user profile: " + profileError.message);
+      if (profileError && profileError.code !== 'PGRST116') { // PGRST116 means no rows found
+        console.error("Error fetching profile:", profileError);
+        toast.error("Failed to load user profile: " + profileError.message);
+        setProfile(null);
+      } else if (profileData) {
+        setProfile(profileData);
+      } else {
+        setProfile(null); // No profile found
+      }
+    } catch (e) {
+      console.error("Unexpected error in fetchUserProfile:", e);
+      toast.error("An unexpected error occurred while fetching user profile.");
       setProfile(null);
-    } else if (profileData) {
-      setProfile(profileData);
-    } else {
-      setProfile(null); // No profile found
     }
   }, []);
 
