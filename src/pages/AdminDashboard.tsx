@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import AdminConfessionList from "@/components/AdminConfessionList"; // Import the new component
 
 const AdminDashboard: React.FC = () => {
   const { user, profile, loading } = useSessionContext();
@@ -38,10 +39,12 @@ const AdminDashboard: React.FC = () => {
       <p className="text-gray-700 dark:text-gray-300 mb-4">
         Welcome, {profile?.first_name || user?.email}! Your role: {profile?.role}
       </p>
-      <p className="text-gray-600 dark:text-gray-400">
+      <p className="text-gray-600 dark:text-gray-400 mb-6">
         This is where you will moderate confessions and comments.
       </p>
+      
       {/* Content moderation components will go here */}
+      <AdminConfessionList />
     </div>
   );
 };
