@@ -89,7 +89,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
   return (
     <div className="w-full max-w-2xl mx-auto mb-6 flex items-start space-x-3" ref={formRef}>
       <GenderAvatar gender={gender} className="h-10 w-10 flex-shrink-0 mt-1.5" />
-      <div className={cn("flex-1 rounded-xl shadow-md relative transition-all duration-300 ease-in-out", bubbleBackgroundColor, open ? "p-4" : "p-1.5")}>
+      <div className={cn("flex-1 rounded-xl shadow-md relative transition-all duration-300 ease-in-out", bubbleBackgroundColor, open ? "p-4" : "pt-2 pb-1 px-1.5")}>
         <div
           className={cn(
             "absolute top-3 -left-2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent",
