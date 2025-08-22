@@ -4,6 +4,7 @@ import ConfessionForm from "@/components/ConfessionForm";
 import ConfessionCard from "@/components/ConfessionCard";
 import { toast } from "sonner";
 import { useSessionContext } from "@/components/SessionProvider";
+import ConfessionCardSkeleton from "@/components/ConfessionCardSkeleton";
 
 interface Comment {
   id: string;
@@ -262,7 +263,11 @@ const Index: React.FC = () => {
       <ConfessionForm onSubmit={handleAddConfession} />
 
       {(authLoading || loadingConfessions) && confessions.length === 0 ? (
-        <p className="text-center text-gray-500 dark:text-gray-400 mt-8">Loading confessions...</p>
+        <div className="space-y-6 mt-8">
+          <ConfessionCardSkeleton />
+          <ConfessionCardSkeleton />
+          <ConfessionCardSkeleton />
+        </div>
       ) : confessions.length === 0 ? (
         <p className="text-center text-gray-500 dark:text-gray-400 mt-8">No confessions yet. Be the first to share!</p>
       ) : (
