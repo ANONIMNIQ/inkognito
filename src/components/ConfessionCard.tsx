@@ -170,19 +170,19 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
           <div className="flex justify-between items-center mb-2">
             <Button
               variant="link"
-              className="flex items-center space-x-px p-0 h-auto text-gray-400 hover:text-gray-900 dark:text-gray-500 dark:hover:text-white transition-colors hover:no-underline"
+              className="flex items-center p-0 h-auto text-gray-400 hover:text-black dark:text-gray-500 dark:hover:text-white transition-colors hover:no-underline"
               onClick={handleToggleComments}
             >
               <MessageCircle className="h-3.5 w-3.5" />
-              <span className="text-xs font-medium">{confession.comment_count}</span>
+              <span className="text-xs font-medium ml-1">{confession.comment_count}</span>
             </Button>
             <Button
               variant="link"
-              className="flex items-center space-x-px p-0 h-auto text-gray-400 hover:text-gray-900 dark:text-gray-500 dark:hover:text-white transition-colors hover:no-underline"
+              className="flex items-center p-0 h-auto text-gray-400 hover:text-black dark:text-gray-500 dark:hover:text-white transition-colors hover:no-underline"
               onClick={() => onLikeConfession(confession.id)}
             >
               <Heart className="h-3.5 w-3.5" />
-              <span className="text-xs font-medium">{confession.likes}</span>
+              <span className="text-xs font-medium ml-1">{confession.likes}</span>
             </Button>
           </div>
 
@@ -194,7 +194,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="w-9 p-0 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-transparent dark:hover:bg-transparent">
+                <Button variant="ghost" size="sm" className="w-9 p-0 text-gray-500 hover:text-black dark:text-gray-400 dark:hover:text-white hover:bg-transparent dark:hover:bg-transparent">
                   {isContentOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   <span className="sr-only">Toggle confession content</span>
                 </Button>

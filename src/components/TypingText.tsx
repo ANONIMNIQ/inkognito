@@ -11,39 +11,41 @@ interface TypingTextProps {
 const TypingText: React.FC<TypingTextProps> = ({ text, delay = 0, speed = 50, className }) => {
   const [displayedText, setDisplayedText] = useState("");
   const [isTypingComplete, setIsTypingComplete] = useState(false);
-  const index = useRef(0);
-  const timeoutId = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
-    // Reset everything when text changes
-    setDisplayedText("");
-    setIsTypingComplete(false);
-    index.current = 0;
-    if (timeoutId.current) {
-      clearTimeout(timeoutId.current);
+    if (!text) {
+      setDisplayedText("");
+      setIsTypingComplete(true);
+      return;
     }
 
-    const startTyping = () => {
-      if (index.current < text.length) {
-        setDisplayedText((prev) => prev + text.charAt(index.current));
-        index.current++;
-        timeoutId.current = setTimeout(startTyping, speed);
+    setIsTypingComplete(false);
+    let i = 0;
+    setDisplayedText("");
+
+    const type = () => {
+      if (i < text.length) {
+        // Use substring to avoid potential race conditions with state updates
+        setDisplayedText(text.substring(0, i + 1));
+        i++;
+        timeoutRef.current = setTimeout(type, speed);
       } else {
         setIsTypingComplete(true);
       }
     };
 
-    // Start after initial delay
-    timeoutId.current = setTimeout(startTyping, delay);
+    // Start the typing after the initial delay
+    const startTimeout = setTimeout(type, delay);
 
-    // Cleanup function
+    // Cleanup function to clear all timeouts on unmount or re-render
     return () => {
-      if (timeoutId.current) {
-        clearTimeout(timeoutId.current);
+      clearTimeout(startTimeout);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
       }
     };
   }, [text, delay, speed]);
-
 
   return (
     <span className={cn("inline-block overflow-hidden whitespace-nowrap", className)}>
