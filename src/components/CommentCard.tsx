@@ -33,7 +33,7 @@ const CommentCard: React.FC<CommentCardProps> = ({ comment, isEditing = false, e
         {/* Speech bubble tail */}
         <div
           className={cn(
-            "absolute top-2 -left-2 w-0 h-0 border-t-6 border-b-6 border-r-6 border-t-transparent border-b-transparent",
+            "absolute top-2 -left-2 w-0 h-0 border-t-[6px] border-b-[6px] border-r-[6px] border-t-transparent border-b-transparent",
             comment.gender === "male"
               ? "border-r-blue-50 dark:border-r-blue-900"
               : "border-r-pink-50 dark:border-r-pink-900"
