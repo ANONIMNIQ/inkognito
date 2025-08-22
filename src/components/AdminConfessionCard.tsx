@@ -131,10 +131,10 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
               {isEditingConfession ? (
                 <>
                   <Button variant="ghost" size="icon" onClick={handleSaveConfession}>
-                    <Save className="h-4 w-4 text-green-600" />
+                    <Save className="h-4 w-4" /> {/* Removed explicit color */}
                   </Button>
                   <Button variant="ghost" size="icon" onClick={handleCancelConfessionEdit}>
-                    <X className="h-4 w-4 text-red-600" />
+                    <X className="h-4 w-4" /> {/* Removed explicit color */}
                   </Button>
                 </>
               ) : (
@@ -145,7 +145,7 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="ghost" size="icon">
-                        <Trash2 className="h-4 w-4 text-red-500" />
+                        <Trash2 className="h-4 w-4 text-red-500" /> {/* Kept red for danger icon */}
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
@@ -157,7 +157,7 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => onDeleteConfession(confession.id)} className="bg-red-500 hover:bg-red-600">Delete</AlertDialogAction>
+                        <AlertDialogAction onClick={() => onDeleteConfession(confession.id)} variant="secondary" className="text-red-500">Delete</AlertDialogAction> {/* Changed to secondary variant with red text */}
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
@@ -232,10 +232,10 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
                     {editingCommentId === comment.id ? (
                       <>
                         <Button variant="ghost" size="icon" onClick={() => handleSaveComment(comment.id)}>
-                          <Save className="h-4 w-4 text-green-600" />
+                          <Save className="h-4 w-4" /> {/* Removed explicit color */}
                         </Button>
                         <Button variant="ghost" size="icon" onClick={handleCancelCommentEdit}>
-                          <X className="h-4 w-4 text-red-600" />
+                          <X className="h-4 w-4" /> {/* Removed explicit color */}
                         </Button>
                       </>
                     ) : (
@@ -246,7 +246,7 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon">
-                              <Trash2 className="h-4 w-4 text-red-500" />
+                              <Trash2 className="h-4 w-4 text-red-500" /> {/* Kept red for danger icon */}
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
@@ -258,7 +258,7 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => onDeleteComment(comment.id)} className="bg-red-500 hover:bg-red-600">Delete</AlertDialogAction>
+                              <AlertDialogAction onClick={() => onDeleteComment(comment.id)} variant="secondary" className="text-red-500">Delete</AlertDialogAction> {/* Changed to secondary variant with red text */}
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>

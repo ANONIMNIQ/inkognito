@@ -94,7 +94,7 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
             </div>
           </RadioGroup>
         </div>
-        <Button type="submit" size="sm" className="w-full">Post Comment</Button>
+        <Button type="submit" size="sm" variant="secondary" className={cn(generalTextColor, "w-full")}>Post Comment</Button>
       </form>
     </div>
   );

@@ -42,6 +42,7 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
   const cardRef = useRef<HTMLDivElement>(null); // Ref for the entire confession card
   const confessionBubbleRef = useRef<HTMLDivElement>(null); // Ref for the confession bubble itself
   const commentsSectionRef = useRef<HTMLDivElement>(null); // Ref for the comments section
+  const isInitialMountForCommentsScroll = useRef(true); // New ref to track initial mount
 
   // Effect to handle scrolling when content expands (scrolls to the top of the card)
   useEffect(() => {
@@ -57,8 +58,12 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
     }
   }, [isCommentsOpen]);
 
-  // NEW: Effect to handle scrolling back to confession bubble when comments collapse
+  // Effect to handle scrolling back to confession bubble when comments collapse
   useEffect(() => {
+    if (isInitialMountForCommentsScroll.current) {
+      isInitialMountForCommentsScroll.current = false;
+      return; // Skip on initial render
+    }
     if (!isCommentsOpen && confessionBubbleRef.current) {
       confessionBubbleRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }

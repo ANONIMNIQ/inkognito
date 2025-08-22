@@ -149,7 +149,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit }) => {
                   </div>
                 </RadioGroup>
               </div>
-              <Button type="submit" className="w-full">Post Confession</Button>
+              <Button type="submit" variant="secondary" className={cn(generalTextColor, "w-full")}>Post Confession</Button>
             </form>
           </CollapsibleContent>
         </Collapsible>
