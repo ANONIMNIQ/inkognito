@@ -59,12 +59,12 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit }) => {
     };
   }, [open, title, content]);
 
-  // Removed: Scroll to the form when it expands
-  // useEffect(() => {
-  //   if (open && formRef.current) {
-  //     formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  //   }
-  // }, [open]);
+  // Re-enabled: Scroll to the form when it expands
+  useEffect(() => {
+    if (open && formRef.current) {
+      formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [open]);
 
   const bubbleBackgroundColor =
     gender === "male"
