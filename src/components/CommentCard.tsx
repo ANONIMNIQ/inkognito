@@ -22,10 +22,8 @@ const CommentCard: React.FC<CommentCardProps> = ({ comment, isEditing = false, e
       ? "bg-blue-50 dark:bg-blue-900"
       : "bg-pink-50 dark:bg-pink-900";
 
-  const textColor =
-    comment.gender === "male"
-      ? "text-blue-800 dark:text-blue-200"
-      : "text-pink-800 dark:text-pink-200";
+  // Updated to grey/black
+  const textColor = "text-gray-800 dark:text-gray-200";
 
   return (
     <div className="flex items-start space-x-2 flex-1"> {/* Added flex-1 to allow it to take available space */}
@@ -45,7 +43,7 @@ const CommentCard: React.FC<CommentCardProps> = ({ comment, isEditing = false, e
             value={editedContent}
             onChange={(e) => onContentChange(e.target.value)}
             rows={2}
-            className={cn("resize-none", textColor)}
+            className={cn("resize-none", textColor, "border-gray-300 dark:border-gray-700")}
           />
         ) : (
           <p className={cn("text-sm", textColor)}>{comment.content}</p>

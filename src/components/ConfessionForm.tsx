@@ -71,13 +71,10 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit }) => {
       ? "bg-blue-100 dark:bg-blue-950"
       : "bg-pink-100 dark:bg-pink-950";
 
-  const maleTextColor = "text-blue-900 dark:text-blue-100";
-  const femaleTextColor = "text-pink-900 dark:text-pink-100";
-  
-  const currentTextColor = gender === 'male' ? maleTextColor : femaleTextColor;
-  const placeholderColor = gender === 'male' ? "placeholder:text-blue-700/60 dark:placeholder:text-blue-200/60" : "placeholder:text-pink-700/60 dark:placeholder:text-pink-200/60";
-  const borderColor = gender === 'male' ? "border-blue-300 dark:border-blue-700" : "border-pink-300 dark:border-pink-700";
-
+  // Updated to grey/black
+  const generalTextColor = "text-gray-800 dark:text-gray-200";
+  const placeholderColor = "placeholder:text-gray-500 dark:placeholder:text-gray-400";
+  const borderColor = "border-gray-300 dark:border-gray-700";
 
   return (
     <div className="w-full max-w-2xl mx-auto mb-6 flex items-start space-x-3" ref={formRef}>
@@ -100,7 +97,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit }) => {
           onChange={(e) => setTitle(e.target.value)}
           onFocus={handleTitleFocus}
           required
-          className={cn("w-full bg-transparent", currentTextColor, placeholderColor, borderColor)}
+          className={cn("w-full bg-transparent", generalTextColor, placeholderColor, borderColor)}
         />
 
         <Collapsible open={open} className="mt-2">
@@ -115,11 +112,11 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit }) => {
                   onChange={(e) => setContent(e.target.value)}
                   rows={5}
                   required
-                  className={cn("bg-transparent", currentTextColor, placeholderColor, borderColor)}
+                  className={cn("bg-transparent", generalTextColor, placeholderColor, borderColor)}
                 />
               </div>
               <div>
-                <Label className={cn("text-sm", currentTextColor)}>Your Gender (Anonymous)</Label>
+                <Label className={cn("text-sm", generalTextColor)}>Your Gender (Anonymous)</Label>
                 <RadioGroup
                   defaultValue="male"
                   value={gender}
@@ -133,8 +130,8 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit }) => {
                       <span className={cn(
                         "text-sm",
                         gender === "male"
-                          ? cn(maleTextColor, "font-bold underline decoration-2")
-                          : cn("text-gray-500 dark:text-gray-400", "hover:underline", `hover:${maleTextColor}`)
+                          ? cn(generalTextColor, "font-bold underline decoration-2")
+                          : cn("text-gray-500 dark:text-gray-400", "hover:underline", `hover:${generalTextColor}`)
                       )}>Male</span>
                     </Label>
                   </div>
@@ -145,8 +142,8 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit }) => {
                       <span className={cn(
                         "text-sm",
                         gender === "female"
-                          ? cn(femaleTextColor, "font-bold underline decoration-2")
-                          : cn("text-gray-500 dark:text-gray-400", "hover:underline", `hover:${femaleTextColor}`)
+                          ? cn(generalTextColor, "font-bold underline decoration-2")
+                          : cn("text-gray-500 dark:text-gray-400", "hover:underline", `hover:${generalTextColor}`)
                       )}>Female</span>
                     </Label>
                   </div>

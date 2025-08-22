@@ -60,13 +60,9 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
   // NEW: Effect to handle scrolling back to confession bubble when comments collapse
   useEffect(() => {
     if (!isCommentsOpen && confessionBubbleRef.current) {
-      // Only scroll back if the main content is still open
-      // Otherwise, if the main content is also collapsing, the cardRef useEffect will handle it.
-      if (isContentOpen) {
-        confessionBubbleRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+      confessionBubbleRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-  }, [isCommentsOpen, isContentOpen]); // Depend on both to ensure correct context
+  }, [isCommentsOpen]); // Only depend on isCommentsOpen
 
   const handleAddComment = (content: string, gender: "male" | "female") => {
     onAddComment(confession.id, content, gender);
@@ -76,11 +72,12 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
 
   const handleToggleComments = () => {
     setIsCommentsOpen((prev) => {
-      // If comments are currently closed and will be expanded
-      if (!prev && !isContentOpen) {
-        onToggleExpand(confession.id, true); // Ensure main content is open
+      const newIsCommentsOpen = !prev;
+      // If comments are being opened and main content is closed, open main content too
+      if (newIsCommentsOpen && !isContentOpen) {
+        onToggleExpand(confession.id, true);
       }
-      return !prev;
+      return newIsCommentsOpen;
     });
   };
 
@@ -96,15 +93,9 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
       ? "bg-blue-100 dark:bg-blue-950"
       : "bg-pink-100 dark:bg-pink-950";
 
-  const textColor =
-    confession.gender === "male"
-      ? "text-blue-900 dark:text-blue-100"
-      : "text-pink-900 dark:text-pink-100";
-
-  const linkColor =
-    confession.gender === "male"
-      ? "text-blue-600 dark:text-blue-400"
-      : "text-pink-600 dark:text-pink-400";
+  // Updated to grey/black
+  const textColor = "text-gray-800 dark:text-gray-200";
+  const linkColor = "text-gray-600 dark:text-gray-400";
 
   const sortedComments = [...confession.comments].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 

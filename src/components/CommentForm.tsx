@@ -32,8 +32,10 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
       ? "bg-blue-50 dark:bg-blue-900"
       : "bg-pink-50 dark:bg-pink-900";
 
-  const maleTextColor = "text-blue-800 dark:text-blue-200";
-  const femaleTextColor = "text-pink-800 dark:text-pink-200";
+  // Updated to grey/black
+  const generalTextColor = "text-gray-800 dark:text-gray-200";
+  const placeholderColor = "placeholder:text-gray-500 dark:placeholder:text-gray-400";
+  const borderColor = "border-gray-300 dark:border-gray-700";
 
   return (
     <div className="flex items-start space-x-2 mb-2">
@@ -55,11 +57,11 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
             onChange={(e) => setContent(e.target.value)}
             rows={2}
             required
-            className={cn("resize-none", gender === "male" ? maleTextColor : femaleTextColor)}
+            className={cn("resize-none", generalTextColor, placeholderColor, borderColor)}
           />
         </div>
         <div>
-          <Label className={cn("text-xs", gender === "male" ? maleTextColor : femaleTextColor)}>Your Gender (Anonymous)</Label>
+          <Label className={cn("text-xs", generalTextColor)}>Your Gender (Anonymous)</Label>
           <RadioGroup
             defaultValue="male"
             value={gender}
@@ -73,8 +75,8 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
                 <span className={cn(
                   "text-sm",
                   gender === "male"
-                    ? cn(maleTextColor, "font-bold underline decoration-2")
-                    : cn("text-gray-500 dark:text-gray-400", "hover:underline", `hover:${maleTextColor}`)
+                    ? cn(generalTextColor, "font-bold underline decoration-2")
+                    : cn("text-gray-500 dark:text-gray-400", "hover:underline", `hover:${generalTextColor}`)
                 )}>Male</span>
               </Label>
             </div>
@@ -85,8 +87,8 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
                 <span className={cn(
                   "text-sm",
                   gender === "female"
-                    ? cn(femaleTextColor, "font-bold underline decoration-2")
-                    : cn("text-gray-500 dark:text-gray-400", "hover:underline", `hover:${femaleTextColor}`)
+                    ? cn(generalTextColor, "font-bold underline decoration-2")
+                    : cn("text-gray-500 dark:text-gray-400", "hover:underline", `hover:${generalTextColor}`)
                 )}>Female</span>
               </Label>
             </div>

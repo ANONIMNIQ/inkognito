@@ -66,15 +66,12 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
       ? "bg-blue-100 dark:bg-blue-950"
       : "bg-pink-100 dark:bg-pink-950";
 
-  const textColor =
-    confession.gender === "male"
-      ? "text-blue-900 dark:text-blue-100"
-      : "text-pink-900 dark:text-pink-100";
+  // Updated to grey/black
+  const textColor = "text-gray-800 dark:text-gray-200";
+  const linkColor = "text-gray-600 dark:text-gray-400";
+  const borderColor = "border-gray-300 dark:border-gray-700";
+  const placeholderColor = "placeholder:text-gray-500 dark:placeholder:text-gray-400";
 
-  const linkColor =
-    confession.gender === "male"
-      ? "text-blue-600 dark:text-blue-400"
-      : "text-pink-600 dark:text-pink-400";
 
   const sortedComments = [...confession.comments].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
@@ -176,7 +173,7 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
                   <Input
                     value={editedConfessionTitle}
                     onChange={(e) => setEditedConfessionTitle(e.target.value)}
-                    className={cn("text-lg font-semibold", textColor)}
+                    className={cn("text-lg font-semibold", textColor, placeholderColor, borderColor)}
                   />
                 ) : (
                   <Button variant="link" className={cn("p-0 h-auto text-left text-lg font-semibold hover:no-underline", textColor)}>
@@ -197,7 +194,7 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
                 <Textarea
                   value={editedConfessionContent}
                   onChange={(e) => setEditedConfessionContent(e.target.value)}
-                  className={cn("whitespace-pre-wrap", textColor)}
+                  className={cn("whitespace-pre-wrap", textColor, placeholderColor, borderColor)}
                   rows={5}
                 />
               ) : (
@@ -225,7 +222,12 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
             ) : (
               sortedComments.map((comment) => (
                 <div key={comment.id} className="flex items-start space-x-2">
-                  <CommentCard comment={{ ...comment, timestamp: new Date(comment.created_at) }} />
+                  <CommentCard
+                    comment={{ ...comment, timestamp: new Date(comment.created_at) }}
+                    isEditing={editingCommentId === comment.id}
+                    editedContent={editedCommentContent}
+                    onContentChange={setEditedCommentContent}
+                  />
                   <div className="flex space-x-1 mt-1">
                     {editingCommentId === comment.id ? (
                       <>
