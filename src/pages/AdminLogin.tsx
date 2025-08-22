@@ -12,25 +12,35 @@ const AdminLogin: React.FC = () => {
   const { session, profile, loading } = useSessionContext(); // Get profile here
 
   useEffect(() => {
+    console.log("AdminLogin useEffect: loading:", loading, "session:", session ? "present" : "null", "profile:", profile ? profile.role : "null");
+
     if (loading) {
-      // Still loading session or profile, do nothing yet.
+      // Still loading initial session/profile, wait.
       return;
     }
 
     if (session) {
-      // User is authenticated
+      // Session exists. Now, we need to ensure profile is loaded.
+      // If profile is null, it means fetchUserProfile is still running or failed.
+      // We should wait for profile to be available before deciding.
+      if (profile === null) {
+        console.log("AdminLogin: Session present, but profile is null. Waiting for profile data.");
+        return; // Wait for profile to be loaded
+      }
+
+      // Profile is loaded (or confirmed null). Now make the decision.
       if (isAdmin(profile)) {
-        // User is an admin, redirect to dashboard
+        console.log("AdminLogin: User is admin, redirecting to dashboard.");
         navigate("/admin/dashboard", { replace: true });
         toast.info("Redirecting to admin dashboard.");
       } else {
-        // User is authenticated but not an admin (or profile not found/role not admin)
+        console.log("AdminLogin: User is not admin, redirecting to main page.");
         navigate("/", { replace: true });
         toast.warning("You are logged in, but do not have admin access.");
       }
     } else {
       // No session, user is not authenticated, stay on login page.
-      // The Auth component will be rendered.
+      console.log("AdminLogin: No session, staying on login page.");
     }
   }, [session, profile, loading, navigate]); // Add profile to dependencies
 

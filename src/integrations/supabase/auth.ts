@@ -19,9 +19,11 @@ export const useSession = () => {
   const [loading, setLoading] = useState(true); // Initial state is true
 
   const fetchUserProfile = useCallback(async (userId: string) => {
+    console.log("fetchUserProfile: Attempting to fetch profile for userId:", userId);
     if (!userId) {
       setProfile(null);
-      return null; // Return null if no user ID
+      console.log("fetchUserProfile: No userId provided, setting profile to null.");
+      return null;
     }
     try {
       const { data: profileData, error: profileError } = await supabase
@@ -31,19 +33,21 @@ export const useSession = () => {
         .single();
 
       if (profileError && profileError.code !== 'PGRST116') { // PGRST116 means no rows found
-        console.error("Error fetching profile:", profileError);
+        console.error("fetchUserProfile: Error fetching profile:", profileError);
         toast.error("Failed to load user profile: " + profileError.message);
         setProfile(null);
         return null;
       } else if (profileData) {
         setProfile(profileData);
+        console.log("fetchUserProfile: Profile fetched successfully:", profileData);
         return profileData;
       } else {
         setProfile(null); // No profile found
+        console.log("fetchUserProfile: No profile found for userId:", userId);
         return null;
       }
     } catch (e) {
-      console.error("Unexpected error in fetchUserProfile:", e);
+      console.error("fetchUserProfile: Unexpected error:", e);
       toast.error("An unexpected error occurred while fetching user profile.");
       setProfile(null);
       return null;
@@ -52,20 +56,26 @@ export const useSession = () => {
 
   useEffect(() => {
     let isMounted = true;
+    console.log("useSession: useEffect mounted.");
 
     const initializeSession = async () => {
+      console.log("useSession: initializeSession started.");
       try {
         const { data: { session: initialSession }, error: initialSessionError } = await supabase.auth.getSession();
-        if (!isMounted) return;
+        if (!isMounted) {
+          console.log("useSession: initializeSession aborted, component unmounted.");
+          return;
+        }
 
         if (initialSessionError) {
-          console.error("Error getting initial session:", initialSessionError);
+          console.error("useSession: Error getting initial session:", initialSessionError);
           setSession(null);
           setUser(null);
           setProfile(null);
         } else {
           setSession(initialSession);
           setUser(initialSession?.user || null);
+          console.log("useSession: Initial session set:", initialSession ? "present" : "null");
           if (initialSession?.user) {
             await fetchUserProfile(initialSession.user.id);
           } else {
@@ -73,14 +83,14 @@ export const useSession = () => {
           }
         }
       } catch (e) {
-        console.error("Unexpected error during initial session fetch:", e);
+        console.error("useSession: Unexpected error during initial session fetch:", e);
         if (isMounted) {
           toast.error("An unexpected error occurred during initial session load.");
         }
       } finally {
         if (isMounted) {
           setLoading(false); // Ensure loading is false after initial check
-          console.log("useSession: Initial load complete, setLoading(false)");
+          console.log("useSession: Initial load complete, setLoading(false). Current loading:", false);
         }
       }
     };
@@ -90,8 +100,11 @@ export const useSession = () => {
     // Set up the listener for subsequent auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
-        if (!isMounted) return;
-        console.log("Auth state change event:", event, "Session:", currentSession ? "present" : "null");
+        if (!isMounted) {
+          console.log("useSession: onAuthStateChange callback aborted, component unmounted.");
+          return;
+        }
+        console.log("useSession: Auth state change event:", event, "Session:", currentSession ? "present" : "null");
 
         // Only update session/user/profile, do not touch loading state here
         setSession(currentSession);
@@ -107,12 +120,16 @@ export const useSession = () => {
     return () => {
       isMounted = false;
       subscription.unsubscribe();
+      console.log("useSession: useEffect unmounted, subscription unsubscribed.");
     };
   }, [fetchUserProfile]); // fetchUserProfile is a dependency
 
+  console.log("useSession: Render. Loading:", loading, "Session:", session ? "present" : "null", "Profile:", profile ? "present" : "null");
   return { session, user, profile, loading };
 };
 
 export const isAdmin = (profile: Profile | null): boolean => {
-  return profile?.role === 'admin';
+  const result = profile?.role === 'admin';
+  console.log("isAdmin check: Profile:", profile ? profile.role : "null", "Is Admin:", result);
+  return result;
 };
