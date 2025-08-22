@@ -22,6 +22,7 @@ interface Confession {
   likes: number;
   created_at: string;
   comments: Comment[];
+  comment_count: number;
 }
 
 const CONFESSIONS_PER_PAGE = 10;
@@ -50,7 +51,7 @@ const Index: React.FC = () => {
     try {
       const { data: confessionsData, error: confessionsError } = await supabase
         .from("confessions")
-        .select("*")
+        .select("*, comments(count)")
         .order("created_at", { ascending: false })
         .range(from, to);
 
@@ -64,22 +65,14 @@ const Index: React.FC = () => {
         setHasMore(false);
       }
 
-      const confessionsWithComments: Confession[] = [];
-      for (const confession of confessionsData) {
-        const { data: commentsData, error: commentsError } = await supabase
-          .from("comments")
-          .select("*")
-          .eq("confession_id", confession.id)
-          .order("created_at", { ascending: false });
-
-        confessionsWithComments.push({
-          ...confession,
-          comments: commentsError ? [] : commentsData || [],
-        });
-      }
+      const confessionsWithCommentCount = confessionsData.map((c: any) => ({
+        ...c,
+        comment_count: c.comments[0]?.count || 0,
+        comments: [], // Start with an empty comments array
+      }));
 
       setConfessions((prev) =>
-        initialLoad ? confessionsWithComments : [...prev, ...confessionsWithComments]
+        initialLoad ? confessionsWithCommentCount : [...prev, ...confessionsWithCommentCount]
       );
     } catch (e) {
       console.error("Unexpected error fetching confessions:", e);
@@ -125,24 +118,52 @@ const Index: React.FC = () => {
     const confessionsSubscription = supabase
       .channel('public:confessions')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'confessions' }, (payload) => {
-        const newConfession = payload.new as Confession;
-        setConfessions((prev) => [{ ...newConfession, comments: [] }, ...prev]);
+        const newConfession = payload.new as Omit<Confession, 'comments' | 'comment_count'>;
+        setConfessions((prev) => [{ ...newConfession, comments: [], comment_count: 0 }, ...prev]);
         setExpandedConfessionId(newConfession.id);
       })
       .subscribe();
-    // Note: Real-time updates for comments and likes are handled within the card to avoid re-fetching the whole list.
     return () => {
       supabase.removeChannel(confessionsSubscription);
     };
   }, []);
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female") => {
-    // This function remains largely the same, as the subscription will handle the UI update.
     const { error } = await supabase
       .from("confessions")
       .insert({ title, content, gender });
     if (error) toast.error("Error posting confession: " + error.message);
     else toast.success("Confession posted successfully!");
+  };
+
+  const handleFetchComments = async (confessionId: string) => {
+    const confessionToUpdate = confessions.find(c => c.id === confessionId);
+    if (!confessionToUpdate || confessionToUpdate.comments.length > 0) {
+      return;
+    }
+
+    try {
+      const { data: commentsData, error: commentsError } = await supabase
+        .from("comments")
+        .select("*")
+        .eq("confession_id", confessionId)
+        .order("created_at", { ascending: false });
+
+      if (commentsError) {
+        toast.error("Error fetching comments: " + commentsError.message);
+        return;
+      }
+
+      setConfessions(prev =>
+        prev.map(conf =>
+          conf.id === confessionId
+            ? { ...conf, comments: commentsData || [] }
+            : conf
+        )
+      );
+    } catch (e) {
+      toast.error("An unexpected error occurred while fetching comments.");
+    }
   };
 
   const handleAddComment = async (confessionId: string, content: string, gender: "male" | "female") => {
@@ -158,7 +179,7 @@ const Index: React.FC = () => {
       setConfessions((prev) =>
         prev.map((conf) =>
           conf.id === confessionId
-            ? { ...conf, comments: [data, ...conf.comments] }
+            ? { ...conf, comments: [data, ...conf.comments], comment_count: conf.comment_count + 1 }
             : conf
         )
       );
@@ -223,6 +244,7 @@ const Index: React.FC = () => {
               }}
               onAddComment={handleAddComment}
               onLikeConfession={handleLikeConfession}
+              onFetchComments={handleFetchComments}
               isContentOpen={expandedConfessionId === confession.id}
               onToggleExpand={handleConfessionToggle}
               animationDelay={200 + (index * 150)}

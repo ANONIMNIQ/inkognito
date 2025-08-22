@@ -26,9 +26,11 @@ interface ConfessionCardProps {
     timestamp: Date;
     comments: Comment[];
     likes: number;
+    comment_count: number;
   };
   onAddComment: (confessionId: string, content: string, gender: "male" | "female") => void;
   onLikeConfession: (confessionId: string) => void;
+  onFetchComments: (confessionId: string) => Promise<void>;
   isContentOpen: boolean;
   onToggleExpand: (confessionId: string) => void;
   animationDelay?: number;
@@ -40,6 +42,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   confession,
   onAddComment,
   onLikeConfession,
+  onFetchComments,
   isContentOpen,
   onToggleExpand,
   animationDelay = 0,
@@ -47,6 +50,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(COMMENTS_PER_PAGE);
   const [isLoadingMoreComments, setIsLoadingMoreComments] = useState(false);
+  const [isFetchingComments, setIsFetchingComments] = useState(false);
   
   const cardRootRef = useRef<HTMLDivElement>(null);
   const commentsSectionRef = useRef<HTMLDivElement>(null);
@@ -96,10 +100,17 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     }
   };
 
-  const handleToggleComments = () => {
+  const handleToggleComments = async () => {
     if (!isContentOpen) {
       onToggleExpand(confession.id);
     }
+
+    if (confession.comments.length === 0 && confession.comment_count > 0) {
+      setIsFetchingComments(true);
+      await onFetchComments(confession.id);
+      setIsFetchingComments(false);
+    }
+
     setIsCommentsOpen(prev => !prev);
   };
 
@@ -108,7 +119,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     setTimeout(() => {
       setVisibleCommentsCount(prev => prev + COMMENTS_PER_PAGE);
       setIsLoadingMoreComments(false);
-    }, 500); // Simulate a network delay
+    }, 500);
   };
 
   const bubbleBackgroundColor =
@@ -140,7 +151,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
               onClick={handleToggleComments}
             >
               <MessageCircle className="h-4 w-4" />
-              <span className="text-sm">{confession.comments.length}</span>
+              <span className="text-sm">{confession.comment_count}</span>
             </Button>
             <Button
               variant="ghost"
@@ -179,33 +190,43 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
           <Collapsible open={isCommentsOpen} onOpenChange={setIsCommentsOpen}>
             <CollapsibleTrigger asChild>
               <Button variant="link" className={cn("w-full justify-start p-0 h-auto", linkColor)}>
-                {isCommentsOpen ? "Hide" : "Show"} comments ({confession.comments.length})
+                {isCommentsOpen ? "Hide" : "Show"} comments ({confession.comment_count})
                 {isCommentsOpen ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-3 pt-2">
-              <div className="opacity-0 animate-fade-zoom-in" style={{ animationDelay: '0ms' }}>
-                <CommentForm onSubmit={handleAddComment} />
-              </div>
-              {confession.comments.slice(0, visibleCommentsCount).map((comment, index) => (
-                <CommentCard key={comment.id} comment={comment} animationDelay={(index + 1) * 100} />
-              ))}
-              {isLoadingMoreComments && (
+              {isFetchingComments ? (
                 <>
                   <CommentCardSkeleton />
                   <CommentCardSkeleton />
+                  <CommentCardSkeleton />
                 </>
-              )}
-              {confession.comments.length > visibleCommentsCount && !isLoadingMoreComments && (
-                <div className="text-center">
-                  <Button
-                    variant="link"
-                    className={linkColor}
-                    onClick={handleLoadMoreComments}
-                  >
-                    Load More Comments
-                  </Button>
-                </div>
+              ) : (
+                <>
+                  <div className="opacity-0 animate-fade-zoom-in" style={{ animationDelay: '0ms' }}>
+                    <CommentForm onSubmit={handleAddComment} />
+                  </div>
+                  {confession.comments.slice(0, visibleCommentsCount).map((comment, index) => (
+                    <CommentCard key={comment.id} comment={comment} animationDelay={(index + 1) * 100} />
+                  ))}
+                  {isLoadingMoreComments && (
+                    <>
+                      <CommentCardSkeleton />
+                      <CommentCardSkeleton />
+                    </>
+                  )}
+                  {confession.comments.length > visibleCommentsCount && !isLoadingMoreComments && (
+                    <div className="text-center">
+                      <Button
+                        variant="link"
+                        className={linkColor}
+                        onClick={handleLoadMoreComments}
+                      >
+                        Load More Comments
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
             </CollapsibleContent>
           </Collapsible>
