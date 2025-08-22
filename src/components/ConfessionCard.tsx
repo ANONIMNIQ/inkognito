@@ -43,29 +43,30 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
   const commentsSectionRef = useRef<HTMLDivElement>(null);
   const isInitialMount = useRef(true);
 
+  // Consolidated scrolling logic to prevent race conditions
   useEffect(() => {
+    // Skip scrolling on the initial render of the component
     if (isInitialMount.current) {
       isInitialMount.current = false;
       return;
     }
 
-    if (isContentOpen) {
-      // Allow layout to settle after other cards collapse before scrolling
-      const timer = setTimeout(() => {
-        cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 250); // Corresponds to collapse animation duration
-      return () => clearTimeout(timer);
-    }
-  }, [isContentOpen]);
-
-  useEffect(() => {
+    // If comments are being opened, prioritize scrolling to the comments section.
     if (isContentOpen && isCommentsOpen) {
       const timer = setTimeout(() => {
         commentsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
+      }, 100); // Short delay for the comments section to render
       return () => clearTimeout(timer);
     }
-  }, [isCommentsOpen, isContentOpen]);
+    // Otherwise, if only the main content is being opened, scroll to the top of the card.
+    else if (isContentOpen) {
+      const timer = setTimeout(() => {
+        cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 250); // Longer delay to allow other cards to collapse smoothly
+      return () => clearTimeout(timer);
+    }
+    // No scrolling action is taken when collapsing content (isContentOpen is false)
+  }, [isContentOpen, isCommentsOpen]);
 
   // If the card is collapsed by the parent, ensure its comments are also collapsed
   useEffect(() => {
@@ -80,9 +81,11 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
   };
 
   const handleToggleComments = () => {
+    // If the main card is closed, clicking comments should open it.
     if (!isContentOpen) {
       onToggleExpand(confession.id);
     }
+    // Then, toggle the comments section.
     setIsCommentsOpen(prev => !prev);
   };
 
@@ -163,7 +166,7 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
             <CollapsibleTrigger asChild>
               <Button variant="link" className={cn("w-full justify-start p-0 h-auto", linkColor)}>
                 See all comments ({confession.comments.length})
-                {isCommentsOpen ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
+                {isCommentsOpen ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4" />}
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-3 pt-2">
