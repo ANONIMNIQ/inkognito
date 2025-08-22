@@ -210,7 +210,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
             </div>
             <CollapsibleContent className="space-y-4 pt-2">
               <p className={cn("whitespace-pre-wrap font-serif", textColor)}>{confession.content}</p>
-            </CollapsableContent>
+            </CollapsibleContent>
           </Collapsible>
         </div>
       </div>
