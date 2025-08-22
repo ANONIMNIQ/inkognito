@@ -50,8 +50,8 @@ serve(async (req) => {
   }
 
   // Call Google Gemini API
-  // Changed v1beta to v1
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${GOOGLE_API_KEY}`, {
+  // Changed model to gemini-1.5-flash
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GOOGLE_API_KEY}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
