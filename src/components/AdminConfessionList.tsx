@@ -44,7 +44,7 @@ const AdminConfessionList: React.FC = () => {
           .from("comments")
           .select("*")
           .eq("confession_id", confession.id)
-          .order("created_at", { ascending: true });
+          .order("created_at", { ascending: false });
 
         if (commentsError) {
           console.error("Error fetching comments for confession", confession.id, commentsError);

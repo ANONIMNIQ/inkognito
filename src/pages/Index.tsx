@@ -49,7 +49,7 @@ const Index: React.FC = () => {
           .from("comments")
           .select("*")
           .eq("confession_id", confession.id)
-          .order("created_at", { ascending: true });
+          .order("created_at", { ascending: false });
 
         if (commentsError) {
           console.error("Error fetching comments for confession", confession.id, commentsError);
@@ -92,7 +92,7 @@ const Index: React.FC = () => {
           setConfessions((prev) =>
             prev.map((conf) =>
               conf.id === newComment.confession_id
-                ? { ...conf, comments: [...conf.comments, newComment] }
+                ? { ...conf, comments: [newComment, ...conf.comments] }
                 : conf
             )
           );
@@ -194,7 +194,7 @@ const Index: React.FC = () => {
           setConfessions((prev) =>
             prev.map((conf) =>
               conf.id === newConfession.id
-                ? { ...conf, comments: [...conf.comments, insertedAiComment] }
+                ? { ...conf, comments: [insertedAiComment, ...conf.comments] }
                 : conf
             )
           );
@@ -221,7 +221,7 @@ const Index: React.FC = () => {
     setConfessions((prev) =>
       prev.map((conf) =>
         conf.id === confessionId
-          ? { ...conf, comments: [...conf.comments, data] }
+          ? { ...conf, comments: [data, ...conf.comments] }
           : conf
       )
     );
