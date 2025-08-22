@@ -43,12 +43,12 @@ const TypingText: React.FC<TypingTextProps> = ({ text, delay = 0, speed = 50, cl
   }, [text, delay, speed]);
 
   return (
-    <span className={cn(className)}>
+    <div className={cn(className)}>
       {displayedText}
       {!isTypingComplete && (
         <span className="inline-block w-0.5 h-full bg-current align-bottom animate-pulse" />
       )}
-    </span>
+    </div>
   );
 };
 
