@@ -4,15 +4,15 @@ import ConfessionForm from "@/components/ConfessionForm";
 import ConfessionCard from "@/components/ConfessionCard";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { useSessionContext } from "@/components/SessionProvider"; // Import useSessionContext
+import { ChevronUp } from "lucide-react"; // Only need ChevronUp now
+import { useSessionContext } from "@/components/SessionProvider";
 
 interface Comment {
   id: string;
   confession_id: string;
   content: string;
   gender: "male" | "female";
-  created_at: string; // Use string for ISO date from Supabase
+  created_at: string;
 }
 
 interface Confession {
@@ -21,18 +21,18 @@ interface Confession {
   content: string;
   gender: "male" | "female";
   likes: number;
-  created_at: string; // Use string for ISO date from Supabase
+  created_at: string;
   comments: Comment[];
 }
 
 const Index: React.FC = () => {
   const [confessions, setConfessions] = useState<Confession[]>([]);
-  const [loadingConfessions, setLoadingConfessions] = useState(true); // Renamed to avoid conflict
-  const [allCollapsed, setAllCollapsed] = useState(true); // Changed to true to start collapsed
-  const { loading: authLoading } = useSessionContext(); // Get auth loading state
+  const [loadingConfessions, setLoadingConfessions] = useState(true);
+  const [allCollapsed, setAllCollapsed] = useState(true); // Start with all collapsed by default
+  const { loading: authLoading } = useSessionContext();
 
   const fetchConfessions = useCallback(async () => {
-    setLoadingConfessions(true); // Use loadingConfessions here
+    setLoadingConfessions(true);
     try {
       const { data: confessionsData, error: confessionsError } = await supabase
         .from("confessions")
@@ -41,7 +41,7 @@ const Index: React.FC = () => {
 
       if (confessionsError) {
         toast.error("Error fetching confessions: " + confessionsError.message);
-        return; // Exit early on error
+        return;
       }
 
       const confessionsWithComments: Confession[] = [];
@@ -50,11 +50,10 @@ const Index: React.FC = () => {
           .from("comments")
           .select("*")
           .eq("confession_id", confession.id)
-          .order("created_at", { ascending: true }); // Order comments by oldest first
+          .order("created_at", { ascending: true });
 
         if (commentsError) {
           console.error("Error fetching comments for confession", confession.id, commentsError);
-          // Continue without comments if there's an error
           confessionsWithComments.push({ ...confession, comments: [] });
         } else {
           confessionsWithComments.push({ ...confession, comments: commentsData || [] });
@@ -66,15 +65,14 @@ const Index: React.FC = () => {
       console.error("Unexpected error fetching confessions:", e);
       toast.error("An unexpected error occurred while loading confessions.");
     } finally {
-      setLoadingConfessions(false); // Always set loadingConfessions to false
+      setLoadingConfessions(false);
     }
   }, []);
 
   useEffect(() => {
-    if (!authLoading) { // Only fetch confessions once auth loading is complete
+    if (!authLoading) {
       fetchConfessions();
 
-      // Set up real-time subscription for new confessions
       const confessionsSubscription = supabase
         .channel('public:confessions')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'confessions' }, (payload) => {
@@ -83,7 +81,6 @@ const Index: React.FC = () => {
         })
         .subscribe();
 
-      // Set up real-time subscription for new comments
       const commentsSubscription = supabase
         .channel('public:comments')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, (payload) => {
@@ -98,7 +95,6 @@ const Index: React.FC = () => {
         })
         .subscribe();
 
-      // Set up real-time subscription for likes updates
       const likesSubscription = supabase
         .channel('public:confessions_likes')
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'confessions' }, (payload) => {
@@ -119,7 +115,7 @@ const Index: React.FC = () => {
         likesSubscription.unsubscribe();
       };
     }
-  }, [fetchConfessions, authLoading]); // Add authLoading to dependencies
+  }, [fetchConfessions, authLoading]);
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female") => {
     const { data, error } = await supabase
@@ -136,11 +132,11 @@ const Index: React.FC = () => {
     const newConfession = { ...data, comments: [] };
     setConfessions((prev) => [newConfession, ...prev]);
     toast.success("Confession posted successfully!");
+    setAllCollapsed(false); // Automatically expand all when a new confession is added
 
-    // Invoke AI Edge Function for comment using direct fetch
     try {
-      const SUPABASE_PROJECT_ID = "yyhlligskuppqmlzpobp"; // Your Supabase Project ID
-      const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY; // Get anon key from env
+      const SUPABASE_PROJECT_ID = "yyhlligskuppqmlzpobp";
+      const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
       const aiFunctionUrl = `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/generate-ai-comment`;
 
@@ -148,7 +144,7 @@ const Index: React.FC = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`, // Required for Edge Functions
+          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({ confessionContent: content }),
       });
@@ -217,7 +213,6 @@ const Index: React.FC = () => {
   };
 
   const handleLikeConfession = async (confessionId: string) => {
-    // Optimistically update UI
     setConfessions((prev) =>
       prev.map((conf) =>
         conf.id === confessionId ? { ...conf, likes: conf.likes + 1 } : conf
@@ -229,7 +224,6 @@ const Index: React.FC = () => {
 
     if (error) {
       toast.error("Error liking confession: " + error.message);
-      // Revert optimistic update if error
       setConfessions((prev) =>
         prev.map((conf) =>
           conf.id === confessionId ? { ...conf, likes: conf.likes - 1 } : conf
@@ -240,14 +234,14 @@ const Index: React.FC = () => {
     }
   };
 
-  const toggleAllCollapsed = () => {
-    setAllCollapsed((prev) => !prev);
+  const collapseAllConfessions = () => {
+    setAllCollapsed(true);
   };
 
-  if (authLoading || loadingConfessions) { // Check both auth and confession loading
+  if (authLoading || loadingConfessions) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <p>Loading...</p> {/* Unified loading message */}
+        <p>Loading...</p>
       </div>
     );
   }
@@ -257,21 +251,14 @@ const Index: React.FC = () => {
       <h1 className="text-3xl font-bold text-center mb-8">Anonymous Confessions</h1>
       <ConfessionForm onSubmit={handleAddConfession} />
 
-      <div className="flex justify-end mb-4">
-        <Button variant="outline" onClick={toggleAllCollapsed} className="flex items-center space-x-2">
-          {allCollapsed ? (
-            <>
-              <ChevronDown className="h-4 w-4" />
-              <span>Expand All</span>
-            </>
-          ) : (
-            <>
-              <ChevronUp className="h-4 w-4" />
-              <span>Collapse All</span>
-            </>
-          )}
-        </Button>
-      </div>
+      {!allCollapsed && ( // Only show the button if not all are collapsed
+        <div className="flex justify-end mb-4">
+          <Button variant="outline" onClick={collapseAllConfessions} className="flex items-center space-x-2">
+            <ChevronUp className="h-4 w-4" />
+            <span>Collapse All</span>
+          </Button>
+        </div>
+      )}
 
       {confessions.length === 0 ? (
         <p className="text-center text-gray-500 dark:text-gray-400 mt-8">No confessions yet. Be the first to share!</p>
