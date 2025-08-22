@@ -170,7 +170,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
           <div className="flex justify-between items-center mb-2">
             <Button
               variant="link"
-              className="flex items-center space-x-0.5 p-0 h-auto text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors hover:no-underline"
+              className="flex items-center space-x-px p-0 h-auto text-gray-400 hover:text-gray-900 dark:text-gray-500 dark:hover:text-white transition-colors hover:no-underline"
               onClick={handleToggleComments}
             >
               <MessageCircle className="h-3.5 w-3.5" />
@@ -178,7 +178,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
             </Button>
             <Button
               variant="link"
-              className="flex items-center space-x-0.5 p-0 h-auto text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors hover:no-underline"
+              className="flex items-center space-x-px p-0 h-auto text-gray-400 hover:text-gray-900 dark:text-gray-500 dark:hover:text-white transition-colors hover:no-underline"
               onClick={() => onLikeConfession(confession.id)}
             >
               <Heart className="h-3.5 w-3.5" />
@@ -189,7 +189,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
           <Collapsible open={isContentOpen} onOpenChange={() => onToggleExpand(confession.id)}>
             <div className="flex items-center justify-between space-x-4 mb-2">
               <CollapsibleTrigger asChild>
-                <Button variant="link" className={cn("p-0 h-auto text-left text-xl font-semibold hover:no-underline", textColor)}>
+                <Button variant="link" className={cn("p-0 h-auto text-left text-2xl font-semibold hover:no-underline", textColor)}>
                   <TypingText text={confession.title} delay={animationDelay + 300} speed={30} className="block" />
                 </Button>
               </CollapsibleTrigger>

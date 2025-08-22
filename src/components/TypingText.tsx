@@ -1,42 +1,49 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 interface TypingTextProps {
   text: string;
-  delay?: number; // Delay before starting typing
-  speed?: number; // Speed of typing in ms per character
+  delay?: number;
+  speed?: number;
   className?: string;
 }
 
 const TypingText: React.FC<TypingTextProps> = ({ text, delay = 0, speed = 50, className }) => {
   const [displayedText, setDisplayedText] = useState("");
   const [isTypingComplete, setIsTypingComplete] = useState(false);
+  const index = useRef(0);
+  const timeoutId = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    setDisplayedText(""); // Reset when text changes
+    // Reset everything when text changes
+    setDisplayedText("");
     setIsTypingComplete(false);
-    let charIndex = 0;
-    let timeoutId: ReturnType<typeof setTimeout>;
+    index.current = 0;
+    if (timeoutId.current) {
+      clearTimeout(timeoutId.current);
+    }
 
     const startTyping = () => {
-      timeoutId = setTimeout(() => {
-        if (charIndex < text.length) {
-          setDisplayedText((prev) => prev + text.charAt(charIndex));
-          charIndex++;
-          startTyping();
-        } else {
-          setIsTypingComplete(true);
-        }
-      }, speed);
+      if (index.current < text.length) {
+        setDisplayedText((prev) => prev + text.charAt(index.current));
+        index.current++;
+        timeoutId.current = setTimeout(startTyping, speed);
+      } else {
+        setIsTypingComplete(true);
+      }
     };
 
-    const initialDelayTimeout = setTimeout(startTyping, delay);
+    // Start after initial delay
+    timeoutId.current = setTimeout(startTyping, delay);
 
+    // Cleanup function
     return () => {
-      clearTimeout(initialDelayTimeout);
-      clearTimeout(timeoutId);
+      if (timeoutId.current) {
+        clearTimeout(timeoutId.current);
+      }
     };
   }, [text, delay, speed]);
+
 
   return (
     <span className={cn("inline-block overflow-hidden whitespace-nowrap", className)}>
