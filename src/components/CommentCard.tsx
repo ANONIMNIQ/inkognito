@@ -8,7 +8,7 @@ interface CommentCardProps {
   comment: {
     id: string;
     content: string;
-    gender: "male" | "female";
+    gender: "male" | "female" | "incognito";
     timestamp: Date;
   };
   isEditing?: boolean; // New prop to indicate if comment is being edited
@@ -21,7 +21,9 @@ const CommentCard: React.FC<CommentCardProps> = ({ comment, isEditing = false, e
   const bubbleBackgroundColor =
     comment.gender === "male"
       ? "bg-blue-50 dark:bg-blue-900"
-      : "bg-pink-50 dark:bg-pink-900";
+      : comment.gender === "female"
+      ? "bg-pink-50 dark:bg-pink-900"
+      : "bg-gray-100 dark:bg-gray-700";
 
   // Updated to grey/black
   const textColor = "text-gray-800 dark:text-gray-200";
@@ -35,7 +37,9 @@ const CommentCard: React.FC<CommentCardProps> = ({ comment, isEditing = false, e
             "absolute top-3 -left-2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent",
             comment.gender === "male"
               ? "border-r-blue-50 dark:border-r-blue-900"
-              : "border-r-pink-50 dark:border-r-pink-900"
+              : comment.gender === "female"
+              ? "border-r-pink-50 dark:border-r-pink-900"
+              : "border-r-gray-100 dark:border-r-gray-700"
           )}
         ></div>
         {isEditing && onContentChange ? (

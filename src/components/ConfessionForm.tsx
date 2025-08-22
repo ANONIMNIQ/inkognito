@@ -10,7 +10,7 @@ import GenderAvatar from "./GenderAvatar";
 import { cn } from "@/lib/utils";
 
 interface ConfessionFormProps {
-  onSubmit: (title: string, content: string, gender: "male" | "female") => void;
+  onSubmit: (title: string, content: string, gender: "male" | "female" | "incognito") => void;
   onFormFocus?: () => void;
 }
 
@@ -18,7 +18,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus }
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [gender, setGender] = useState<"male" | "female">("male");
+  const [gender, setGender] = useState<"male" | "female" | "incognito">("male");
   const formRef = useRef<HTMLDivElement>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -73,7 +73,9 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus }
   const bubbleBackgroundColor =
     gender === "male"
       ? "bg-blue-100 dark:bg-blue-950"
-      : "bg-pink-100 dark:bg-pink-950";
+      : gender === "female"
+      ? "bg-pink-100 dark:bg-pink-950"
+      : "bg-gray-100 dark:bg-gray-800";
 
   // Updated to grey/black
   const generalTextColor = "text-gray-800 dark:text-gray-200";
@@ -90,7 +92,9 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus }
             "absolute top-3 -left-2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent",
             gender === "male"
               ? "border-r-blue-100 dark:border-r-blue-950"
-              : "border-r-pink-100 dark:border-r-pink-950"
+              : gender === "female"
+              ? "border-r-pink-100 dark:border-r-pink-950"
+              : "border-r-gray-100 dark:border-r-gray-800"
           )}
         ></div>
 
@@ -124,7 +128,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus }
                 <RadioGroup
                   defaultValue="male"
                   value={gender}
-                  onValueChange={(value: "male" | "female") => setGender(value)}
+                  onValueChange={(value: "male" | "female" | "incognito") => setGender(value)}
                   className="flex space-x-4 mt-2"
                 >
                   <div className="flex items-center space-x-2">
@@ -149,6 +153,18 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus }
                           ? cn(generalTextColor, "font-bold underline decoration-2")
                           : cn("text-gray-500 dark:text-gray-400", "hover:underline", `hover:${generalTextColor}`)
                       )}>Female</span>
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="incognito" id="confession-gender-incognito" className="sr-only" />
+                    <Label htmlFor="confession-gender-incognito" className="flex items-center space-x-1 cursor-pointer">
+                      <GenderAvatar gender="incognito" className="h-6 w-6" />
+                      <span className={cn(
+                        "text-sm",
+                        gender === "incognito"
+                          ? cn(generalTextColor, "font-bold underline decoration-2")
+                          : cn("text-gray-500 dark:text-gray-400", "hover:underline", `hover:${generalTextColor}`)
+                      )}>Incognito</span>
                     </Label>
                   </div>
                 </RadioGroup>

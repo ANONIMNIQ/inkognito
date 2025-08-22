@@ -103,7 +103,7 @@ serve(async (req) => {
   return new Response(JSON.stringify({
     id: crypto.randomUUID(), // Generate a UUID for the comment
     content: `AI says: "${aiResponseContent}"`,
-    gender: "male", // Default gender for AI
+    gender: "incognito", // Default gender for AI
     timestamp: new Date().toISOString(),
   }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },

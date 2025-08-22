@@ -10,7 +10,7 @@ interface Comment {
   id: string;
   confession_id: string;
   content: string;
-  gender: "male" | "female";
+  gender: "male" | "female" | "incognito";
   created_at: string;
 }
 
@@ -18,7 +18,7 @@ interface Confession {
   id: string;
   title: string;
   content: string;
-  gender: "male" | "female";
+  gender: "male" | "female" | "incognito";
   likes: number;
   created_at: string;
   comments: Comment[];
@@ -133,7 +133,7 @@ const Index: React.FC = () => {
     };
   }, []);
 
-  const handleAddConfession = async (title: string, content: string, gender: "male" | "female") => {
+  const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito") => {
     const { data: newConfessionData, error: insertError } = await supabase
       .from("confessions")
       .insert({ title, content, gender })
@@ -218,7 +218,7 @@ const Index: React.FC = () => {
     }
   };
 
-  const handleAddComment = async (confessionId: string, content: string, gender: "male" | "female") => {
+  const handleAddComment = async (confessionId: string, content: string, gender: "male" | "female" | "incognito") => {
     const { data, error } = await supabase
       .from("comments")
       .insert({ confession_id: confessionId, content, gender })

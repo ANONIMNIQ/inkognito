@@ -8,12 +8,12 @@ import GenderAvatar from "./GenderAvatar";
 import { cn } from "@/lib/utils";
 
 interface CommentFormProps {
-  onSubmit: (content: string, gender: "male" | "female") => void;
+  onSubmit: (content: string, gender: "male" | "female" | "incognito") => void;
 }
 
 const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
   const [content, setContent] = useState("");
-  const [gender, setGender] = useState<"male" | "female">("male");
+  const [gender, setGender] = useState<"male" | "female" | "incognito">("male");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +22,7 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
       return;
     }
     onSubmit(content, gender);
-setContent("");
+    setContent("");
     setGender("male"); // Reset to default
     toast.success("Your comment has been posted!");
   };
@@ -30,7 +30,9 @@ setContent("");
   const bubbleBackgroundColor =
     gender === "male"
       ? "bg-blue-50 dark:bg-blue-900"
-      : "bg-pink-50 dark:bg-pink-900";
+      : gender === "female"
+      ? "bg-pink-50 dark:bg-pink-900"
+      : "bg-gray-100 dark:bg-gray-700";
 
   // Updated to grey/black
   const generalTextColor = "text-gray-800 dark:text-gray-200";
@@ -46,7 +48,9 @@ setContent("");
             "absolute top-3 -left-2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent",
             gender === "male"
               ? "border-r-blue-50 dark:border-r-blue-900"
-              : "border-r-pink-50 dark:border-r-pink-900"
+              : gender === "female"
+              ? "border-r-pink-50 dark:border-r-pink-900"
+              : "border-r-gray-100 dark:border-r-gray-700"
           )}
         ></div>
         <div>
@@ -64,7 +68,7 @@ setContent("");
           <RadioGroup
             defaultValue="male"
             value={gender}
-            onValueChange={(value: "male" | "female") => setGender(value)}
+            onValueChange={(value: "male" | "female" | "incognito") => setGender(value)}
             className="flex space-x-4 mt-1"
           >
             <div className="flex items-center space-x-2">
@@ -89,6 +93,18 @@ setContent("");
                     ? cn(generalTextColor, "font-bold underline decoration-2")
                     : cn("text-gray-500 dark:text-gray-400", "hover:underline", `hover:${generalTextColor}`)
                 )}>Female</span>
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="incognito" id="comment-gender-incognito" className="sr-only" />
+              <Label htmlFor="comment-gender-incognito" className="flex items-center space-x-1 cursor-pointer">
+                <GenderAvatar gender="incognito" className="h-6 w-6" />
+                <span className={cn(
+                  "text-sm",
+                  gender === "incognito"
+                    ? cn(generalTextColor, "font-bold underline decoration-2")
+                    : cn("text-gray-500 dark:text-gray-400", "hover:underline", `hover:${generalTextColor}`)
+                )}>Incognito</span>
               </Label>
             </div>
           </RadioGroup>

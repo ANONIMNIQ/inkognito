@@ -13,7 +13,7 @@ import CommentCardSkeleton from "./CommentCardSkeleton";
 interface Comment {
   id: string;
   content: string;
-  gender: "male" | "female";
+  gender: "male" | "female" | "incognito";
   timestamp: Date;
 }
 
@@ -22,13 +22,13 @@ interface ConfessionCardProps {
     id: string;
     title: string;
     content: string;
-    gender: "male" | "female";
+    gender: "male" | "female" | "incognito";
     timestamp: Date;
     comments: Comment[];
     likes: number;
     comment_count: number;
   };
-  onAddComment: (confessionId: string, content: string, gender: "male" | "female") => void;
+  onAddComment: (confessionId: string, content: string, gender: "male" | "female" | "incognito") => void;
   onLikeConfession: (confessionId: string) => void;
   onFetchComments: (confessionId: string) => Promise<void>;
   isContentOpen: boolean;
@@ -110,7 +110,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     }
   }, [visibleCommentsCount, isLoadingMoreComments]);
 
-  const handleAddComment = (content: string, gender: "male" | "female") => {
+  const handleAddComment = (content: string, gender: "male" | "female" | "incognito") => {
     onAddComment(confession.id, content, gender);
     if (!isCommentsOpen) {
       setIsCommentsOpen(true);
@@ -145,7 +145,9 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const bubbleBackgroundColor =
     confession.gender === "male"
       ? "bg-blue-100 dark:bg-blue-950"
-      : "bg-pink-100 dark:bg-pink-950";
+      : confession.gender === "female"
+      ? "bg-pink-100 dark:bg-pink-950"
+      : "bg-gray-100 dark:bg-gray-800";
 
   const textColor = "text-gray-800 dark:text-gray-200";
   const linkColor = "text-gray-600 dark:text-gray-400";
@@ -160,7 +162,9 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
               "absolute top-3 -left-2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent",
               confession.gender === "male"
                 ? "border-r-blue-100 dark:border-r-blue-950"
-                : "border-r-pink-100 dark:border-r-pink-950"
+                : confession.gender === "female"
+                ? "border-r-pink-100 dark:border-r-pink-950"
+                : "border-r-gray-100 dark:border-r-gray-800"
             )}
           ></div>
           <div className="flex justify-between items-center mb-2">

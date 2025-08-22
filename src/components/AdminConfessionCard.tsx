@@ -24,7 +24,7 @@ interface Comment {
   id: string;
   confession_id: string;
   content: string;
-  gender: "male" | "female";
+  gender: "male" | "female" | "incognito";
   created_at: string;
 }
 
@@ -32,7 +32,7 @@ interface Confession {
   id: string;
   title: string;
   content: string;
-  gender: "male" | "female";
+  gender: "male" | "female" | "incognito";
   likes: number;
   created_at: string;
   comments: Comment[];
@@ -64,7 +64,9 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
   const bubbleBackgroundColor =
     confession.gender === "male"
       ? "bg-blue-100 dark:bg-blue-950"
-      : "bg-pink-100 dark:bg-pink-950";
+      : confession.gender === "female"
+      ? "bg-pink-100 dark:bg-pink-950"
+      : "bg-gray-100 dark:bg-gray-800";
 
   const textColor = "text-gray-800 dark:text-gray-200";
   const linkColor = "text-gray-600 dark:text-gray-400";

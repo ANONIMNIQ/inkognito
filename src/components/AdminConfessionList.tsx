@@ -7,7 +7,7 @@ interface Comment {
   id: string;
   confession_id: string;
   content: string;
-  gender: "male" | "female";
+  gender: "male" | "female" | "incognito";
   created_at: string;
 }
 
@@ -15,7 +15,7 @@ interface Confession {
   id: string;
   title: string;
   content: string;
-  gender: "male" | "female";
+  gender: "male" | "female" | "incognito";
   likes: number;
   created_at: string;
   comments: Comment[];
