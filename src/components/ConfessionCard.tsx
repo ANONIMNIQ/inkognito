@@ -226,7 +226,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                   <div className="opacity-0 animate-fade-zoom-in" style={{ animationDelay: '0ms' }}>
                     <CommentForm onSubmit={handleAddComment} />
                   </div>
-                  <div ref={commentsListRef}>
+                  <div ref={commentsListRef} className="space-y-3">
                     {confession.comments.slice(0, visibleCommentsCount).map((comment, index) => (
                       <CommentCard key={comment.id} comment={comment} animationDelay={(index + 1) * 100} />
                     ))}
