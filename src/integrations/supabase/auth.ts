@@ -43,8 +43,39 @@ export const useSession = () => {
   }, []);
 
   useEffect(() => {
+    let isMounted = true; // Flag to prevent state updates on unmounted component
+
+    const getInitialSession = async () => {
+      setLoading(true);
+      try {
+        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
+        if (isMounted) {
+          setSession(initialSession);
+          setUser(initialSession?.user || null);
+          if (initialSession?.user) {
+            await fetchUserProfile(initialSession.user.id);
+          } else {
+            setProfile(null);
+          }
+        }
+      } catch (e) {
+        console.error("Error getting initial session:", e);
+        if (isMounted) {
+          toast.error("An unexpected error occurred during initial session load.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    getInitialSession(); // Call immediately on mount to get initial state
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
+        if (!isMounted) return; // Don't update state if component is unmounted
+
         setLoading(true); // Start loading for any auth state change
         try {
           setSession(currentSession);
@@ -63,7 +94,10 @@ export const useSession = () => {
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false; // Cleanup: component is unmounted
+      subscription.unsubscribe();
+    };
   }, [fetchUserProfile]); // Add fetchUserProfile to dependencies
 
   return { session, user, profile, loading };
