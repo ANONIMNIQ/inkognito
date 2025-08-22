@@ -198,12 +198,20 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                       : [linkColor, "hover:text-gray-800 dark:hover:text-gray-200"]
                   )}
                 >
-                  <div className={cn("w-full", !isContentOpen && "truncate")}>
-                    <TypingText
-                      text={confession.title}
-                      delay={animationDelay + 300}
-                      speed={30}
-                    />
+                  <div className="relative w-full">
+                    {/* Invisible text for layout calculation */}
+                    <span className={cn("block w-full opacity-0 whitespace-pre-wrap", !isContentOpen && "truncate")}>
+                      {confession.title}
+                    </span>
+                    {/* Visible typing animation, absolutely positioned */}
+                    <div className={cn("absolute inset-0", !isContentOpen && "truncate")}>
+                      <TypingText
+                        text={confession.title}
+                        delay={animationDelay + 300}
+                        speed={30}
+                        className="whitespace-pre-wrap"
+                      />
+                    </div>
                   </div>
                 </Button>
               </CollapsibleTrigger>
