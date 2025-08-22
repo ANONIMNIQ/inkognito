@@ -177,8 +177,8 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
               {sortedComments.length === 0 ? (
                 <p className="text-sm text-center text-gray-500 dark:text-gray-400 py-4">No comments yet. Be the first!</p>
               ) : (
-                sortedComments.map((comment) => (
-                  <CommentCard key={comment.id} comment={comment} />
+                sortedComments.map((comment, index) => (
+                  <CommentCard key={comment.id} comment={comment} animationDelay={index * 100} /> {/* Staggered delay */}
                 ))
               )}
             </CollapsibleContent>

@@ -14,9 +14,10 @@ interface CommentCardProps {
   isEditing?: boolean; // New prop to indicate if comment is being edited
   editedContent?: string; // New prop for edited content
   onContentChange?: (content: string) => void; // New prop for content change handler
+  animationDelay?: number; // New prop for animation delay
 }
 
-const CommentCard: React.FC<CommentCardProps> = ({ comment, isEditing = false, editedContent, onContentChange }) => {
+const CommentCard: React.FC<CommentCardProps> = ({ comment, isEditing = false, editedContent, onContentChange, animationDelay = 0 }) => {
   const bubbleBackgroundColor =
     comment.gender === "male"
       ? "bg-blue-50 dark:bg-blue-900"
@@ -26,7 +27,7 @@ const CommentCard: React.FC<CommentCardProps> = ({ comment, isEditing = false, e
   const textColor = "text-gray-800 dark:text-gray-200";
 
   return (
-    <div className="flex items-start space-x-2 flex-1"> {/* Added flex-1 to allow it to take available space */}
+    <div className="flex items-start space-x-2 flex-1 animate-fade-zoom-in" style={{ animationDelay: `${animationDelay}ms` }}> {/* Added animation classes and style */}
       <GenderAvatar gender={comment.gender} className="h-7 w-7 flex-shrink-0 mt-1" />
       <div className={cn("flex-1 p-3 rounded-xl shadow-sm relative", bubbleBackgroundColor)}>
         {/* Speech bubble tail */}
