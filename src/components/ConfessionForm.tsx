@@ -69,6 +69,8 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit }) => {
   
   const currentTextColor = gender === 'male' ? maleTextColor : femaleTextColor;
   const placeholderColor = gender === 'male' ? "placeholder:text-blue-700/60 dark:placeholder:text-blue-200/60" : "placeholder:text-pink-700/60 dark:placeholder:text-pink-200/60";
+  const borderColor = gender === 'male' ? "border-blue-300 dark:border-blue-700" : "border-pink-300 dark:border-pink-700";
+
 
   return (
     <div className="w-full max-w-2xl mx-auto mb-6 flex items-start space-x-3" ref={formRef}>
@@ -91,7 +93,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit }) => {
           onChange={(e) => setTitle(e.target.value)}
           onFocus={handleTitleFocus}
           required
-          className={cn("w-full bg-transparent", currentTextColor, placeholderColor)}
+          className={cn("w-full bg-transparent", currentTextColor, placeholderColor, borderColor)}
         />
 
         <Collapsible open={open} className="mt-2">
@@ -106,7 +108,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit }) => {
                   onChange={(e) => setContent(e.target.value)}
                   rows={5}
                   required
-                  className={cn("bg-transparent", currentTextColor, placeholderColor)}
+                  className={cn("bg-transparent", currentTextColor, placeholderColor, borderColor)}
                 />
               </div>
               <div>
