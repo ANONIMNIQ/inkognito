@@ -189,7 +189,15 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
           <Collapsible open={isContentOpen} onOpenChange={() => onToggleExpand(confession.id)}>
             <div className="flex items-center justify-between space-x-4 mb-2">
               <CollapsibleTrigger asChild>
-                <Button variant="link" className={cn("p-0 h-auto text-left text-2xl font-semibold hover:no-underline font-serif", textColor)}>
+                <Button
+                  variant="link"
+                  className={cn(
+                    "p-0 h-auto text-left text-2xl font-semibold hover:no-underline font-serif transition-colors",
+                    isContentOpen
+                      ? textColor
+                      : [linkColor, "hover:text-gray-800 dark:hover:text-gray-200"]
+                  )}
+                >
                   <TypingText text={confession.title} delay={animationDelay + 300} speed={30} className="block" />
                 </Button>
               </CollapsibleTrigger>
@@ -202,7 +210,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
             </div>
             <CollapsibleContent className="space-y-4 pt-2">
               <p className={cn("whitespace-pre-wrap font-serif", textColor)}>{confession.content}</p>
-            </CollapsibleContent>
+            </CollapsableContent>
           </Collapsible>
         </div>
       </div>
