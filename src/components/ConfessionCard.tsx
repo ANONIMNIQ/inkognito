@@ -40,7 +40,8 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
 }) => {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false); // Comments section remains local
   const cardRef = useRef<HTMLDivElement>(null); // Ref for the entire confession card
-  const commentsSectionRef = useRef<HTMLDivElement>(null); // New ref for the comments section
+  const confessionBubbleRef = useRef<HTMLDivElement>(null); // New ref for the confession bubble itself
+  const commentsSectionRef = useRef<HTMLDivElement>(null); // Ref for the comments section
 
   // Effect to handle scrolling when content expands (scrolls to the top of the card)
   useEffect(() => {
@@ -63,11 +64,17 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
   };
 
   const handleToggleComments = () => {
-    setIsCommentsOpen((prev) => !prev);
-    // If comments are being opened, ensure the main content is also open
-    if (!isCommentsOpen && !isContentOpen) {
-      onToggleExpand(confession.id, true);
-    }
+    setIsCommentsOpen((prev) => {
+      if (prev) { // If comments are currently open and will be collapsed
+        confessionBubbleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else { // If comments are currently closed and will be expanded
+        // Ensure the main content is also open if comments are being opened
+        if (!isContentOpen) {
+          onToggleExpand(confession.id, true);
+        }
+      }
+      return !prev;
+    });
   };
 
   const handleContentOpenChange = (open: boolean) => {
@@ -98,7 +105,7 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
     <div className="w-full max-w-2xl mx-auto mb-6" ref={cardRef}>
       <div className="flex items-start space-x-3">
         <GenderAvatar gender={confession.gender} className="h-10 w-10 flex-shrink-0 mt-2" />
-        <div className={cn("flex-1 p-4 rounded-xl shadow-md relative", bubbleBackgroundColor)}>
+        <div className={cn("flex-1 p-4 rounded-xl shadow-md relative", bubbleBackgroundColor)} ref={confessionBubbleRef}>
           <div
             className={cn(
               "absolute top-3 -left-2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent",
@@ -152,7 +159,7 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
       </div>
 
       {isContentOpen && (
-        <div className="ml-14 mt-4" ref={commentsSectionRef}> {/* Attach ref here */}
+        <div className="ml-14 mt-4" ref={commentsSectionRef}>
           <Collapsible open={isCommentsOpen} onOpenChange={setIsCommentsOpen}>
             <CollapsibleTrigger asChild>
               <Button variant="link" className={cn("w-full justify-start p-0 h-auto", linkColor)}>
