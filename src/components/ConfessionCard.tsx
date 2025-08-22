@@ -28,7 +28,8 @@ interface ConfessionCardProps {
 }
 
 const ConfessionCard: React.FC<ConfessionCardProps> = ({ confession, onAddComment }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isContentOpen, setIsContentOpen] = useState(false); // State for main confession content
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false); // State for comments section
 
   const handleAddComment = (content: string, gender: "male" | "female") => {
     onAddComment(confession.id, content, gender);
@@ -63,7 +64,8 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({ confession, onAddCommen
           )}
         ></div>
 
-        <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        {/* Outer Collapsible for main confession content */}
+        <Collapsible open={isContentOpen} onOpenChange={setIsContentOpen}>
           <div className="flex items-center justify-between space-x-4 mb-2">
             <CollapsibleTrigger asChild>
               <Button variant="link" className={cn("p-0 h-auto text-left text-lg font-semibold hover:no-underline", textColor)}>
@@ -74,34 +76,38 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({ confession, onAddCommen
               <span>{formatDistanceToNow(confession.timestamp, { addSuffix: true })}</span>
               <CollapsibleTrigger asChild>
                 <Button variant="ghost" size="sm" className="w-9 p-0">
-                  {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  <span className="sr-only">Toggle</span>
+                  {isContentOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  <span className="sr-only">Toggle confession content</span>
                 </Button>
               </CollapsibleTrigger>
             </div>
           </div>
+
           <CollapsibleContent className="space-y-4 pt-2">
             <p className={cn("whitespace-pre-wrap", textColor)}>{confession.content}</p>
-            <div className="space-y-3">
-              <h3 className={cn("text-md font-semibold", textColor)}>Comments ({confession.comments.length})</h3>
-              {confession.comments.length === 0 ? (
-                <p className="text-sm text-gray-500 dark:text-gray-400">No comments yet. Be the first!</p>
-              ) : (
-                confession.comments.map((comment) => (
-                  <CommentCard key={comment.id} comment={comment} />
-                ))
-              )}
-              <CommentForm onSubmit={handleAddComment} />
-            </div>
+
+            {/* Inner Collapsible for comments section */}
+            <Collapsible open={isCommentsOpen} onOpenChange={setIsCommentsOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="link" className={cn("w-full justify-start p-0 h-auto", linkColor)}>
+                  See all comments ({confession.comments.length})
+                  {isCommentsOpen ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-3 pt-2">
+                <h3 className={cn("text-md font-semibold", textColor)}>Comments ({confession.comments.length})</h3>
+                {confession.comments.length === 0 ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">No comments yet. Be the first!</p>
+                ) : (
+                  confession.comments.map((comment) => (
+                    <CommentCard key={comment.id} comment={comment} />
+                  ))
+                )}
+                <CommentForm onSubmit={handleAddComment} />
+              </CollapsibleContent>
+            </Collapsible>
           </CollapsibleContent>
         </Collapsible>
-        {!isOpen && (
-          <div className="mt-2">
-            <Button variant="link" onClick={() => setIsOpen(true)} className={cn("w-full", linkColor)}>
-              See all comments ({confession.comments.length})
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   );
