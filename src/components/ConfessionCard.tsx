@@ -39,21 +39,22 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
   onToggleExpand,
 }) => {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false); // Comments section remains local
-  const cardRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null); // Ref for the entire confession card
+  const commentsSectionRef = useRef<HTMLDivElement>(null); // New ref for the comments section
 
-  // Effect to handle scrolling when content expands
+  // Effect to handle scrolling when content expands (scrolls to the top of the card)
   useEffect(() => {
     if (isContentOpen && cardRef.current) {
       cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [isContentOpen]);
 
-  // Effect to handle scrolling when comments section expands (only if content is already open)
+  // Effect to handle scrolling when comments section expands (scrolls to the top of the comments section)
   useEffect(() => {
-    if (isCommentsOpen && isContentOpen && cardRef.current) {
-      cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (isCommentsOpen && commentsSectionRef.current) {
+      commentsSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-  }, [isCommentsOpen, isContentOpen]);
+  }, [isCommentsOpen]);
 
   const handleAddComment = (content: string, gender: "male" | "female") => {
     onAddComment(confession.id, content, gender);
@@ -151,7 +152,7 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
       </div>
 
       {isContentOpen && (
-        <div className="ml-14 mt-4">
+        <div className="ml-14 mt-4" ref={commentsSectionRef}> {/* Attach ref here */}
           <Collapsible open={isCommentsOpen} onOpenChange={setIsCommentsOpen}>
             <CollapsibleTrigger asChild>
               <Button variant="link" className={cn("w-full justify-start p-0 h-auto", linkColor)}>
