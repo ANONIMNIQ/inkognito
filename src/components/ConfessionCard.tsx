@@ -105,7 +105,7 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
   const linkColor = "text-gray-600 dark:text-gray-400";
 
   return (
-    <div className="w-full max-w-2xl mx-auto mb-6 animate-fade-zoom-in" style={{ animationDelay: `${animationDelay}ms` }} ref={cardRef}>
+    <div className="w-full max-w-2xl mx-auto mb-6 opacity-0 animate-fade-zoom-in" style={{ animationDelay: `${animationDelay}ms` }} ref={cardRef}>
       <div className="flex items-start space-x-3">
         <GenderAvatar gender={confession.gender} className="h-10 w-10 flex-shrink-0 mt-2" />
         <div className={cn("flex-1 p-4 rounded-xl shadow-md relative", bubbleBackgroundColor)}>
