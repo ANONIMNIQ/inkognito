@@ -21,7 +21,7 @@ export const useSession = () => {
   const fetchUserProfile = useCallback(async (userId: string) => {
     if (!userId) {
       setProfile(null);
-      return;
+      return null; // Return null if no user ID
     }
     try {
       const { data: profileData, error: profileError } = await supabase
@@ -34,46 +34,42 @@ export const useSession = () => {
         console.error("Error fetching profile:", profileError);
         toast.error("Failed to load user profile: " + profileError.message);
         setProfile(null);
+        return null;
       } else if (profileData) {
         setProfile(profileData);
+        return profileData;
       } else {
         setProfile(null); // No profile found
+        return null;
       }
     } catch (e) {
       console.error("Unexpected error in fetchUserProfile:", e);
       toast.error("An unexpected error occurred while fetching user profile.");
       setProfile(null);
+      return null;
     }
   }, []);
 
   useEffect(() => {
-    let isMounted = true; // Flag to prevent state updates on unmounted component
+    let isMounted = true;
 
-    const handleAuthChange = async (currentSession: Session | null) => {
-      if (!isMounted) return;
-
-      setSession(currentSession);
-      setUser(currentSession?.user || null);
-      if (currentSession?.user) {
-        await fetchUserProfile(currentSession.user.id);
-      } else {
-        setProfile(null);
-      }
-      setLoading(false); // Always set loading to false after processing
-    };
-
-    // Get initial session and set up listener
-    const setupAuth = async () => {
+    const initializeSession = async () => {
       try {
         const { data: { session: initialSession }, error: initialSessionError } = await supabase.auth.getSession();
-        if (isMounted) {
-          if (initialSessionError) {
-            console.error("Error getting initial session:", initialSessionError);
-            setSession(null);
-            setUser(null);
-            setProfile(null);
+        if (!isMounted) return;
+
+        if (initialSessionError) {
+          console.error("Error getting initial session:", initialSessionError);
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+        } else {
+          setSession(initialSession);
+          setUser(initialSession?.user || null);
+          if (initialSession?.user) {
+            await fetchUserProfile(initialSession.user.id);
           } else {
-            await handleAuthChange(initialSession); // Process initial session
+            setProfile(null);
           }
         }
       } catch (e) {
@@ -84,31 +80,35 @@ export const useSession = () => {
       } finally {
         if (isMounted) {
           setLoading(false); // Ensure loading is false after initial check
+          console.log("useSession: Initial load complete, setLoading(false)");
         }
       }
-
-      // Set up the listener for subsequent auth state changes
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        async (event, currentSession) => {
-          console.log("Auth state change event:", event, "Session:", currentSession);
-          if (!isMounted) return;
-          // For any auth state change, re-evaluate the session and profile
-          // We don't set loading to true here, as handleAuthChange will manage it
-          await handleAuthChange(currentSession);
-        }
-      );
-
-      return () => {
-        subscription.unsubscribe();
-      };
     };
 
-    setupAuth();
+    initializeSession();
+
+    // Set up the listener for subsequent auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, currentSession) => {
+        if (!isMounted) return;
+        console.log("Auth state change event:", event, "Session:", currentSession ? "present" : "null");
+
+        // Only update session/user/profile, do not touch loading state here
+        setSession(currentSession);
+        setUser(currentSession?.user || null);
+        if (currentSession?.user) {
+          await fetchUserProfile(currentSession.user.id);
+        } else {
+          setProfile(null);
+        }
+      }
+    );
 
     return () => {
       isMounted = false;
+      subscription.unsubscribe();
     };
-  }, [fetchUserProfile]); // Dependencies for useEffect
+  }, [fetchUserProfile]); // fetchUserProfile is a dependency
 
   return { session, user, profile, loading };
 };
