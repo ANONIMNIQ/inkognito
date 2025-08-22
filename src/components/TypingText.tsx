@@ -47,7 +47,7 @@ const TypingText: React.FC<TypingTextProps> = ({ text, delay = 0, speed = 50, cl
   }, [text, delay, speed]);
 
   return (
-    <span className={cn("inline-block overflow-hidden whitespace-nowrap", className)}>
+    <span className={cn("inline-block overflow-hidden", className)}>
       {displayedText}
       {!isTypingComplete && (
         <span className="inline-block w-0.5 h-full bg-current align-bottom animate-pulse"></span>
