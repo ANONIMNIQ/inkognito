@@ -192,7 +192,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                 <Button
                   variant="link"
                   className={cn(
-                    "p-0 h-auto text-left text-2xl font-semibold hover:no-underline font-serif transition-colors w-full justify-start",
+                    "p-0 h-auto text-left text-2xl font-semibold hover:no-underline font-serif transition-colors w-full justify-start min-w-0",
                     isContentOpen
                       ? textColor
                       : [linkColor, "hover:text-gray-800 dark:hover:text-gray-200"]
@@ -202,7 +202,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                     text={confession.title}
                     delay={animationDelay + 300}
                     speed={30}
-                    className={cn("block", !isContentOpen && "truncate")}
+                    className={cn("block w-full", !isContentOpen && "truncate")}
                   />
                 </Button>
               </CollapsibleTrigger>
