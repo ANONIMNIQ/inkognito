@@ -27,71 +27,67 @@ interface ConfessionCardProps {
   };
   onAddComment: (confessionId: string, content: string, gender: "male" | "female") => void;
   onLikeConfession: (confessionId: string) => void;
-  isContentOpen: boolean; // Now controlled by parent
-  onToggleExpand: (confessionId: string, isOpen: boolean) => void;
+  isContentOpen: boolean;
+  onToggleExpand: (confessionId: string) => void;
 }
 
 const ConfessionCard: React.FC<ConfessionCardProps> = ({
   confession,
   onAddComment,
   onLikeConfession,
-  isContentOpen, // Now controlled by parent
+  isContentOpen,
   onToggleExpand,
 }) => {
-  const [isCommentsOpen, setIsCommentsOpen] = useState(false); // Comments section remains local
-  const cardRef = useRef<HTMLDivElement>(null); // Ref for the entire confession card
-  const commentsSectionRef = useRef<HTMLDivElement>(null); // Ref for the comments section
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const commentsSectionRef = useRef<HTMLDivElement>(null);
+  const isInitialMount = useRef(true);
 
-  // Refs to prevent scrolling on initial mount
-  const isInitialMountForContentScroll = useRef(true);
-  const isInitialMountForCommentsScroll = useRef(true);
-
-  // Effect to handle scrolling when main content expands
   useEffect(() => {
-    if (isInitialMountForContentScroll.current) {
-      isInitialMountForContentScroll.current = false;
-      return; // Skip on initial render
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
     }
-    if (isContentOpen && cardRef.current) {
-      cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    if (isContentOpen) {
+      // Allow layout to settle after other cards collapse before scrolling
+      const timer = setTimeout(() => {
+        cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 250); // Corresponds to collapse animation duration
+      return () => clearTimeout(timer);
     }
   }, [isContentOpen]);
 
-  // Effect to handle scrolling when comments section expands
   useEffect(() => {
-    if (isInitialMountForCommentsScroll.current) {
-      isInitialMountForCommentsScroll.current = false;
-      return; // Skip on initial render
+    if (isContentOpen && isCommentsOpen) {
+      const timer = setTimeout(() => {
+        commentsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+      return () => clearTimeout(timer);
     }
-    if (isCommentsOpen && commentsSectionRef.current) {
-      commentsSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [isCommentsOpen, isContentOpen]);
+
+  // If the card is collapsed by the parent, ensure its comments are also collapsed
+  useEffect(() => {
+    if (!isContentOpen) {
+      setIsCommentsOpen(false);
     }
-    // Removed the scroll back to confessionBubbleRef when comments collapse
-    // This prevents unwanted jumps and allows the user to maintain their scroll position.
-  }, [isCommentsOpen]);
+  }, [isContentOpen]);
 
   const handleAddComment = (content: string, gender: "male" | "female") => {
     onAddComment(confession.id, content, gender);
-    setIsCommentsOpen(true); // Ensure comments section is open after adding a comment
-    onToggleExpand(confession.id, true); // Ensure main content is open if a comment is added
+    setIsCommentsOpen(true);
   };
 
   const handleToggleComments = () => {
-    setIsCommentsOpen((prev) => {
-      const newIsCommentsOpen = !prev;
-      // If comments are being opened and main content is closed, open main content too
-      if (newIsCommentsOpen && !isContentOpen) {
-        onToggleExpand(confession.id, true);
-      }
-      return newIsCommentsOpen;
-    });
+    if (!isContentOpen) {
+      onToggleExpand(confession.id);
+    }
+    setIsCommentsOpen(prev => !prev);
   };
 
-  const handleContentOpenChange = (open: boolean) => {
-    onToggleExpand(confession.id, open);
-    if (!open) { // If main content is closing, also close comments
-      setIsCommentsOpen(false);
-    }
+  const handleContentOpenChange = () => {
+    onToggleExpand(confession.id);
   };
 
   const bubbleBackgroundColor =
@@ -99,7 +95,6 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
       ? "bg-blue-100 dark:bg-blue-950"
       : "bg-pink-100 dark:bg-pink-950";
 
-  // Updated to grey/black
   const textColor = "text-gray-800 dark:text-gray-200";
   const linkColor = "text-gray-600 dark:text-gray-400";
 

@@ -3,8 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import ConfessionForm from "@/components/ConfessionForm";
 import ConfessionCard from "@/components/ConfessionCard";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { ChevronUp } from "lucide-react";
 import { useSessionContext } from "@/components/SessionProvider";
 
 interface Comment {
@@ -28,7 +26,7 @@ interface Confession {
 const Index: React.FC = () => {
   const [confessions, setConfessions] = useState<Confession[]>([]);
   const [loadingConfessions, setLoadingConfessions] = useState(true);
-  const [expandedConfessionsState, setExpandedConfessionsState] = useState<Record<string, boolean>>({});
+  const [expandedConfessionId, setExpandedConfessionId] = useState<string | null>(null);
   const { loading: authLoading } = useSessionContext();
 
   const fetchConfessions = useCallback(async () => {
@@ -45,7 +43,6 @@ const Index: React.FC = () => {
       }
 
       const confessionsWithComments: Confession[] = [];
-      const initialExpandedState: Record<string, boolean> = {};
       for (const confession of confessionsData) {
         const { data: commentsData, error: commentsError } = await supabase
           .from("comments")
@@ -59,11 +56,9 @@ const Index: React.FC = () => {
         } else {
           confessionsWithComments.push({ ...confession, comments: commentsData || [] });
         }
-        initialExpandedState[confession.id] = false; // All start collapsed by default
       }
 
       setConfessions(confessionsWithComments);
-      setExpandedConfessionsState(initialExpandedState);
     } catch (e) {
       console.error("Unexpected error fetching confessions:", e);
       toast.error("An unexpected error occurred while loading confessions.");
@@ -81,16 +76,11 @@ const Index: React.FC = () => {
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'confessions' }, (payload) => {
           const newConfession = payload.new as Confession;
           setConfessions((prev) => [{ ...newConfession, comments: [] }, ...prev]);
-          setExpandedConfessionsState((prev) => ({ ...prev, [newConfession.id]: true })); // New confession starts expanded
+          setExpandedConfessionId(newConfession.id); // New confession starts expanded
         })
         .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'confessions' }, (payload) => {
           const deletedConfessionId = payload.old.id;
           setConfessions((prev) => prev.filter(conf => conf.id !== deletedConfessionId));
-          setExpandedConfessionsState((prev) => {
-            const newState = { ...prev };
-            delete newState[deletedConfessionId];
-            return newState;
-          });
         })
         .subscribe();
 
@@ -105,12 +95,11 @@ const Index: React.FC = () => {
                 : conf
             )
           );
-          // Ensure the parent confession is expanded if a new comment comes in
-          setExpandedConfessionsState((prev) => ({ ...prev, [newComment.confession_id]: true }));
+          setExpandedConfessionId(newComment.confession_id); // Ensure parent confession is expanded
         })
         .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'comments' }, (payload) => {
           const deletedCommentId = payload.old.id;
-          const confessionId = payload.old.confession_id; // Assuming confession_id is available in old record
+          const confessionId = payload.old.confession_id;
           setConfessions((prev) =>
             prev.map((conf) =>
               conf.id === confessionId
@@ -157,7 +146,7 @@ const Index: React.FC = () => {
 
     const newConfession = { ...data, comments: [] };
     setConfessions((prev) => [newConfession, ...prev]);
-    setExpandedConfessionsState((prev) => ({ ...prev, [newConfession.id]: true })); // New confession starts expanded
+    setExpandedConfessionId(newConfession.id); // New confession starts expanded
     toast.success("Confession posted successfully!");
 
     try {
@@ -235,7 +224,7 @@ const Index: React.FC = () => {
           : conf
       )
     );
-    setExpandedConfessionsState((prev) => ({ ...prev, [confessionId]: true })); // Ensure parent confession is expanded
+    setExpandedConfessionId(confessionId); // Ensure parent confession is expanded
     toast.success("Comment posted!");
   };
 
@@ -261,24 +250,11 @@ const Index: React.FC = () => {
     }
   };
 
-  const handleConfessionToggle = useCallback((confessionId: string, isOpen: boolean) => {
-    setExpandedConfessionsState((prev) => ({
-      ...prev,
-      [confessionId]: isOpen,
-    }));
+  const handleConfessionToggle = useCallback((toggledConfessionId: string) => {
+    setExpandedConfessionId(currentId =>
+      currentId === toggledConfessionId ? null : toggledConfessionId
+    );
   }, []);
-
-  const collapseAllConfessions = () => {
-    setExpandedConfessionsState((prev) => {
-      const newState: Record<string, boolean> = {};
-      for (const id in prev) {
-        newState[id] = false;
-      }
-      return newState;
-    });
-  };
-
-  const anyConfessionExpanded = Object.values(expandedConfessionsState).some(Boolean);
 
   if (authLoading || loadingConfessions) {
     return (
@@ -292,15 +268,6 @@ const Index: React.FC = () => {
     <div className="container mx-auto p-4 max-w-3xl">
       <h1 className="text-3xl font-bold text-center mb-8">Anonymous Confessions</h1>
       <ConfessionForm onSubmit={handleAddConfession} />
-
-      {anyConfessionExpanded && ( // Only show the button if at least one is expanded
-        <div className="flex justify-end mb-4">
-          <Button variant="outline" onClick={collapseAllConfessions} className="flex items-center space-x-2">
-            <ChevronUp className="h-4 w-4" />
-            <span>Collapse All</span>
-          </Button>
-        </div>
-      )}
 
       {confessions.length === 0 ? (
         <p className="text-center text-gray-500 dark:text-gray-400 mt-8">No confessions yet. Be the first to share!</p>
@@ -319,7 +286,7 @@ const Index: React.FC = () => {
               }}
               onAddComment={handleAddComment}
               onLikeConfession={handleLikeConfession}
-              isContentOpen={expandedConfessionsState[confession.id]} // Pass controlled state
+              isContentOpen={expandedConfessionId === confession.id} // Pass controlled state
               onToggleExpand={handleConfessionToggle} // Pass callback
             />
           ))}
