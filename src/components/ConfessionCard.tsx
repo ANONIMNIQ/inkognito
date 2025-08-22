@@ -45,7 +45,46 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
 }, ref) => {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(COMMENTS_PER_PAGE);
+  
+  const cardRootRef = useRef<HTMLDivElement>(null);
   const commentsSectionRef = useRef<HTMLDivElement>(null);
+  const isInitialMount = useRef(true);
+
+  // Combine the local ref with the forwarded ref from the parent
+  useEffect(() => {
+    if (ref) {
+      if (typeof ref === 'function') {
+        ref(cardRootRef.current);
+      } else {
+        ref.current = cardRootRef.current;
+      }
+    }
+  }, [ref]);
+
+  // Auto-scrolling logic restored
+  useEffect(() => {
+    // Don't scroll when the component first loads, only on user interaction
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    if (isContentOpen) {
+      // If comments are opening, scroll to the comments section
+      if (isCommentsOpen) {
+        const timer = setTimeout(() => {
+          commentsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 150);
+        return () => clearTimeout(timer);
+      } else {
+        // Otherwise, scroll to the top of the confession card
+        const timer = setTimeout(() => {
+          cardRootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 250);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [isContentOpen, isCommentsOpen]);
 
   useEffect(() => {
     if (!isContentOpen) {
@@ -76,7 +115,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const linkColor = "text-gray-600 dark:text-gray-400";
 
   return (
-    <div ref={ref} className="w-full max-w-2xl mx-auto mb-6 opacity-0 animate-fade-zoom-in" style={{ animationDelay: `${animationDelay}ms` }}>
+    <div ref={cardRootRef} className="w-full max-w-2xl mx-auto mb-6 opacity-0 animate-fade-zoom-in" style={{ animationDelay: `${animationDelay}ms` }}>
       <div className="flex items-start space-x-3">
         <GenderAvatar gender={confession.gender} className="h-10 w-10 flex-shrink-0 mt-2" />
         <div className={cn("flex-1 p-4 rounded-xl shadow-md relative", bubbleBackgroundColor)}>
