@@ -11,12 +11,22 @@ serve(async (req) => {
   }
 
   let confessionContent;
+  let rawRequestBody = ''; // Variable to store the raw request body
   try {
-    const body = await req.json();
-    confessionContent = body.confessionContent;
+    rawRequestBody = await req.text(); // Read the raw body as text first
+    console.log("Incoming raw request body:", rawRequestBody); // Log the raw body
+
+    // Only attempt to parse if the raw body is not empty
+    if (rawRequestBody) {
+      const body = JSON.parse(rawRequestBody);
+      confessionContent = body.confessionContent;
+    } else {
+      // If body is empty, treat it as missing content
+      throw new Error('Empty request body received.');
+    }
   } catch (jsonParseError) {
-    console.error("Error parsing incoming request JSON:", jsonParseError);
-    return new Response(JSON.stringify({ error: 'Invalid JSON in request body' }), {
+    console.error("Error parsing incoming request JSON:", jsonParseError, "Raw body received:", rawRequestBody);
+    return new Response(JSON.stringify({ error: 'Invalid JSON in request body', rawBody: rawRequestBody }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     });
