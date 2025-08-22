@@ -18,7 +18,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus }
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [gender, setGender] = useState<"male" | "female" | "incognito">("male");
+  const [gender, setGender] = useState<"male" | "female" | "incognito">("incognito");
   const formRef = useRef<HTMLDivElement>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -30,7 +30,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus }
     onSubmit(title, content, gender);
     setTitle("");
     setContent("");
-    setGender("male");
+    setGender("incognito");
     setOpen(false);
     toast.success("Your confession has been posted!");
   };
@@ -126,7 +126,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus }
               <div>
                 <Label className={cn("text-sm", generalTextColor)}>Your Gender (Anonymous)</Label>
                 <RadioGroup
-                  defaultValue="male"
+                  defaultValue="incognito"
                   value={gender}
                   onValueChange={(value: "male" | "female" | "incognito") => setGender(value)}
                   className="flex space-x-4 mt-2"

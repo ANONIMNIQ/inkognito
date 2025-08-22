@@ -13,7 +13,7 @@ interface CommentFormProps {
 
 const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
   const [content, setContent] = useState("");
-  const [gender, setGender] = useState<"male" | "female" | "incognito">("male");
+  const [gender, setGender] = useState<"male" | "female" | "incognito">("incognito");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +23,7 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
     }
     onSubmit(content, gender);
     setContent("");
-    setGender("male"); // Reset to default
+    setGender("incognito"); // Reset to default
     toast.success("Your comment has been posted!");
   };
 
@@ -66,7 +66,7 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
         <div>
           <Label className={cn("text-xs", generalTextColor)}>Your Gender (Anonymous)</Label>
           <RadioGroup
-            defaultValue="male"
+            defaultValue="incognito"
             value={gender}
             onValueChange={(value: "male" | "female" | "incognito") => setGender(value)}
             className="flex space-x-4 mt-1"
