@@ -46,19 +46,19 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
     setIsCommentsOpen(!allCollapsed);
   }, [allCollapsed]);
 
-  // Scroll to the card when its content expands
-  useEffect(() => {
-    if (isContentOpen && cardRef.current) {
-      cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [isContentOpen]);
+  // Removed: Scroll to the card when its content expands
+  // useEffect(() => {
+  //   if (isContentOpen && cardRef.current) {
+  //     cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  //   }
+  // }, [isContentOpen]);
 
-  // Scroll to the card when its comments section expands
-  useEffect(() => {
-    if (isCommentsOpen && cardRef.current) {
-      cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [isCommentsOpen]);
+  // Removed: Scroll to the card when its comments section expands
+  // useEffect(() => {
+  //   if (isCommentsOpen && cardRef.current) {
+  //     cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  //   }
+  // }, [isCommentsOpen]);
 
   const handleAddComment = (content: string, gender: "male" | "female") => {
     onAddComment(confession.id, content, gender);

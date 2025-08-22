@@ -49,7 +49,21 @@ export const useSession = () => {
   useEffect(() => {
     let isMounted = true; // Flag to prevent state updates on unmounted component
 
-    const getInitialSession = async () => {
+    const handleAuthChange = async (currentSession: Session | null) => {
+      if (!isMounted) return;
+
+      setSession(currentSession);
+      setUser(currentSession?.user || null);
+      if (currentSession?.user) {
+        await fetchUserProfile(currentSession.user.id);
+      } else {
+        setProfile(null);
+      }
+      setLoading(false); // Always set loading to false after processing
+    };
+
+    // Get initial session and set up listener
+    const setupAuth = async () => {
       try {
         const { data: { session: initialSession }, error: initialSessionError } = await supabase.auth.getSession();
         if (isMounted) {
@@ -59,13 +73,7 @@ export const useSession = () => {
             setUser(null);
             setProfile(null);
           } else {
-            setSession(initialSession);
-            setUser(initialSession?.user || null);
-            if (initialSession?.user) {
-              await fetchUserProfile(initialSession.user.id);
-            } else {
-              setProfile(null);
-            }
+            await handleAuthChange(initialSession); // Process initial session
           }
         }
       } catch (e) {
@@ -75,53 +83,30 @@ export const useSession = () => {
         }
       } finally {
         if (isMounted) {
-          setLoading(false); // Always set loading to false after initial check
+          setLoading(false); // Ensure loading is false after initial check
         }
       }
+
+      // Set up the listener for subsequent auth state changes
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event, currentSession) => {
+          console.log("Auth state change event:", event, "Session:", currentSession);
+          if (!isMounted) return;
+          // For any auth state change, re-evaluate the session and profile
+          // We don't set loading to true here, as handleAuthChange will manage it
+          await handleAuthChange(currentSession);
+        }
+      );
+
+      return () => {
+        subscription.unsubscribe();
+      };
     };
 
-    getInitialSession(); // Call immediately on mount
-
-    // Set up the listener for subsequent auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
-        console.log("Auth state change event:", event, "Session:", currentSession);
-        if (!isMounted) return;
-
-        setLoading(true); // Briefly set loading to true for any auth state change event
-
-        try {
-          const { data: { session: latestSession }, error: sessionError } = await supabase.auth.getSession();
-
-          if (sessionError) {
-            console.error("Error getting latest session:", sessionError);
-            toast.error("Failed to retrieve latest session: " + sessionError.message);
-            setSession(null);
-            setUser(null);
-            setProfile(null);
-          } else {
-            setSession(latestSession);
-            setUser(latestSession?.user || null);
-            if (latestSession?.user) {
-              await fetchUserProfile(latestSession.user.id);
-            } else {
-              setProfile(null);
-            }
-          }
-        } catch (e) {
-          console.error("Unexpected error during auth state change:", e);
-          toast.error("An unexpected authentication error occurred during state change.");
-        } finally {
-          if (isMounted) {
-            setLoading(false); // Always set loading to false after processing
-          }
-        }
-      }
-    );
+    setupAuth();
 
     return () => {
       isMounted = false;
-      subscription.unsubscribe();
     };
   }, [fetchUserProfile]); // Dependencies for useEffect
 

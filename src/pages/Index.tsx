@@ -28,7 +28,7 @@ interface Confession {
 const Index: React.FC = () => {
   const [confessions, setConfessions] = useState<Confession[]>([]);
   const [loadingConfessions, setLoadingConfessions] = useState(true); // Renamed to avoid conflict
-  const [allCollapsed, setAllCollapsed] = useState(false);
+  const [allCollapsed, setAllCollapsed] = useState(true); // Changed to true to start collapsed
   const { loading: authLoading } = useSessionContext(); // Get auth loading state
 
   const fetchConfessions = useCallback(async () => {
