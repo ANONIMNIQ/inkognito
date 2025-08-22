@@ -51,6 +51,18 @@ serve(async (req) => {
       }),
     });
 
+    // --- Added error handling and logging for the API response ---
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Google Gemini API error: Status ${response.status}, Body: ${errorText}`);
+      return new Response(JSON.stringify({
+        error: `Failed to get AI comment from Google Gemini API. Status: ${response.status}. Details: ${errorText.substring(0, 200)}...`
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: response.status,
+      });
+    }
+
     const data = await response.json();
     const aiResponseContent = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "AI comment generation failed.";
 
