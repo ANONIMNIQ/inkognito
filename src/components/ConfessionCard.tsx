@@ -8,6 +8,7 @@ import CommentForm from "./CommentForm";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import TypingText from "./TypingText";
+import CommentCardSkeleton from "./CommentCardSkeleton";
 
 interface Comment {
   id: string;
@@ -45,12 +46,12 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
 }, ref) => {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(COMMENTS_PER_PAGE);
+  const [isLoadingMoreComments, setIsLoadingMoreComments] = useState(false);
   
   const cardRootRef = useRef<HTMLDivElement>(null);
   const commentsSectionRef = useRef<HTMLDivElement>(null);
   const isInitialMount = useRef(true);
 
-  // Combine the local ref with the forwarded ref from the parent
   useEffect(() => {
     if (ref) {
       if (typeof ref === 'function') {
@@ -61,23 +62,19 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     }
   }, [ref]);
 
-  // Auto-scrolling logic restored
   useEffect(() => {
-    // Don't scroll when the component first loads, only on user interaction
     if (isInitialMount.current) {
       isInitialMount.current = false;
       return;
     }
 
     if (isContentOpen) {
-      // If comments are opening, scroll to the comments section
       if (isCommentsOpen) {
         const timer = setTimeout(() => {
           commentsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 150);
         return () => clearTimeout(timer);
       } else {
-        // Otherwise, scroll to the top of the confession card
         const timer = setTimeout(() => {
           cardRootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 250);
@@ -104,6 +101,14 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
       onToggleExpand(confession.id);
     }
     setIsCommentsOpen(prev => !prev);
+  };
+
+  const handleLoadMoreComments = () => {
+    setIsLoadingMoreComments(true);
+    setTimeout(() => {
+      setVisibleCommentsCount(prev => prev + COMMENTS_PER_PAGE);
+      setIsLoadingMoreComments(false);
+    }, 500); // Simulate a network delay
   };
 
   const bubbleBackgroundColor =
@@ -185,12 +190,18 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
               {confession.comments.slice(0, visibleCommentsCount).map((comment, index) => (
                 <CommentCard key={comment.id} comment={comment} animationDelay={(index + 1) * 100} />
               ))}
-              {confession.comments.length > visibleCommentsCount && (
+              {isLoadingMoreComments && (
+                <>
+                  <CommentCardSkeleton />
+                  <CommentCardSkeleton />
+                </>
+              )}
+              {confession.comments.length > visibleCommentsCount && !isLoadingMoreComments && (
                 <div className="text-center">
                   <Button
                     variant="link"
                     className={linkColor}
-                    onClick={() => setVisibleCommentsCount(prev => prev + COMMENTS_PER_PAGE)}
+                    onClick={handleLoadMoreComments}
                   >
                     Load More Comments
                   </Button>
