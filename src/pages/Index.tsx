@@ -128,28 +128,40 @@ const Index: React.FC = () => {
     setConfessions((prev) => [newConfession, ...prev]);
     toast.success("Confession posted successfully!");
 
-    // Invoke AI Edge Function for comment
+    // Invoke AI Edge Function for comment using direct fetch
     try {
-      const { data: aiCommentResponse, error: aiError } = await supabase.functions.invoke(
-        'generate-ai-comment',
-        {
-          body: { confessionContent: content }, // Changed to a plain object
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
+      const SUPABASE_PROJECT_ID = "yyhlligskuppqmlzpobp"; // Your Supabase Project ID
+      const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY; // Get anon key from env
 
-      if (aiError) {
-        console.error("Error invoking AI function:", aiError);
-        toast.warning("Confession posted, but AI comment failed to generate.");
-      } else if (aiCommentResponse) {
-        const aiComment = aiCommentResponse as Omit<Comment, 'confession_id'> & { timestamp: string }; // Ensure timestamp is string
+      const aiFunctionUrl = `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/generate-ai-comment`;
+
+      const aiResponse = await fetch(aiFunctionUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`, // Required for Edge Functions
+        },
+        body: JSON.stringify({ confessionContent: content }),
+      });
+
+      if (!aiResponse.ok) {
+        const errorData = await aiResponse.json();
+        console.error("Error invoking AI function:", errorData);
+        toast.warning("Confession posted, but AI comment failed to generate: " + (errorData.error || "Unknown error"));
+        return;
+      }
+
+      const aiCommentResponse = await aiResponse.json();
+
+      if (aiCommentResponse) {
+        const aiComment = aiCommentResponse as Omit<Comment, 'confession_id'> & { timestamp: string };
         const { data: insertedAiComment, error: aiInsertError } = await supabase
           .from('comments')
           .insert({
             confession_id: newConfession.id,
             content: aiComment.content,
             gender: aiComment.gender,
-            created_at: aiComment.timestamp, // Use the timestamp from AI response
+            created_at: aiComment.timestamp,
           })
           .select()
           .single();
