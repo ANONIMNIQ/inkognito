@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card"; // Removed CardHeader, CardTitle
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea } => "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible"; // Removed CollapsibleTrigger
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 
 interface ConfessionFormProps {
   onSubmit: (title: string, content: string, gender: "male" | "female") => void;
@@ -70,14 +70,12 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit }) => {
 
       {/* The Collapsible component now only wraps the content that expands */}
       <Collapsible open={open}>
-        <CollapsibleContent className="pt-4">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <CardHeader className="p-0 pb-4">
-              <CardTitle className="text-xl font-bold">Complete Your Confession</CardTitle>
-            </CardHeader>
+        <CollapsibleContent className="pt-2"> {/* Reduced top padding */}
+          <form onSubmit={handleSubmit} className="space-y-3"> {/* Reduced space-y */}
+            {/* Removed CardHeader with "Complete Your Confession" */}
             <CardContent className="p-0">
               <div>
-                <Label htmlFor="content">Confession</Label>
+                <Label htmlFor="content" className="sr-only">Confession</Label> {/* Added sr-only as label is implied */}
                 <Textarea
                   id="content"
                   placeholder="What's on your mind?"
@@ -88,7 +86,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit }) => {
                 />
               </div>
               <div>
-                <Label>Your Gender (Anonymous)</Label>
+                <Label className="text-sm">Your Gender (Anonymous)</Label>
                 <RadioGroup
                   defaultValue="male"
                   value={gender}
@@ -106,7 +104,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit }) => {
                 </RadioGroup>
               </div>
             </CardContent>
-            <CardFooter className="p-0 pt-4">
+            <CardFooter className="p-0 pt-2"> {/* Reduced top padding */}
               <Button type="submit" className="w-full">Post Confession</Button>
             </CardFooter>
           </form>
