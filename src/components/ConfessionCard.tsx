@@ -40,7 +40,7 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
 }) => {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false); // Comments section remains local
   const cardRef = useRef<HTMLDivElement>(null); // Ref for the entire confession card
-  const confessionBubbleRef = useRef<HTMLDivElement>(null); // New ref for the confession bubble itself
+  const confessionBubbleRef = useRef<HTMLDivElement>(null); // Ref for the confession bubble itself
   const commentsSectionRef = useRef<HTMLDivElement>(null); // Ref for the comments section
 
   // Effect to handle scrolling when content expands (scrolls to the top of the card)
@@ -50,12 +50,23 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
     }
   }, [isContentOpen]);
 
-  // Effect to handle scrolling when comments section expands (scrolls to the top of the comments section)
+  // Effect to handle scrolling when comments section expands
   useEffect(() => {
     if (isCommentsOpen && commentsSectionRef.current) {
       commentsSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [isCommentsOpen]);
+
+  // NEW: Effect to handle scrolling back to confession bubble when comments collapse
+  useEffect(() => {
+    if (!isCommentsOpen && confessionBubbleRef.current) {
+      // Only scroll back if the main content is still open
+      // Otherwise, if the main content is also collapsing, the cardRef useEffect will handle it.
+      if (isContentOpen) {
+        confessionBubbleRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }, [isCommentsOpen, isContentOpen]); // Depend on both to ensure correct context
 
   const handleAddComment = (content: string, gender: "male" | "female") => {
     onAddComment(confession.id, content, gender);
@@ -65,13 +76,9 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
 
   const handleToggleComments = () => {
     setIsCommentsOpen((prev) => {
-      if (prev) { // If comments are currently open and will be collapsed
-        confessionBubbleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      } else { // If comments are currently closed and will be expanded
-        // Ensure the main content is also open if comments are being opened
-        if (!isContentOpen) {
-          onToggleExpand(confession.id, true);
-        }
+      // If comments are currently closed and will be expanded
+      if (!prev && !isContentOpen) {
+        onToggleExpand(confession.id, true); // Ensure main content is open
       }
       return !prev;
     });
