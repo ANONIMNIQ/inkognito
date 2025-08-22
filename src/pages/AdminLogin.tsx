@@ -3,7 +3,6 @@ import { Auth } from "@supabase/auth-ui-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useSessionContext } from "@/components/SessionProvider";
-import { toast } from "sonner";
 import { isAdmin } from "@/integrations/supabase/auth";
 
 const AdminLogin: React.FC = () => {
@@ -51,6 +50,7 @@ const AdminLogin: React.FC = () => {
           providers={[]}
           theme="dark"
           view="sign_in"
+          showLinks={false}
         />
       </div>
     </div>
