@@ -45,51 +45,39 @@ export const useSession = () => {
   useEffect(() => {
     let isMounted = true; // Flag to prevent state updates on unmounted component
 
-    const getInitialSession = async () => {
-      setLoading(true);
-      try {
-        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
-        if (isMounted) {
-          setSession(initialSession);
-          setUser(initialSession?.user || null);
-          if (initialSession?.user) {
-            await fetchUserProfile(initialSession.user.id);
-          } else {
-            setProfile(null);
-          }
-        }
-      } catch (e) {
-        console.error("Error getting initial session:", e);
-        if (isMounted) {
-          toast.error("An unexpected error occurred during initial session load.");
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    getInitialSession(); // Call immediately on mount to get initial state
-
+    // This listener will fire immediately upon subscription with the current session state
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
         if (!isMounted) return; // Don't update state if component is unmounted
 
         setLoading(true); // Start loading for any auth state change
         try {
-          setSession(currentSession);
-          setUser(currentSession?.user || null);
-          if (currentSession?.user) {
-            await fetchUserProfile(currentSession.user.id);
+          // Always get the most current session directly from Supabase,
+          // as currentSession from the event might sometimes be slightly stale or incomplete
+          const { data: { session: latestSession }, error: sessionError } = await supabase.auth.getSession();
+
+          if (sessionError) {
+            console.error("Error getting latest session:", sessionError);
+            toast.error("Failed to retrieve latest session: " + sessionError.message);
+            setSession(null);
+            setUser(null);
+            setProfile(null);
           } else {
-            setProfile(null); // Clear profile on sign out or no user
+            setSession(latestSession);
+            setUser(latestSession?.user || null);
+            if (latestSession?.user) {
+              await fetchUserProfile(latestSession.user.id);
+            } else {
+              setProfile(null); // Clear profile on sign out or no user
+            }
           }
         } catch (e) {
           console.error("Unexpected error during auth state change:", e);
           toast.error("An unexpected authentication error occurred during state change.");
         } finally {
-          setLoading(false); // Always set loading to false after processing
+          if (isMounted) { // Ensure component is still mounted before setting loading to false
+            setLoading(false); // Always set loading to false after processing
+          }
         }
       }
     );

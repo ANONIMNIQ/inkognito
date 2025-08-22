@@ -5,6 +5,7 @@ import ConfessionCard from "@/components/ConfessionCard";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { useSessionContext } from "@/components/SessionProvider"; // Import useSessionContext
 
 interface Comment {
   id: string;
@@ -26,11 +27,12 @@ interface Confession {
 
 const Index: React.FC = () => {
   const [confessions, setConfessions] = useState<Confession[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingConfessions, setLoadingConfessions] = useState(true); // Renamed to avoid conflict
   const [allCollapsed, setAllCollapsed] = useState(false);
+  const { loading: authLoading } = useSessionContext(); // Get auth loading state
 
   const fetchConfessions = useCallback(async () => {
-    setLoading(true);
+    setLoadingConfessions(true); // Use loadingConfessions here
     try {
       const { data: confessionsData, error: confessionsError } = await supabase
         .from("confessions")
@@ -64,58 +66,60 @@ const Index: React.FC = () => {
       console.error("Unexpected error fetching confessions:", e);
       toast.error("An unexpected error occurred while loading confessions.");
     } finally {
-      setLoading(false); // Always set loading to false
+      setLoadingConfessions(false); // Always set loadingConfessions to false
     }
   }, []);
 
   useEffect(() => {
-    fetchConfessions();
+    if (!authLoading) { // Only fetch confessions once auth loading is complete
+      fetchConfessions();
 
-    // Set up real-time subscription for new confessions
-    const confessionsSubscription = supabase
-      .channel('public:confessions')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'confessions' }, (payload) => {
-        const newConfession = payload.new as Confession;
-        setConfessions((prev) => [{ ...newConfession, comments: [] }, ...prev]);
-      })
-      .subscribe();
+      // Set up real-time subscription for new confessions
+      const confessionsSubscription = supabase
+        .channel('public:confessions')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'confessions' }, (payload) => {
+          const newConfession = payload.new as Confession;
+          setConfessions((prev) => [{ ...newConfession, comments: [] }, ...prev]);
+        })
+        .subscribe();
 
-    // Set up real-time subscription for new comments
-    const commentsSubscription = supabase
-      .channel('public:comments')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, (payload) => {
-        const newComment = payload.new as Comment;
-        setConfessions((prev) =>
-          prev.map((conf) =>
-            conf.id === newComment.confession_id
-              ? { ...conf, comments: [...conf.comments, newComment] }
-              : conf
-          )
-        );
-      })
-      .subscribe();
+      // Set up real-time subscription for new comments
+      const commentsSubscription = supabase
+        .channel('public:comments')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, (payload) => {
+          const newComment = payload.new as Comment;
+          setConfessions((prev) =>
+            prev.map((conf) =>
+              conf.id === newComment.confession_id
+                ? { ...conf, comments: [...conf.comments, newComment] }
+                : conf
+            )
+          );
+        })
+        .subscribe();
 
-    // Set up real-time subscription for likes updates
-    const likesSubscription = supabase
-      .channel('public:confessions_likes')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'confessions' }, (payload) => {
-        const updatedConfession = payload.new as Confession;
-        setConfessions((prev) =>
-          prev.map((conf) =>
-            conf.id === updatedConfession.id
-              ? { ...conf, likes: updatedConfession.likes }
-              : conf
-          )
-        );
-      })
-      .subscribe();
+      // Set up real-time subscription for likes updates
+      const likesSubscription = supabase
+        .channel('public:confessions_likes')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'confessions' }, (payload) => {
+          const updatedConfession = payload.new as Confession;
+          setConfessions((prev) =>
+            prev.map((conf) =>
+              conf.id === updatedConfession.id
+                ? { ...conf, likes: updatedConfession.likes }
+                : conf
+            )
+          );
+        })
+        .subscribe();
 
-    return () => {
-      confessionsSubscription.unsubscribe();
-      commentsSubscription.unsubscribe();
-      likesSubscription.unsubscribe();
-    };
-  }, [fetchConfessions]);
+      return () => {
+        confessionsSubscription.unsubscribe();
+        commentsSubscription.unsubscribe();
+        likesSubscription.unsubscribe();
+      };
+    }
+  }, [fetchConfessions, authLoading]); // Add authLoading to dependencies
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female") => {
     const { data, error } = await supabase
@@ -240,10 +244,10 @@ const Index: React.FC = () => {
     setAllCollapsed((prev) => !prev);
   };
 
-  if (loading) {
+  if (authLoading || loadingConfessions) { // Check both auth and confession loading
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <p>Loading confessions...</p>
+        <p>Loading...</p> {/* Unified loading message */}
       </div>
     );
   }
