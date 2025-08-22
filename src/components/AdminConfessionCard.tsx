@@ -248,7 +248,7 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
                               <AlertDialogAction onClick={() => onDeleteComment(comment.id)} variant="secondary" className="text-red-500">Delete</AlertDialogAction>
-                            </Footer>
+                            </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
                       </>
