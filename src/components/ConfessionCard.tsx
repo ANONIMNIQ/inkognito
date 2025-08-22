@@ -108,7 +108,16 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
     <div className="w-full max-w-2xl mx-auto mb-6 animate-fade-zoom-in" style={{ animationDelay: `${animationDelay}ms` }} ref={cardRef}>
       <div className="flex items-start space-x-3">
         <GenderAvatar gender={confession.gender} className="h-10 w-10 flex-shrink-0 mt-2" />
-        <div className={cn("flex-1 p-4 rounded-xl shadow-md", bubbleBackgroundColor)}>
+        <div className={cn("flex-1 p-4 rounded-xl shadow-md relative", bubbleBackgroundColor)}>
+          {/* Speech bubble tail */}
+          <div
+            className={cn(
+              "absolute top-3 -left-2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent",
+              confession.gender === "male"
+                ? "border-r-blue-100 dark:border-r-blue-950"
+                : "border-r-pink-100 dark:border-r-pink-950"
+            )}
+          ></div>
           <div className="flex justify-between items-center mb-2">
             <Button
               variant="ghost"
@@ -140,7 +149,7 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="w-9 p-0">
+                <Button variant="ghost" size="sm" className={cn("w-9 p-0 opacity-0 animate-slide-fade-in-top")} style={{ animationDelay: '700ms' }}>
                   {isContentOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   <span className="sr-only">Toggle confession content</span>
                 </Button>
