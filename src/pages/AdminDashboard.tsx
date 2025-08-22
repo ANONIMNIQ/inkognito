@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useSessionContext } from "@/components/SessionProvider";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +10,10 @@ const AdminDashboard: React.FC = () => {
   const { user, profile, loading } = useSessionContext();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    console.log("AdminDashboard useEffect: loading:", loading, "user:", user ? "present" : "null", "profile:", profile ? profile.role : "null");
+  }, [loading, user, profile]);
+
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -20,7 +24,8 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  if (loading) {
+  // Explicitly wait for loading to be false AND for profile to be available if a user exists
+  if (loading || (user && !profile)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
         <p className="text-gray-700 dark:text-gray-300">Loading admin dashboard...</p>
