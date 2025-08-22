@@ -54,6 +54,8 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   
   const cardRootRef = useRef<HTMLDivElement>(null);
   const commentsSectionRef = useRef<HTMLDivElement>(null);
+  const commentsListRef = useRef<HTMLDivElement>(null);
+  const prevVisibleCountRef = useRef(COMMENTS_PER_PAGE);
   const isInitialMount = useRef(true);
 
   useEffect(() => {
@@ -93,6 +95,21 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     }
   }, [isContentOpen]);
 
+  useEffect(() => {
+    if (!isLoadingMoreComments && visibleCommentsCount > prevVisibleCountRef.current) {
+      const firstNewCommentIndex = prevVisibleCountRef.current;
+      const commentElements = commentsListRef.current?.children;
+      if (commentElements && commentElements[firstNewCommentIndex]) {
+        setTimeout(() => {
+          (commentElements[firstNewCommentIndex] as HTMLElement).scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          });
+        }, 100);
+      }
+    }
+  }, [visibleCommentsCount, isLoadingMoreComments]);
+
   const handleAddComment = (content: string, gender: "male" | "female") => {
     onAddComment(confession.id, content, gender);
     if (!isCommentsOpen) {
@@ -117,6 +134,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   };
 
   const handleLoadMoreComments = () => {
+    prevVisibleCountRef.current = visibleCommentsCount;
     setIsLoadingMoreComments(true);
     setTimeout(() => {
       setVisibleCommentsCount(prev => prev + COMMENTS_PER_PAGE);
@@ -208,9 +226,11 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                   <div className="opacity-0 animate-fade-zoom-in" style={{ animationDelay: '0ms' }}>
                     <CommentForm onSubmit={handleAddComment} />
                   </div>
-                  {confession.comments.slice(0, visibleCommentsCount).map((comment, index) => (
-                    <CommentCard key={comment.id} comment={comment} animationDelay={(index + 1) * 100} />
-                  ))}
+                  <div ref={commentsListRef}>
+                    {confession.comments.slice(0, visibleCommentsCount).map((comment, index) => (
+                      <CommentCard key={comment.id} comment={comment} animationDelay={(index + 1) * 100} />
+                    ))}
+                  </div>
                   {isLoadingMoreComments && (
                     <>
                       <CommentCardSkeleton />
