@@ -51,19 +51,33 @@ serve(async (req) => {
       }),
     });
 
-    // --- Added error handling and logging for the API response ---
+    // Always read the response body as text first for debugging
+    const responseText = await response.text();
+    console.log(`Google Gemini API raw response (Status: ${response.status}):`, responseText);
+
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Google Gemini API error: Status ${response.status}, Body: ${errorText}`);
+      console.error(`Google Gemini API error: Status ${response.status}, Body: ${responseText}`);
       return new Response(JSON.stringify({
-        error: `Failed to get AI comment from Google Gemini API. Status: ${response.status}. Details: ${errorText.substring(0, 200)}...`
+        error: `Failed to get AI comment from Google Gemini API. Status: ${response.status}. Details: ${responseText.substring(0, 200)}...`
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: response.status,
       });
     }
 
-    const data = await response.json();
+    let data;
+    try {
+      data = JSON.parse(responseText); // Attempt to parse the text as JSON
+    } catch (jsonError) {
+      console.error("Failed to parse Google Gemini API response as JSON:", jsonError);
+      return new Response(JSON.stringify({
+        error: `Failed to parse AI comment response. Raw body: ${responseText.substring(0, 200)}...`
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
+    
     const aiResponseContent = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "AI comment generation failed.";
 
     return new Response(JSON.stringify({
