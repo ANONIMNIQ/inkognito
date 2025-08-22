@@ -101,17 +101,19 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   };
 
   const handleToggleComments = async () => {
-    if (!isContentOpen) {
+    const willBeOpen = !isCommentsOpen;
+
+    if (willBeOpen && !isContentOpen) {
       onToggleExpand(confession.id);
     }
 
-    if (confession.comments.length === 0 && confession.comment_count > 0) {
+    if (willBeOpen && confession.comments.length === 0 && confession.comment_count > 0) {
       setIsFetchingComments(true);
       await onFetchComments(confession.id);
       setIsFetchingComments(false);
     }
 
-    setIsCommentsOpen(prev => !prev);
+    setIsCommentsOpen(willBeOpen);
   };
 
   const handleLoadMoreComments = () => {
@@ -187,9 +189,9 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
 
       {isContentOpen && (
         <div className="ml-14 mt-4" ref={commentsSectionRef}>
-          <Collapsible open={isCommentsOpen} onOpenChange={setIsCommentsOpen}>
+          <Collapsible open={isCommentsOpen}>
             <CollapsibleTrigger asChild>
-              <Button variant="link" className={cn("w-full justify-start p-0 h-auto", linkColor)}>
+              <Button variant="link" className={cn("w-full justify-start p-0 h-auto", linkColor)} onClick={handleToggleComments}>
                 {isCommentsOpen ? "Hide" : "Show"} comments ({confession.comment_count})
                 {isCommentsOpen ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
               </Button>
