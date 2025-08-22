@@ -50,7 +50,6 @@ serve(async (req) => {
   }
 
   // Call Google Gemini API
-  // Changed model to gemini-1.5-flash
   const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GOOGLE_API_KEY}`, {
     method: "POST",
     headers: {
@@ -60,13 +59,13 @@ serve(async (req) => {
       contents: [
         {
           parts: [
-            { text: "You are a compassionate and thoughtful anonymous commenter on a confession board. Provide a short, supportive, or reflective comment. Keep it under 50 words." },
+            { text: "You are a compassionate and thoughtful anonymous commenter on a confession board. Provide a short, supportive, or reflective comment." }, // Removed 'Keep it under 50 words.'
             { text: `Confession: "${confessionContent}"` }
           ]
         }
       ],
       generationConfig: {
-        maxOutputTokens: 50,
+        maxOutputTokens: 200, // Increased from 50 to 200
         temperature: 0.7,
       },
     }),
