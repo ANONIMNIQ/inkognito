@@ -40,16 +40,7 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
   return (
     <div className="flex items-start space-x-2 mb-2">
       <GenderAvatar gender={gender} className="h-7 w-7 flex-shrink-0 mt-1" />
-      <form onSubmit={handleSubmit} className={cn("flex-1 p-3 rounded-xl shadow-sm relative space-y-2", bubbleBackgroundColor)}>
-        {/* Speech bubble tail */}
-        <div
-          className={cn(
-            "absolute top-2 -left-2 w-0 h-0 border-t-[6px] border-b-[6px] border-r-[6px] border-t-transparent border-b-transparent",
-            gender === "male"
-              ? "border-r-blue-50 dark:border-r-blue-900"
-              : "border-r-pink-50 dark:border-r-pink-900"
-          )}
-        ></div>
+      <form onSubmit={handleSubmit} className={cn("flex-1 p-3 rounded-xl shadow-sm space-y-2", bubbleBackgroundColor)}>
         <div>
           <Textarea
             placeholder="Add your anonymous comment..."
