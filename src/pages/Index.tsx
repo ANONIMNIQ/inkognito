@@ -4,6 +4,7 @@ import ConfessionForm from "@/components/ConfessionForm";
 import ConfessionCard from "@/components/ConfessionCard";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button"; // Import Button component
+import { generateAIComment } from "@/services/aiService"; // Import the AI service
 
 interface Comment {
   id: string;
@@ -26,7 +27,7 @@ const Index = () => {
   const [confessions, setConfessions] = useState<Confession[]>([]);
   const [allCollapsed, setAllCollapsed] = useState(false); // New state for collapsing all
 
-  const handleAddConfession = (title: string, content: string, gender: "male" | "female") => {
+  const handleAddConfession = async (title: string, content: string, gender: "male" | "female") => {
     const newConfession: Confession = {
       id: Date.now().toString(), // Simple unique ID
       title,
@@ -36,6 +37,16 @@ const Index = () => {
       comments: [],
       likes: 0, // Initialize likes to 0
     };
+
+    // Generate AI comment
+    try {
+      const aiComment = await generateAIComment(content);
+      newConfession.comments.push(aiComment);
+    } catch (error) {
+      console.error("Failed to generate AI comment:", error);
+      // Optionally add a fallback comment or toast error
+    }
+
     setConfessions((prevConfessions) => [newConfession, ...prevConfessions]);
   };
 
