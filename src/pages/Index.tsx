@@ -31,36 +31,41 @@ const Index: React.FC = () => {
 
   const fetchConfessions = useCallback(async () => {
     setLoading(true);
-    const { data: confessionsData, error: confessionsError } = await supabase
-      .from("confessions")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (confessionsError) {
-      toast.error("Error fetching confessions: " + confessionsError.message);
-      setLoading(false);
-      return;
-    }
-
-    const confessionsWithComments: Confession[] = [];
-    for (const confession of confessionsData) {
-      const { data: commentsData, error: commentsError } = await supabase
-        .from("comments")
+    try {
+      const { data: confessionsData, error: confessionsError } = await supabase
+        .from("confessions")
         .select("*")
-        .eq("confession_id", confession.id)
-        .order("created_at", { ascending: true }); // Order comments by oldest first
+        .order("created_at", { ascending: false });
 
-      if (commentsError) {
-        console.error("Error fetching comments for confession", confession.id, commentsError);
-        // Continue without comments if there's an error
-        confessionsWithComments.push({ ...confession, comments: [] });
-      } else {
-        confessionsWithComments.push({ ...confession, comments: commentsData || [] });
+      if (confessionsError) {
+        toast.error("Error fetching confessions: " + confessionsError.message);
+        return; // Exit early on error
       }
-    }
 
-    setConfessions(confessionsWithComments);
-    setLoading(false);
+      const confessionsWithComments: Confession[] = [];
+      for (const confession of confessionsData) {
+        const { data: commentsData, error: commentsError } = await supabase
+          .from("comments")
+          .select("*")
+          .eq("confession_id", confession.id)
+          .order("created_at", { ascending: true }); // Order comments by oldest first
+
+        if (commentsError) {
+          console.error("Error fetching comments for confession", confession.id, commentsError);
+          // Continue without comments if there's an error
+          confessionsWithComments.push({ ...confession, comments: [] });
+        } else {
+          confessionsWithComments.push({ ...confession, comments: commentsData || [] });
+        }
+      }
+
+      setConfessions(confessionsWithComments);
+    } catch (e) {
+      console.error("Unexpected error fetching confessions:", e);
+      toast.error("An unexpected error occurred while loading confessions.");
+    } finally {
+      setLoading(false); // Always set loading to false
+    }
   }, []);
 
   useEffect(() => {

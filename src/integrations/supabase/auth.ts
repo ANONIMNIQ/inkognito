@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
 import { useState, useEffect } from "react";
+import { toast } from "sonner"; // Import toast for user-facing errors
 
 export type Profile = {
   id: string;
@@ -17,57 +18,75 @@ export const useSession = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const fetchUserProfile = async (userId: string) => {
+    const { data: profileData, error: profileError } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .single();
+
+    if (profileError && profileError.code !== 'PGRST116') { // PGRST116 means no rows found
+      console.error("Error fetching profile:", profileError);
+      toast.error("Failed to load user profile: " + profileError.message);
+      setProfile(null);
+    } else if (profileData) {
+      setProfile(profileData);
+    } else {
+      setProfile(null); // No profile found
+    }
+  };
+
   useEffect(() => {
-    const getSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error("Error getting session:", error);
-        setLoading(false);
-        return;
-      }
-      setSession(session);
-      setUser(session?.user || null);
-
-      if (session?.user) {
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
-
-        if (profileError && profileError.code !== 'PGRST116') { // PGRST116 means no rows found
-          console.error("Error fetching profile:", profileError);
-        } else if (profileData) {
-          setProfile(profileData);
+    const initializeSession = async () => {
+      setLoading(true); // Ensure loading is true at the start
+      try {
+        const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error("Error getting initial session:", sessionError);
+          toast.error("Authentication error: " + sessionError.message);
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+        } else {
+          setSession(initialSession);
+          setUser(initialSession?.user || null);
+          if (initialSession?.user) {
+            await fetchUserProfile(initialSession.user.id);
+          } else {
+            setProfile(null);
+          }
         }
+      } catch (e) {
+        console.error("Unexpected error during initial session fetch:", e);
+        toast.error("An unexpected authentication error occurred.");
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+      } finally {
+        setLoading(false); // Always set loading to false after initial attempt
       }
-      setLoading(false);
     };
 
-    getSession();
+    initializeSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        setUser(session?.user || null);
-        if (session?.user) {
-          const { data: profileData, error: profileError } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", session.user.id)
-            .single();
-
-          if (profileError && profileError.code !== 'PGRST116') {
-            console.error("Error fetching profile on auth state change:", profileError);
-          } else if (profileData) {
-            setProfile(profileData);
+      async (_event, currentSession) => {
+        setLoading(true); // Set loading true for state changes
+        try {
+          setSession(currentSession);
+          setUser(currentSession?.user || null);
+          if (currentSession?.user) {
+            await fetchUserProfile(currentSession.user.id);
           } else {
-            setProfile(null); // Clear profile if not found
+            setProfile(null); // Clear profile on sign out
           }
-        } else {
-          setProfile(null); // Clear profile on sign out
+        } catch (e) {
+          console.error("Unexpected error during auth state change:", e);
+          toast.error("An unexpected authentication error occurred during state change.");
+        } finally {
+          setLoading(false); // Always set loading to false after state change processing
         }
-        setLoading(false);
       }
     );
 
