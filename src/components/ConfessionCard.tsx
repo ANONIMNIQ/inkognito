@@ -50,6 +50,9 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({ confession, onAddCommen
       ? "text-blue-600 dark:text-blue-400"
       : "text-pink-600 dark:text-pink-400";
 
+  // Sort comments by timestamp, newest first
+  const sortedComments = [...confession.comments].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+
   return (
     <div className="w-full max-w-2xl mx-auto mb-6"> {/* Overall container for confession and its comments */}
       {/* Main Confession Bubble */}
@@ -100,10 +103,10 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({ confession, onAddCommen
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-3 pt-2">
               <CommentForm onSubmit={handleAddComment} /> {/* Moved to the top */}
-              {confession.comments.length === 0 ? (
+              {sortedComments.length === 0 ? (
                 <p className="text-sm text-gray-500 dark:text-gray-400">No comments yet. Be the first!</p>
               ) : (
-                confession.comments.map((comment) => (
+                sortedComments.map((comment) => (
                   <CommentCard key={comment.id} comment={comment} />
                 ))
               )}

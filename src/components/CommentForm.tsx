@@ -71,14 +71,14 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="male" id="comment-gender-male" className="sr-only" /> {/* Visually hide radio input */}
               <Label htmlFor="comment-gender-male" className="flex items-center space-x-1 cursor-pointer">
-                <GenderAvatar gender="male" className="h-6 w-6" />
+                <GenderAvatar gender="male" className={cn("h-6 w-6", gender === "male" && "ring-2 ring-primary ring-offset-2")} />
                 <span className={cn("text-sm", textColor)}>Male</span>
               </Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="female" id="comment-gender-female" className="sr-only" /> {/* Visually hide radio input */}
               <Label htmlFor="comment-gender-female" className="flex items-center space-x-1 cursor-pointer">
-                <GenderAvatar gender="female" className="h-6 w-6" />
+                <GenderAvatar gender="female" className={cn("h-6 w-6", gender === "female" && "ring-2 ring-primary ring-offset-2")} />
                 <span className={cn("text-sm", textColor)}>Female</span>
               </Label>
             </div>
