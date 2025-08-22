@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, MessageCircle, Heart } from "lucide-react"; // Import MessageCircle and Heart icons
 import GenderAvatar from "./GenderAvatar";
 import CommentCard from "./CommentCard";
 import CommentForm from "./CommentForm";
@@ -23,16 +23,36 @@ interface ConfessionCardProps {
     gender: "male" | "female";
     timestamp: Date;
     comments: Comment[];
+    likes: number; // Added likes property
   };
   onAddComment: (confessionId: string, content: string, gender: "male" | "female") => void;
+  onLikeConfession: (confessionId: string) => void; // New prop for liking
+  allCollapsed: boolean; // New prop for global collapse
 }
 
-const ConfessionCard: React.FC<ConfessionCardProps> = ({ confession, onAddComment }) => {
+const ConfessionCard: React.FC<ConfessionCardProps> = ({
+  confession,
+  onAddComment,
+  onLikeConfession,
+  allCollapsed,
+}) => {
   const [isContentOpen, setIsContentOpen] = useState(false); // State for main confession content
   const [isCommentsOpen, setIsCommentsOpen] = useState(false); // State for comments section
 
+  // Effect to handle global collapse/expand
+  useEffect(() => {
+    setIsContentOpen(!allCollapsed);
+    setIsCommentsOpen(!allCollapsed);
+  }, [allCollapsed]);
+
   const handleAddComment = (content: string, gender: "male" | "female") => {
     onAddComment(confession.id, content, gender);
+    setIsCommentsOpen(true); // Ensure comments section is open after adding a comment
+  };
+
+  const handleToggleComments = () => {
+    setIsCommentsOpen((prev) => !prev);
+    setIsContentOpen(true); // Ensure main content is open if comments are toggled
   };
 
   const bubbleBackgroundColor =
@@ -68,6 +88,27 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({ confession, onAddCommen
                 : "border-r-pink-100 dark:border-r-pink-950"
             )}
           ></div>
+
+          <div className="flex justify-between items-center mb-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn("flex items-center space-x-1 p-0 h-auto", linkColor)}
+              onClick={handleToggleComments}
+            >
+              <MessageCircle className="h-4 w-4" />
+              <span className="text-sm">{confession.comments.length}</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn("flex items-center space-x-1 p-0 h-auto", linkColor)}
+              onClick={() => onLikeConfession(confession.id)}
+            >
+              <Heart className="h-4 w-4" />
+              <span className="text-sm">{confession.likes}</span>
+            </Button>
+          </div>
 
           <Collapsible open={isContentOpen} onOpenChange={setIsContentOpen}>
             <div className="flex items-center justify-between space-x-4 mb-2">

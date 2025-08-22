@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import ConfessionForm from "@/components/ConfessionForm"; // Updated import
+import ConfessionForm from "@/components/ConfessionForm";
 import ConfessionCard from "@/components/ConfessionCard";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button"; // Import Button component
 
 interface Comment {
   id: string;
@@ -18,10 +19,12 @@ interface Confession {
   gender: "male" | "female";
   timestamp: Date;
   comments: Comment[];
+  likes: number; // Added likes property
 }
 
 const Index = () => {
   const [confessions, setConfessions] = useState<Confession[]>([]);
+  const [allCollapsed, setAllCollapsed] = useState(false); // New state for collapsing all
 
   const handleAddConfession = (title: string, content: string, gender: "male" | "female") => {
     const newConfession: Confession = {
@@ -31,6 +34,7 @@ const Index = () => {
       gender,
       timestamp: new Date(),
       comments: [],
+      likes: 0, // Initialize likes to 0
     };
     setConfessions((prevConfessions) => [newConfession, ...prevConfessions]);
   };
@@ -56,6 +60,16 @@ const Index = () => {
     );
   };
 
+  const handleLikeConfession = (confessionId: string) => {
+    setConfessions((prevConfessions) =>
+      prevConfessions.map((confession) =>
+        confession.id === confessionId
+          ? { ...confession, likes: confession.likes + 1 }
+          : confession
+      )
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
@@ -63,9 +77,17 @@ const Index = () => {
           Anonymous Confessions
         </h1>
 
-        <ConfessionForm onSubmit={handleAddConfession} /> {/* Directly using ConfessionForm */}
+        <ConfessionForm onSubmit={handleAddConfession} />
 
         <Separator className="my-8" />
+
+        {confessions.length > 0 && (
+          <div className="flex justify-end mb-4">
+            <Button variant="outline" onClick={() => setAllCollapsed(!allCollapsed)}>
+              {allCollapsed ? "Expand All" : "Collapse All"}
+            </Button>
+          </div>
+        )}
 
         <div className="space-y-6">
           {confessions.length === 0 ? (
@@ -78,6 +100,8 @@ const Index = () => {
                 key={confession.id}
                 confession={confession}
                 onAddComment={handleAddComment}
+                onLikeConfession={handleLikeConfession} // Pass new prop
+                allCollapsed={allCollapsed} // Pass new prop
               />
             ))
           )}
