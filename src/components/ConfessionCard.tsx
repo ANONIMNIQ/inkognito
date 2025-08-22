@@ -99,6 +99,7 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({ confession, onAddCommen
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-3 pt-2">
+              <CommentForm onSubmit={handleAddComment} /> {/* Moved to the top */}
               {confession.comments.length === 0 ? (
                 <p className="text-sm text-gray-500 dark:text-gray-400">No comments yet. Be the first!</p>
               ) : (
@@ -106,7 +107,6 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({ confession, onAddCommen
                   <CommentCard key={comment.id} comment={comment} />
                 ))
               )}
-              <CommentForm onSubmit={handleAddComment} />
             </CollapsibleContent>
           </Collapsible>
         </div>
