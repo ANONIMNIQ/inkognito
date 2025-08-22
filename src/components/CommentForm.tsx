@@ -74,7 +74,7 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
                   "text-sm",
                   gender === "male"
                     ? cn(maleTextColor, "font-bold underline decoration-2")
-                    : cn("text-gray-500 dark:text-gray-400", "hover:font-bold", `hover:${maleTextColor}`)
+                    : cn("text-gray-500 dark:text-gray-400", "hover:underline", `hover:${maleTextColor}`)
                 )}>Male</span>
               </Label>
             </div>
@@ -86,7 +86,7 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
                   "text-sm",
                   gender === "female"
                     ? cn(femaleTextColor, "font-bold underline decoration-2")
-                    : cn("text-gray-500 dark:text-gray-400", "hover:font-bold", `hover:${femaleTextColor}`)
+                    : cn("text-gray-500 dark:text-gray-400", "hover:underline", `hover:${femaleTextColor}`)
                 )}>Female</span>
               </Label>
             </div>
