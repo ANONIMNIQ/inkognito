@@ -29,7 +29,15 @@ const CommentCard: React.FC<CommentCardProps> = ({ comment, isEditing = false, e
   return (
     <div className="flex items-start space-x-2 flex-1 opacity-0 animate-fade-zoom-in" style={{ animationDelay: `${animationDelay}ms` }}> {/* Added animation classes and style */}
       <GenderAvatar gender={comment.gender} className="h-7 w-7 flex-shrink-0 mt-1" />
-      <div className={cn("flex-1 p-3 rounded-xl shadow-sm", bubbleBackgroundColor)}>
+      <div className={cn("flex-1 p-3 rounded-xl shadow-sm relative", bubbleBackgroundColor)}>
+        <div
+          className={cn(
+            "absolute top-3 -left-2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent",
+            comment.gender === "male"
+              ? "border-r-blue-50 dark:border-r-blue-900"
+              : "border-r-pink-50 dark:border-r-pink-900"
+          )}
+        ></div>
         {isEditing && onContentChange ? (
           <Textarea
             value={editedContent}
