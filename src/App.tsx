@@ -6,16 +6,19 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/AdminLogin";
-import AdminDashboard from "./pages/AdminDashboard"; // We will create this next
+import AdminDashboard from "./pages/AdminDashboard";
 import { SessionProvider, useSessionContext } from "@/components/SessionProvider";
 import { isAdmin } from "@/integrations/supabase/auth";
 import React from "react";
+import AdminRedirectWrapper from "@/components/AdminRedirectWrapper"; // Import the new wrapper
 
 const queryClient = new QueryClient();
 
 // ProtectedRoute component to guard admin routes
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { session, profile, loading } = useSessionContext();
+
+  console.log("ProtectedRoute: loading:", loading, "session:", session ? "present" : "null", "profile:", profile ? profile.role : "null");
 
   if (loading) {
     return (
@@ -26,6 +29,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   }
 
   if (!session || !isAdmin(profile)) {
+    console.log("ProtectedRoute: Not authenticated or not admin, redirecting to /admin/login");
     return <Navigate to="/admin/login" replace />;
   }
 
@@ -40,7 +44,14 @@ const App = () => (
       <BrowserRouter>
         <SessionProvider>
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route
+              path="/"
+              element={
+                <AdminRedirectWrapper> {/* Wrap Index with AdminRedirectWrapper */}
+                  <Index />
+                </AdminRedirectWrapper>
+              }
+            />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route
               path="/admin/dashboard"
