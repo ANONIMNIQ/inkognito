@@ -133,7 +133,7 @@ const Index: React.FC = () => {
       const { data: aiCommentResponse, error: aiError } = await supabase.functions.invoke(
         'generate-ai-comment',
         {
-          body: JSON.stringify({ confessionContent: content }),
+          body: { confessionContent: content }, // Changed to a plain object
           headers: { 'Content-Type': 'application/json' },
         }
       );
