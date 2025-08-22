@@ -192,7 +192,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                 <Button
                   variant="link"
                   className={cn(
-                    "p-0 h-auto text-left text-2xl font-semibold hover:no-underline font-serif transition-colors w-full",
+                    "p-0 h-auto text-left text-2xl font-semibold hover:no-underline font-serif transition-colors w-full justify-start",
                     isContentOpen
                       ? textColor
                       : [linkColor, "hover:text-gray-800 dark:hover:text-gray-200"]
