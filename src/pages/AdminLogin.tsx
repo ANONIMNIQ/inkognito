@@ -75,6 +75,7 @@ const AdminLogin: React.FC = () => {
               },
             }}
             theme="dark"
+            view="sign_in" {/* Added to only show sign-in form */}
           />
         </div>
       </div>
