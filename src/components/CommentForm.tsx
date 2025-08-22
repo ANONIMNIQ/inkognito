@@ -72,6 +72,18 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
             className="flex space-x-4 mt-1"
           >
             <div className="flex items-center space-x-2">
+              <RadioGroupItem value="incognito" id="comment-gender-incognito" className="sr-only" />
+              <Label htmlFor="comment-gender-incognito" className="flex items-center space-x-1 cursor-pointer">
+                <GenderAvatar gender="incognito" className="h-6 w-6" />
+                <span className={cn(
+                  "text-sm",
+                  gender === "incognito"
+                    ? cn(generalTextColor, "font-bold underline decoration-2")
+                    : cn("text-gray-500 dark:text-gray-400", "hover:underline", `hover:${generalTextColor}`)
+                )}>Incognito</span>
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
               <RadioGroupItem value="male" id="comment-gender-male" className="sr-only" />
               <Label htmlFor="comment-gender-male" className="flex items-center space-x-1 cursor-pointer">
                 <GenderAvatar gender="male" className="h-6 w-6" />
@@ -93,18 +105,6 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
                     ? cn(generalTextColor, "font-bold underline decoration-2")
                     : cn("text-gray-500 dark:text-gray-400", "hover:underline", `hover:${generalTextColor}`)
                 )}>Female</span>
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="incognito" id="comment-gender-incognito" className="sr-only" />
-              <Label htmlFor="comment-gender-incognito" className="flex items-center space-x-1 cursor-pointer">
-                <GenderAvatar gender="incognito" className="h-6 w-6" />
-                <span className={cn(
-                  "text-sm",
-                  gender === "incognito"
-                    ? cn(generalTextColor, "font-bold underline decoration-2")
-                    : cn("text-gray-500 dark:text-gray-400", "hover:underline", `hover:${generalTextColor}`)
-                )}>Incognito</span>
               </Label>
             </div>
           </RadioGroup>
