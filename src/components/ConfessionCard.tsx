@@ -104,7 +104,7 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({ confession, onAddCommen
             <CollapsibleContent className="space-y-3 pt-2">
               <CommentForm onSubmit={handleAddComment} /> {/* Moved to the top */}
               {sortedComments.length === 0 ? (
-                <p className="text-sm text-gray-500 dark:text-gray-400">No comments yet. Be the first!</p>
+                <p className="text-sm text-center text-gray-500 dark:text-gray-400 py-4">No comments yet. Be the first!</p>
               ) : (
                 sortedComments.map((comment) => (
                   <CommentCard key={comment.id} comment={comment} />
