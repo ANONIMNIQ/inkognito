@@ -11,9 +11,10 @@ import { cn } from "@/lib/utils";
 
 interface ConfessionFormProps {
   onSubmit: (title: string, content: string, gender: "male" | "female") => void;
+  onFormFocus?: () => void;
 }
 
-const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit }) => {
+const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus }) => {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -36,6 +37,9 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit }) => {
 
   const handleTitleFocus = () => {
     setOpen(true);
+    if (onFormFocus) {
+      onFormFocus();
+    }
   };
 
   useEffect(() => {

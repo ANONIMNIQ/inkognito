@@ -257,11 +257,15 @@ const Index: React.FC = () => {
     );
   }, []);
 
+  const handleFormFocus = () => {
+    setExpandedConfessionId(null);
+  };
+
   return (
     <div className="container mx-auto p-4 max-w-3xl">
       <h1 className="text-3xl font-bold text-center mb-8 opacity-0 animate-fade-zoom-in">Anonymous Confessions</h1>
       <div className="opacity-0 animate-fade-zoom-in" style={{ animationDelay: '200ms' }}>
-        <ConfessionForm onSubmit={handleAddConfession} />
+        <ConfessionForm onSubmit={handleAddConfession} onFormFocus={handleFormFocus} />
       </div>
 
       {(authLoading || loadingConfessions) && confessions.length === 0 ? (
