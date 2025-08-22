@@ -111,7 +111,7 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
         <div className={cn("flex-1 p-4 rounded-xl shadow-md relative", bubbleBackgroundColor)}>
           <div
             className={cn(
-              "absolute top-3 -left-2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent",
+              "absolute top-3 -left-2 w-0 h-0 border-t-[8px] border-b-[8px] border-r-[8px] border-t-transparent border-b-transparent",
               confession.gender === "male"
                 ? "border-r-blue-100 dark:border-r-blue-950"
                 : "border-r-pink-100 dark:border-r-pink-950"
