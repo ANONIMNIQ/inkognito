@@ -52,7 +52,8 @@ const AdminLogin: React.FC = () => {
               },
             }}
             theme="dark"
-            redirectTo={window.location.origin + "/admin/dashboard"} // Keep redirectTo for Auth component's internal flow
+            // Removed redirectTo to prevent full page reloads.
+            // Navigation is now handled by the useEffect above.
           />
         </div>
       </div>

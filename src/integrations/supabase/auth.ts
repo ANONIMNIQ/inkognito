@@ -43,13 +43,13 @@ export const useSession = () => {
   }, []);
 
   useEffect(() => {
-    let isMounted = true;
+    let isMounted = true; // Flag to prevent state updates on unmounted component
 
     // This listener will fire immediately upon subscription with the current session state
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
         console.log("Auth state change event:", event, "Session:", currentSession); // Debug log
-        if (!isMounted) return;
+        if (!isMounted) return; // Don't update state if component is unmounted
 
         setLoading(true); // Start loading for any auth state change
         try {
@@ -83,40 +83,11 @@ export const useSession = () => {
       }
     );
 
-    // Initial check for session on mount, in case onAuthStateChange doesn't fire immediately
-    // This is a common pattern to ensure state is set immediately for the first render.
-    const checkInitialSession = async () => {
-      setLoading(true);
-      try {
-        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
-        if (isMounted) {
-          setSession(initialSession);
-          setUser(initialSession?.user || null);
-          if (initialSession?.user) {
-            await fetchUserProfile(initialSession.user.id);
-          } else {
-            setProfile(null);
-          }
-        }
-      } catch (e) {
-        console.error("Error getting initial session:", e);
-        if (isMounted) {
-          toast.error("An unexpected error occurred during initial session load.");
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-    checkInitialSession();
-
-
     return () => {
-      isMounted = false;
+      isMounted = false; // Cleanup: component is unmounted
       subscription.unsubscribe();
     };
-  }, [fetchUserProfile]);
+  }, [fetchUserProfile]); // Add fetchUserProfile to dependencies
 
   return { session, user, profile, loading };
 };
