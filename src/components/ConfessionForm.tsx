@@ -12,14 +12,17 @@ import { cn } from "@/lib/utils";
 interface ConfessionFormProps {
   onSubmit: (title: string, content: string, gender: "male" | "female" | "incognito") => void;
   onFormFocus?: () => void;
+  forceExpand: boolean;
+  onFormExpanded: () => void;
 }
 
-const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus }) => {
+const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, forceExpand, onFormExpanded }) => {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [gender, setGender] = useState<"male" | "female" | "incognito">("incognito");
   const formRef = useRef<HTMLDivElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +48,6 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus }
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (formRef.current && !formRef.current.contains(event.target as Node)) {
-        // Only collapse if the form is empty to prevent data loss
         if (title.trim() === "" && content.trim() === "") {
           setOpen(false);
         }
@@ -63,12 +65,15 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus }
     };
   }, [open, title, content]);
 
-  // Re-enabled: Scroll to the form when it expands
   useEffect(() => {
-    if (open && formRef.current) {
-      formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (forceExpand) {
+      setOpen(true);
+      setTimeout(() => {
+        titleInputRef.current?.focus();
+      }, 100); 
+      onFormExpanded();
     }
-  }, [open]);
+  }, [forceExpand, onFormExpanded]);
 
   const bubbleBackgroundColor =
     gender === "male"
@@ -77,7 +82,6 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus }
       ? "bg-pink-100 dark:bg-pink-950"
       : "bg-gray-100 dark:bg-gray-800";
 
-  // Updated to grey/black
   const generalTextColor = "text-gray-800 dark:text-gray-200";
   const placeholderColor = "placeholder:text-gray-500 dark:placeholder:text-gray-400";
   const borderColor = "border-gray-300 dark:border-gray-700";
@@ -86,7 +90,6 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus }
     <div className="w-full max-w-2xl mx-auto mb-6 flex items-start space-x-3" ref={formRef}>
       <GenderAvatar gender={gender} className="h-10 w-10 flex-shrink-0 mt-2" />
       <div className={cn("flex-1 p-4 rounded-xl shadow-md relative", bubbleBackgroundColor)}>
-        {/* Speech bubble tail */}
         <div
           className={cn(
             "absolute top-3 -left-2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent",
@@ -99,6 +102,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus }
         ></div>
 
         <Input
+          ref={titleInputRef}
           id="title"
           placeholder="Share your anonymous confession title..."
           value={title}

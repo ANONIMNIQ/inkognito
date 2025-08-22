@@ -5,6 +5,7 @@ import ConfessionCard from "@/components/ConfessionCard";
 import { toast } from "sonner";
 import { useSessionContext } from "@/components/SessionProvider";
 import ConfessionCardSkeleton from "@/components/ConfessionCardSkeleton";
+import ComposeButton from "@/components/ComposeButton";
 
 interface Comment {
   id: string;
@@ -35,8 +36,28 @@ const Index: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const [expandedConfessionId, setExpandedConfessionId] = useState<string | null>(null);
   const { loading: authLoading } = useSessionContext();
+  const [isComposeButtonVisible, setIsComposeButtonVisible] = useState(false);
+  const [forceExpandForm, setForceExpandForm] = useState(false);
+  const confessionFormContainerRef = useRef<HTMLDivElement>(null);
 
   const observer = useRef<IntersectionObserver>();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (confessionFormContainerRef.current) {
+        const { bottom } = confessionFormContainerRef.current.getBoundingClientRect();
+        setIsComposeButtonVisible(bottom < 0);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const handleComposeClick = () => {
+    confessionFormContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setForceExpandForm(true);
+  };
 
   const fetchConfessions = useCallback(async (currentPage: number, initialLoad: boolean) => {
     if (initialLoad) {
@@ -68,7 +89,7 @@ const Index: React.FC = () => {
       const confessionsWithCommentCount = confessionsData.map((c: any) => ({
         ...c,
         comment_count: c.comments[0]?.count || 0,
-        comments: [], // Start with an empty comments array
+        comments: [],
       }));
 
       setConfessions((prev) =>
@@ -86,14 +107,12 @@ const Index: React.FC = () => {
     }
   }, []);
 
-  // Effect for initial load
   useEffect(() => {
     if (!authLoading) {
       fetchConfessions(0, true);
     }
   }, [authLoading, fetchConfessions]);
 
-  // Effect for subsequent page loads (infinite scroll)
   useEffect(() => {
     if (page > 0) {
       fetchConfessions(page, false);
@@ -270,8 +289,17 @@ const Index: React.FC = () => {
   return (
     <div className="container mx-auto p-4 max-w-3xl">
       <h1 className="text-3xl font-bold text-center mb-8 opacity-0 animate-fade-zoom-in">Anonymous Confessions</h1>
-      <div className="opacity-0 animate-fade-zoom-in" style={{ animationDelay: '200ms' }}>
-        <ConfessionForm onSubmit={handleAddConfession} onFormFocus={handleFormFocus} />
+      <div
+        ref={confessionFormContainerRef}
+        className="opacity-0 animate-fade-zoom-in"
+        style={{ animationDelay: '200ms' }}
+      >
+        <ConfessionForm
+          onSubmit={handleAddConfession}
+          onFormFocus={handleFormFocus}
+          forceExpand={forceExpandForm}
+          onFormExpanded={() => setForceExpandForm(false)}
+        />
       </div>
 
       {loadingConfessions && confessions.length === 0 ? (
@@ -308,6 +336,7 @@ const Index: React.FC = () => {
       {!hasMore && confessions.length > 0 && (
         <p className="text-center text-gray-500 dark:text-gray-400 mt-8">You've reached the end of the confessions.</p>
       )}
+      <ComposeButton isVisible={isComposeButtonVisible} onClick={handleComposeClick} />
     </div>
   );
 };
