@@ -259,8 +259,10 @@ const Index: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4 max-w-3xl">
-      <h1 className="text-3xl font-bold text-center mb-8">Anonymous Confessions</h1>
-      <ConfessionForm onSubmit={handleAddConfession} />
+      <h1 className="text-3xl font-bold text-center mb-8 animate-fade-zoom-in">Anonymous Confessions</h1>
+      <div className="animate-fade-zoom-in" style={{ animationDelay: '200ms' }}>
+        <ConfessionForm onSubmit={handleAddConfession} />
+      </div>
 
       {(authLoading || loadingConfessions) && confessions.length === 0 ? (
         <div className="space-y-6 mt-8">
@@ -287,7 +289,7 @@ const Index: React.FC = () => {
               onLikeConfession={handleLikeConfession}
               isContentOpen={expandedConfessionId === confession.id}
               onToggleExpand={handleConfessionToggle}
-              animationDelay={index * 150}
+              animationDelay={500 + index * 150}
             />
           ))}
         </div>
