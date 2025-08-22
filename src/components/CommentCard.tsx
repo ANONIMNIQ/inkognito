@@ -1,8 +1,8 @@
 import React from "react";
 import GenderAvatar from "./GenderAvatar";
-// Removed Card, CardContent imports as we're making a custom bubble div
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
+import { Textarea } from "@/components/ui/textarea"; // Import Textarea
 
 interface CommentCardProps {
   comment: {
@@ -11,9 +11,12 @@ interface CommentCardProps {
     gender: "male" | "female";
     timestamp: Date;
   };
+  isEditing?: boolean; // New prop to indicate if comment is being edited
+  editedContent?: string; // New prop for edited content
+  onContentChange?: (content: string) => void; // New prop for content change handler
 }
 
-const CommentCard: React.FC<CommentCardProps> = ({ comment }) => {
+const CommentCard: React.FC<CommentCardProps> = ({ comment, isEditing = false, editedContent, onContentChange }) => {
   const bubbleBackgroundColor =
     comment.gender === "male"
       ? "bg-blue-50 dark:bg-blue-900"
@@ -25,7 +28,7 @@ const CommentCard: React.FC<CommentCardProps> = ({ comment }) => {
       : "text-pink-800 dark:text-pink-200";
 
   return (
-    <div className="flex items-start space-x-2 mb-2"> {/* Added mb-2 for spacing between comments */}
+    <div className="flex items-start space-x-2 flex-1"> {/* Added flex-1 to allow it to take available space */}
       <GenderAvatar gender={comment.gender} className="h-7 w-7 flex-shrink-0 mt-1" />
       <div className={cn("flex-1 p-3 rounded-xl shadow-sm relative", bubbleBackgroundColor)}>
         {/* Speech bubble tail */}
@@ -37,7 +40,16 @@ const CommentCard: React.FC<CommentCardProps> = ({ comment }) => {
               : "border-r-pink-50 dark:border-r-pink-900"
           )}
         ></div>
-        <p className={cn("text-sm", textColor)}>{comment.content}</p>
+        {isEditing && onContentChange ? (
+          <Textarea
+            value={editedContent}
+            onChange={(e) => onContentChange(e.target.value)}
+            rows={2}
+            className={cn("resize-none", textColor)}
+          />
+        ) : (
+          <p className={cn("text-sm", textColor)}>{comment.content}</p>
+        )}
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
           {formatDistanceToNow(comment.timestamp, { addSuffix: true })}
         </p>

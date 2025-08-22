@@ -86,6 +86,78 @@ const AdminConfessionList: React.FC = () => {
     };
   }, [fetchAllConfessionsAndComments]);
 
+  const handleDeleteConfession = async (confessionId: string) => {
+    const { error } = await supabase
+      .from("confessions")
+      .delete()
+      .eq("id", confessionId);
+
+    if (error) {
+      toast.error("Error deleting confession: " + error.message);
+    } else {
+      setConfessions((prev) => prev.filter((conf) => conf.id !== confessionId));
+      toast.success("Confession deleted successfully!");
+    }
+  };
+
+  const handleEditConfession = async (confessionId: string, title: string, content: string) => {
+    const { error } = await supabase
+      .from("confessions")
+      .update({ title, content })
+      .eq("id", confessionId);
+
+    if (error) {
+      toast.error("Error updating confession: " + error.message);
+    } else {
+      setConfessions((prev) =>
+        prev.map((conf) =>
+          conf.id === confessionId ? { ...conf, title, content } : conf
+        )
+      );
+      toast.success("Confession updated successfully!");
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    const { error } = await supabase
+      .from("comments")
+      .delete()
+      .eq("id", commentId);
+
+    if (error) {
+      toast.error("Error deleting comment: " + error.message);
+    } else {
+      setConfessions((prev) =>
+        prev.map((conf) => ({
+          ...conf,
+          comments: conf.comments.filter((comment) => comment.id !== commentId),
+        }))
+      );
+      toast.success("Comment deleted successfully!");
+    }
+  };
+
+  const handleEditComment = async (commentId: string, content: string) => {
+    const { error } = await supabase
+      .from("comments")
+      .update({ content })
+      .eq("id", commentId);
+
+    if (error) {
+      toast.error("Error updating comment: " + error.message);
+    } else {
+      setConfessions((prev) =>
+        prev.map((conf) => ({
+          ...conf,
+          comments: conf.comments.map((comment) =>
+            comment.id === commentId ? { ...comment, content } : comment
+          ),
+        }))
+      );
+      toast.success("Comment updated successfully!");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-8">
@@ -100,7 +172,14 @@ const AdminConfessionList: React.FC = () => {
         <p className="text-center text-gray-500 dark:text-gray-400 mt-8">No confessions to moderate yet.</p>
       ) : (
         confessions.map((confession) => (
-          <AdminConfessionCard key={confession.id} confession={confession} />
+          <AdminConfessionCard
+            key={confession.id}
+            confession={confession}
+            onDeleteConfession={handleDeleteConfession}
+            onEditConfession={handleEditConfession}
+            onDeleteComment={handleDeleteComment}
+            onEditComment={handleEditComment}
+          />
         ))
       )}
     </div>
