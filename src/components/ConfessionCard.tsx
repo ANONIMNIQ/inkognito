@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, MessageCircle, Heart } from "lucide-react"; // Import MessageCircle and Heart icons
@@ -38,12 +38,27 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
 }) => {
   const [isContentOpen, setIsContentOpen] = useState(false); // State for main confession content
   const [isCommentsOpen, setIsCommentsOpen] = useState(false); // State for comments section
+  const cardRef = useRef<HTMLDivElement>(null); // Ref for the entire confession card
 
   // Effect to handle global collapse/expand
   useEffect(() => {
     setIsContentOpen(!allCollapsed);
     setIsCommentsOpen(!allCollapsed);
   }, [allCollapsed]);
+
+  // Scroll to the card when its content expands
+  useEffect(() => {
+    if (isContentOpen && cardRef.current) {
+      cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [isContentOpen]);
+
+  // Scroll to the card when its comments section expands
+  useEffect(() => {
+    if (isCommentsOpen && cardRef.current) {
+      cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [isCommentsOpen]);
 
   const handleAddComment = (content: string, gender: "male" | "female") => {
     onAddComment(confession.id, content, gender);
@@ -74,7 +89,7 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
   const sortedComments = [...confession.comments].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
   return (
-    <div className="w-full max-w-2xl mx-auto mb-6"> {/* Overall container for confession and its comments */}
+    <div className="w-full max-w-2xl mx-auto mb-6" ref={cardRef}> {/* Overall container for confession and its comments */}
       {/* Main Confession Bubble */}
       <div className="flex items-start space-x-3">
         <GenderAvatar gender={confession.gender} className="h-10 w-10 flex-shrink-0 mt-2" />

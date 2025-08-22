@@ -59,6 +59,13 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit }) => {
     };
   }, [open, title, content]);
 
+  // Scroll to the form when it expands
+  useEffect(() => {
+    if (open && formRef.current) {
+      formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [open]);
+
   const bubbleBackgroundColor =
     gender === "male"
       ? "bg-blue-100 dark:bg-blue-950"
