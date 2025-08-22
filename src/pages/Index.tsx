@@ -4,6 +4,7 @@ import ConfessionForm from "@/components/ConfessionForm";
 import ConfessionCard from "@/components/ConfessionCard";
 import { toast } from "sonner";
 import { useSessionContext } from "@/components/SessionProvider";
+import ConfessionCardSkeleton from "@/components/ConfessionCardSkeleton"; // Import the skeleton component
 
 interface Comment {
   id: string;
@@ -258,8 +259,14 @@ const Index: React.FC = () => {
 
   if (authLoading || loadingConfessions) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <p>Loading...</p>
+      <div className="container mx-auto p-4 max-w-3xl">
+        <h1 className="text-3xl font-bold text-center mb-8">Anonymous Confessions</h1>
+        <ConfessionForm onSubmit={handleAddConfession} /> {/* Form is always visible */}
+        <div className="space-y-6">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <ConfessionCardSkeleton key={i} />
+          ))}
+        </div>
       </div>
     );
   }
@@ -286,8 +293,8 @@ const Index: React.FC = () => {
               }}
               onAddComment={handleAddComment}
               onLikeConfession={handleLikeConfession}
-              isContentOpen={expandedConfessionId === confession.id} // Pass controlled state
-              onToggleExpand={handleConfessionToggle} // Pass callback
+              isContentOpen={expandedConfessionId === confession.id}
+              onToggleExpand={handleConfessionToggle}
             />
           ))}
         </div>

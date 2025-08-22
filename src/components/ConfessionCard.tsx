@@ -7,6 +7,7 @@ import CommentCard from "./CommentCard";
 import CommentForm from "./CommentForm";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
+import TypingText from "./TypingText"; // Import TypingText
 
 interface Comment {
   id: string;
@@ -104,7 +105,7 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
   const sortedComments = [...confession.comments].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
   return (
-    <div className="w-full max-w-2xl mx-auto mb-6" ref={cardRef}>
+    <div className="w-full max-w-2xl mx-auto mb-6 animate-fade-zoom-in" style={{ animationDelay: '0ms' }} ref={cardRef}>
       <div className="flex items-start space-x-3">
         <GenderAvatar gender={confession.gender} className="h-10 w-10 flex-shrink-0 mt-2" />
         <div className={cn("flex-1 p-4 rounded-xl shadow-md relative", bubbleBackgroundColor)}>
@@ -121,8 +122,9 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              className={cn("flex items-center space-x-1 p-0 h-auto", linkColor)}
+              className={cn("flex items-center space-x-1 p-0 h-auto animate-slide-fade-in-top", linkColor)}
               onClick={handleToggleComments}
+              style={{ animationDelay: '200ms' }}
             >
               <MessageCircle className="h-4 w-4" />
               <span className="text-sm">{confession.comments.length}</span>
@@ -130,8 +132,9 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              className={cn("flex items-center space-x-1 p-0 h-auto", linkColor)}
+              className={cn("flex items-center space-x-1 p-0 h-auto animate-slide-fade-in-top", linkColor)}
               onClick={() => onLikeConfession(confession.id)}
+              style={{ animationDelay: '300ms' }}
             >
               <Heart className="h-4 w-4" />
               <span className="text-sm">{confession.likes}</span>
@@ -142,7 +145,7 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
             <div className="flex items-center justify-between space-x-4 mb-2">
               <CollapsibleTrigger asChild>
                 <Button variant="link" className={cn("p-0 h-auto text-left text-lg font-semibold hover:no-underline", textColor)}>
-                  {confession.title}
+                  <TypingText text={confession.title} delay={400} speed={30} className="block" />
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleTrigger asChild>
@@ -166,7 +169,7 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
             <CollapsibleTrigger asChild>
               <Button variant="link" className={cn("w-full justify-start p-0 h-auto", linkColor)}>
                 See all comments ({confession.comments.length})
-                {isCommentsOpen ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4" />}
+                {isCommentsOpen ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-3 pt-2">
