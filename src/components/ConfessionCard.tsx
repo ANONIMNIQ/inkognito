@@ -156,7 +156,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     <div ref={cardRootRef} className="w-full max-w-2xl mx-auto mb-6 opacity-0 animate-fade-zoom-in" style={{ animationDelay: `${animationDelay}ms` }}>
       <div className="flex items-start space-x-3">
         <GenderAvatar gender={confession.gender} className="h-10 w-10 flex-shrink-0 mt-2" />
-        <div className={cn("flex-1 p-4 rounded-xl shadow-md relative", bubbleBackgroundColor)}>
+        <div className={cn("flex-1 p-4 rounded-xl shadow-md relative min-w-0", bubbleBackgroundColor)}>
           <div
             className={cn(
               "absolute top-3 -left-2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent",
@@ -198,15 +198,14 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                       : [linkColor, "hover:text-gray-800 dark:hover:text-gray-200"]
                   )}
                 >
-                  <TypingText
-                    text={confession.title}
-                    delay={animationDelay + 300}
-                    speed={30}
-                    className={cn(
-                      "w-full",
-                      isContentOpen ? "whitespace-pre-wrap" : "truncate"
-                    )}
-                  />
+                  <div className={cn("w-full", !isContentOpen && "truncate")}>
+                    <TypingText
+                      text={confession.title}
+                      delay={animationDelay + 300}
+                      speed={30}
+                      className={cn(isContentOpen && "whitespace-pre-wrap")}
+                    />
+                  </div>
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleTrigger asChild>
