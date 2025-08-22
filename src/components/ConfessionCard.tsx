@@ -169,29 +169,27 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
           ></div>
           <div className="flex justify-between items-center mb-2">
             <Button
-              variant="ghost"
-              size="sm"
-              className={cn("flex items-center space-x-1 p-0 h-auto", linkColor)}
+              variant="link"
+              className="flex items-center space-x-0.5 p-0 h-auto text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors hover:no-underline"
               onClick={handleToggleComments}
             >
-              <MessageCircle className="h-4 w-4" />
-              <span className="text-sm">{confession.comment_count}</span>
+              <MessageCircle className="h-3.5 w-3.5" />
+              <span className="text-xs font-medium">{confession.comment_count}</span>
             </Button>
             <Button
-              variant="ghost"
-              size="sm"
-              className={cn("flex items-center space-x-1 p-0 h-auto", linkColor)}
+              variant="link"
+              className="flex items-center space-x-0.5 p-0 h-auto text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors hover:no-underline"
               onClick={() => onLikeConfession(confession.id)}
             >
-              <Heart className="h-4 w-4" />
-              <span className="text-sm">{confession.likes}</span>
+              <Heart className="h-3.5 w-3.5" />
+              <span className="text-xs font-medium">{confession.likes}</span>
             </Button>
           </div>
 
           <Collapsible open={isContentOpen} onOpenChange={() => onToggleExpand(confession.id)}>
             <div className="flex items-center justify-between space-x-4 mb-2">
               <CollapsibleTrigger asChild>
-                <Button variant="link" className={cn("p-0 h-auto text-left text-lg font-semibold hover:no-underline", textColor)}>
+                <Button variant="link" className={cn("p-0 h-auto text-left text-xl font-semibold hover:no-underline", textColor)}>
                   <TypingText text={confession.title} delay={animationDelay + 300} speed={30} className="block" />
                 </Button>
               </CollapsibleTrigger>
