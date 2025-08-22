@@ -55,7 +55,7 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
         ></div>
         <div>
           <Textarea
-            placeholder="Add your anonymous comment..."
+            placeholder="Напиши твоя анонимен коментар..."
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={2}
@@ -64,7 +64,7 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
           />
         </div>
         <div>
-          <Label className={cn("text-xs", generalTextColor)}>Your Gender (Anonymous)</Label>
+          <Label className={cn("text-xs", generalTextColor)}>Твоят пол</Label>
           <RadioGroup
             defaultValue="incognito"
             value={gender}
@@ -80,7 +80,7 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
                   gender === "incognito"
                     ? cn(generalTextColor, "font-bold underline decoration-2")
                     : cn("text-gray-500 dark:text-gray-400", "hover:underline", `hover:${generalTextColor}`)
-                )}>Incognito</span>
+                )}>инкогнито</span>
               </Label>
             </div>
             <div className="flex items-center space-x-2">
@@ -92,7 +92,7 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
                   gender === "male"
                     ? cn(generalTextColor, "font-bold underline decoration-2")
                     : cn("text-gray-500 dark:text-gray-400", "hover:underline", `hover:${generalTextColor}`)
-                )}>Male</span>
+                )}>мъж</span>
               </Label>
             </div>
             <div className="flex items-center space-x-2">
@@ -104,12 +104,12 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
                   gender === "female"
                     ? cn(generalTextColor, "font-bold underline decoration-2")
                     : cn("text-gray-500 dark:text-gray-400", "hover:underline", `hover:${generalTextColor}`)
-                )}>Female</span>
+                )}>жена</span>
               </Label>
             </div>
           </RadioGroup>
         </div>
-        <Button type="submit" size="sm" variant="secondary" className={cn(generalTextColor, "w-full")}>Post Comment</Button>
+        <Button type="submit" size="sm" variant="secondary" className={cn(generalTextColor, "w-full")}>Публикувай Коментар</Button>
       </form>
     </div>
   );

@@ -110,7 +110,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
         <Input
           ref={titleInputRef}
           id="title"
-          placeholder="Share your anonymous confession title..."
+          placeholder="Кратко заглавие на твоята изповед..."
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onFocus={handleTitleFocus}
@@ -126,7 +126,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
                 <Label htmlFor="content" className="sr-only">Confession</Label>
                 <Textarea
                   id="content"
-                  placeholder="What's on your mind?"
+                  placeholder="Сподели ни тайната си..."
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   rows={5}
@@ -135,7 +135,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
                 />
               </div>
               <div>
-                <Label className={cn("text-sm", generalTextColor)}>Your Gender (Anonymous)</Label>
+                <Label className={cn("text-sm", generalTextColor)}>Твоят пол</Label>
                 <RadioGroup
                   defaultValue="incognito"
                   value={gender}
@@ -151,7 +151,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
                         gender === "incognito"
                           ? cn(generalTextColor, "font-bold underline decoration-2")
                           : cn("text-gray-500 dark:text-gray-400", "hover:underline", `hover:${generalTextColor}`)
-                      )}>Incognito</span>
+                      )}>инкогнито</span>
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -163,7 +163,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
                         gender === "male"
                           ? cn(generalTextColor, "font-bold underline decoration-2")
                           : cn("text-gray-500 dark:text-gray-400", "hover:underline", `hover:${generalTextColor}`)
-                      )}>Male</span>
+                      )}>мъж</span>
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -175,12 +175,12 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
                         gender === "female"
                           ? cn(generalTextColor, "font-bold underline decoration-2")
                           : cn("text-gray-500 dark:text-gray-400", "hover:underline", `hover:${generalTextColor}`)
-                      )}>Female</span>
+                      )}>жена</span>
                     </Label>
                   </div>
                 </RadioGroup>
               </div>
-              <Button type="submit" variant="secondary" className={cn(generalTextColor, "w-full")}>Post Confession</Button>
+              <Button type="submit" variant="secondary" className={cn(generalTextColor, "w-full")}>Публикувай</Button>
             </form>
           </CollapsibleContent>
         </Collapsible>

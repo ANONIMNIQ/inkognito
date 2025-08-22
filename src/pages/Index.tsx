@@ -288,7 +288,7 @@ const Index: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4 max-w-3xl">
-      <h1 className="text-3xl font-bold text-center mb-8 opacity-0 animate-fade-zoom-in">Anonymous Confessions</h1>
+      <h1 className="text-3xl font-bold text-center mb-8 opacity-0 animate-fade-zoom-in">Анонимни изповеди</h1>
       <div
         ref={confessionFormContainerRef}
         className="opacity-0 animate-fade-zoom-in"
@@ -334,7 +334,7 @@ const Index: React.FC = () => {
       )}
       {loadingMore && <ConfessionCardSkeleton />}
       {!hasMore && confessions.length > 0 && (
-        <p className="text-center text-gray-500 dark:text-gray-400 mt-8">You've reached the end of the confessions.</p>
+        <p className="text-center text-gray-500 dark:text-gray-400 mt-8">Това са всички изповеди.</p>
       )}
       <ComposeButton isVisible={isComposeButtonVisible} onClick={handleComposeClick} />
     </div>

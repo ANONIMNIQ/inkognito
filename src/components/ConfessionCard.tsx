@@ -228,7 +228,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
           <Collapsible open={isCommentsOpen}>
             <CollapsibleTrigger asChild>
               <Button variant="link" className={cn("w-full justify-start p-0 h-auto", linkColor)} onClick={handleToggleComments}>
-                {isCommentsOpen ? "Hide" : "Show"} comments ({confession.comment_count})
+                {isCommentsOpen ? "Скрий коментарите" : "Покажи коментарите"} ({confession.comment_count})
                 {isCommentsOpen ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
               </Button>
             </CollapsibleTrigger>
