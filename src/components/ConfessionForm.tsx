@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible"; // Removed CollapsibleTrigger
 
 interface ConfessionFormProps {
   onSubmit: (title: string, content: string, gender: "male" | "female") => void;
@@ -17,6 +17,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit }) => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [gender, setGender] = useState<"male" | "female">("male");
+  const cardRef = useRef<HTMLDivElement>(null); // Ref to the Card component
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,20 +33,43 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit }) => {
     toast.success("Your confession has been posted!");
   };
 
+  const handleTitleFocus = () => {
+    setOpen(true); // Open collapsible when input is focused
+  };
+
+  // Effect to close the collapsible when clicking outside the form
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (cardRef.current && !cardRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [open]);
+
   return (
-    <Card className="w-full max-w-2xl mx-auto mb-6 p-4">
-      <Collapsible open={open} onOpenChange={setOpen}>
-        <CollapsibleTrigger asChild>
-          <Input
-            id="title"
-            placeholder="Share your anonymous confession title..."
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            onClick={() => setOpen(true)} // Open collapsible when input is clicked
-            required
-            className="w-full"
-          />
-        </CollapsibleTrigger>
+    <Card className="w-full max-w-2xl mx-auto mb-6 p-4" ref={cardRef}>
+      <Input
+        id="title"
+        placeholder="Share your anonymous confession title..."
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        onFocus={handleTitleFocus}
+        required
+        className="w-full"
+      />
+
+      {/* The Collapsible component now only wraps the content that expands */}
+      <Collapsible open={open}>
         <CollapsibleContent className="pt-4">
           <form onSubmit={handleSubmit} className="space-y-4">
             <CardHeader className="p-0 pb-4">
