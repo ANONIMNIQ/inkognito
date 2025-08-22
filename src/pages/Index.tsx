@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import ConfessionForm from "@/components/ConfessionForm";
+import ExpandableConfessionForm from "@/components/ExpandableConfessionForm"; // Changed import
 import ConfessionCard from "@/components/ConfessionCard";
 import { Separator } from "@/components/ui/separator";
 
@@ -63,7 +63,7 @@ const Index = () => {
           Anonymous Confessions
         </h1>
 
-        <ConfessionForm onSubmit={handleAddConfession} />
+        <ExpandableConfessionForm onSubmit={handleAddConfession} /> {/* Changed component */}
 
         <Separator className="my-8" />
 

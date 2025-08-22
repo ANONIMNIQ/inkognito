@@ -7,6 +7,7 @@ import GenderAvatar from "./GenderAvatar";
 import CommentCard from "./CommentCard";
 import CommentForm from "./CommentForm";
 import { formatDistanceToNow } from "date-fns";
+import { cn } from "@/lib/utils"; // Import cn for conditional class names
 
 interface Comment {
   id: string;
@@ -34,8 +35,13 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({ confession, onAddCommen
     onAddComment(confession.id, content, gender);
   };
 
+  const cardBackgroundColor =
+    confession.gender === "male"
+      ? "bg-blue-100 dark:bg-blue-950"
+      : "bg-pink-100 dark:bg-pink-950";
+
   return (
-    <Card className="w-full max-w-2xl mx-auto mb-6 shadow-lg">
+    <Card className={cn("w-full max-w-2xl mx-auto mb-6 shadow-lg", cardBackgroundColor)}>
       <CardHeader className="pb-2">
         <Collapsible open={isOpen} onOpenChange={setIsOpen}>
           <div className="flex items-center justify-between space-x-4">
