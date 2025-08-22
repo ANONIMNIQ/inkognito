@@ -99,11 +99,22 @@ export default {
             transform: "scale(1)",
           },
         },
+        "slide-fade-in-top": {
+          "0%": {
+            opacity: "0",
+            transform: "translateY(10px)",
+          },
+          "100%": {
+            opacity: "1",
+            transform: "translateY(0)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-zoom-in": "fade-zoom-in 0.5s ease-out forwards",
+        "slide-fade-in-top": "slide-fade-in-top 0.4s ease-out forwards",
       },
     },
   },

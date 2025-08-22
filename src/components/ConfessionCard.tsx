@@ -115,7 +115,7 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
               size="sm"
               className={cn("flex items-center space-x-1 p-0 h-auto animate-slide-fade-in-top", linkColor)}
               onClick={handleToggleComments}
-              style={{ animationDelay: '200ms' }}
+              style={{ animationDelay: '500ms' }}
             >
               <MessageCircle className="h-4 w-4" />
               <span className="text-sm">{confession.comments.length}</span>
@@ -125,7 +125,7 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
               size="sm"
               className={cn("flex items-center space-x-1 p-0 h-auto animate-slide-fade-in-top", linkColor)}
               onClick={() => onLikeConfession(confession.id)}
-              style={{ animationDelay: '300ms' }}
+              style={{ animationDelay: '600ms' }}
             >
               <Heart className="h-4 w-4" />
               <span className="text-sm">{confession.likes}</span>
@@ -136,7 +136,7 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
             <div className="flex items-center justify-between space-x-4 mb-2">
               <CollapsibleTrigger asChild>
                 <Button variant="link" className={cn("p-0 h-auto text-left text-lg font-semibold hover:no-underline", textColor)}>
-                  <TypingText text={confession.title} delay={400} speed={30} className="block" />
+                  <TypingText text={confession.title} delay={500} speed={30} className="block" />
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleTrigger asChild>
