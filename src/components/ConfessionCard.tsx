@@ -113,7 +113,7 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              className={cn("flex items-center space-x-1 p-0 h-auto animate-slide-fade-in-top", linkColor)}
+              className={cn("flex items-center space-x-1 p-0 h-auto opacity-0 animate-slide-fade-in-top", linkColor)}
               onClick={handleToggleComments}
               style={{ animationDelay: '500ms' }}
             >
@@ -123,7 +123,7 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              className={cn("flex items-center space-x-1 p-0 h-auto animate-slide-fade-in-top", linkColor)}
+              className={cn("flex items-center space-x-1 p-0 h-auto opacity-0 animate-slide-fade-in-top", linkColor)}
               onClick={() => onLikeConfession(confession.id)}
               style={{ animationDelay: '600ms' }}
             >
