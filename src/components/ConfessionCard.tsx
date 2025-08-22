@@ -40,34 +40,19 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
 }) => {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false); // Comments section remains local
   const cardRef = useRef<HTMLDivElement>(null); // Ref for the entire confession card
-  const confessionBubbleRef = useRef<HTMLDivElement>(null); // Ref for the confession bubble itself
   const commentsSectionRef = useRef<HTMLDivElement>(null); // Ref for the comments section
-  const isInitialMountForCommentsScroll = useRef(true); // New ref to track initial mount
 
-  // Effect to handle scrolling when content expands (scrolls to the top of the card)
-  useEffect(() => {
-    if (isContentOpen && cardRef.current) {
-      cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [isContentOpen]);
+  // Removed the useEffect that scrolled the cardRef when isContentOpen changed.
+  // The browser's default scroll behavior on click is usually sufficient.
 
   // Effect to handle scrolling when comments section expands
   useEffect(() => {
     if (isCommentsOpen && commentsSectionRef.current) {
       commentsSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+    // Removed the scroll back to confessionBubbleRef when comments collapse
+    // This prevents unwanted jumps and allows the user to maintain their scroll position.
   }, [isCommentsOpen]);
-
-  // Effect to handle scrolling back to confession bubble when comments collapse
-  useEffect(() => {
-    if (isInitialMountForCommentsScroll.current) {
-      isInitialMountForCommentsScroll.current = false;
-      return; // Skip on initial render
-    }
-    if (!isCommentsOpen && confessionBubbleRef.current) {
-      confessionBubbleRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [isCommentsOpen]); // Only depend on isCommentsOpen
 
   const handleAddComment = (content: string, gender: "male" | "female") => {
     onAddComment(confession.id, content, gender);
@@ -108,7 +93,7 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
     <div className="w-full max-w-2xl mx-auto mb-6" ref={cardRef}>
       <div className="flex items-start space-x-3">
         <GenderAvatar gender={confession.gender} className="h-10 w-10 flex-shrink-0 mt-2" />
-        <div className={cn("flex-1 p-4 rounded-xl shadow-md relative", bubbleBackgroundColor)} ref={confessionBubbleRef}>
+        <div className={cn("flex-1 p-4 rounded-xl shadow-md relative", bubbleBackgroundColor)}>
           <div
             className={cn(
               "absolute top-3 -left-2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent",
