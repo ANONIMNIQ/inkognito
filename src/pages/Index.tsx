@@ -4,7 +4,7 @@ import ConfessionForm from "@/components/ConfessionForm";
 import ConfessionCard from "@/components/ConfessionCard";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { ChevronUp } from "lucide-react"; // Only need ChevronUp now
+import { ChevronUp } from "lucide-react";
 import { useSessionContext } from "@/components/SessionProvider";
 
 interface Comment {
@@ -28,7 +28,7 @@ interface Confession {
 const Index: React.FC = () => {
   const [confessions, setConfessions] = useState<Confession[]>([]);
   const [loadingConfessions, setLoadingConfessions] = useState(true);
-  const [allCollapsed, setAllCollapsed] = useState(true); // Start with all collapsed by default
+  const [expandedConfessionsState, setExpandedConfessionsState] = useState<Record<string, boolean>>({});
   const { loading: authLoading } = useSessionContext();
 
   const fetchConfessions = useCallback(async () => {
@@ -45,6 +45,7 @@ const Index: React.FC = () => {
       }
 
       const confessionsWithComments: Confession[] = [];
+      const initialExpandedState: Record<string, boolean> = {};
       for (const confession of confessionsData) {
         const { data: commentsData, error: commentsError } = await supabase
           .from("comments")
@@ -58,9 +59,11 @@ const Index: React.FC = () => {
         } else {
           confessionsWithComments.push({ ...confession, comments: commentsData || [] });
         }
+        initialExpandedState[confession.id] = false; // All start collapsed by default
       }
 
       setConfessions(confessionsWithComments);
+      setExpandedConfessionsState(initialExpandedState);
     } catch (e) {
       console.error("Unexpected error fetching confessions:", e);
       toast.error("An unexpected error occurred while loading confessions.");
@@ -78,6 +81,16 @@ const Index: React.FC = () => {
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'confessions' }, (payload) => {
           const newConfession = payload.new as Confession;
           setConfessions((prev) => [{ ...newConfession, comments: [] }, ...prev]);
+          setExpandedConfessionsState((prev) => ({ ...prev, [newConfession.id]: true })); // New confession starts expanded
+        })
+        .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'confessions' }, (payload) => {
+          const deletedConfessionId = payload.old.id;
+          setConfessions((prev) => prev.filter(conf => conf.id !== deletedConfessionId));
+          setExpandedConfessionsState((prev) => {
+            const newState = { ...prev };
+            delete newState[deletedConfessionId];
+            return newState;
+          });
         })
         .subscribe();
 
@@ -89,6 +102,19 @@ const Index: React.FC = () => {
             prev.map((conf) =>
               conf.id === newComment.confession_id
                 ? { ...conf, comments: [...conf.comments, newComment] }
+                : conf
+            )
+          );
+          // Ensure the parent confession is expanded if a new comment comes in
+          setExpandedConfessionsState((prev) => ({ ...prev, [newComment.confession_id]: true }));
+        })
+        .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'comments' }, (payload) => {
+          const deletedCommentId = payload.old.id;
+          const confessionId = payload.old.confession_id; // Assuming confession_id is available in old record
+          setConfessions((prev) =>
+            prev.map((conf) =>
+              conf.id === confessionId
+                ? { ...conf, comments: conf.comments.filter(comment => comment.id !== deletedCommentId) }
                 : conf
             )
           );
@@ -131,8 +157,8 @@ const Index: React.FC = () => {
 
     const newConfession = { ...data, comments: [] };
     setConfessions((prev) => [newConfession, ...prev]);
+    setExpandedConfessionsState((prev) => ({ ...prev, [newConfession.id]: true })); // New confession starts expanded
     toast.success("Confession posted successfully!");
-    setAllCollapsed(false); // Automatically expand all when a new confession is added
 
     try {
       const SUPABASE_PROJECT_ID = "yyhlligskuppqmlzpobp";
@@ -209,6 +235,7 @@ const Index: React.FC = () => {
           : conf
       )
     );
+    setExpandedConfessionsState((prev) => ({ ...prev, [confessionId]: true })); // Ensure parent confession is expanded
     toast.success("Comment posted!");
   };
 
@@ -234,9 +261,24 @@ const Index: React.FC = () => {
     }
   };
 
+  const handleConfessionToggle = useCallback((confessionId: string, isOpen: boolean) => {
+    setExpandedConfessionsState((prev) => ({
+      ...prev,
+      [confessionId]: isOpen,
+    }));
+  }, []);
+
   const collapseAllConfessions = () => {
-    setAllCollapsed(true);
+    setExpandedConfessionsState((prev) => {
+      const newState: Record<string, boolean> = {};
+      for (const id in prev) {
+        newState[id] = false;
+      }
+      return newState;
+    });
   };
+
+  const anyConfessionExpanded = Object.values(expandedConfessionsState).some(Boolean);
 
   if (authLoading || loadingConfessions) {
     return (
@@ -251,7 +293,7 @@ const Index: React.FC = () => {
       <h1 className="text-3xl font-bold text-center mb-8">Anonymous Confessions</h1>
       <ConfessionForm onSubmit={handleAddConfession} />
 
-      {!allCollapsed && ( // Only show the button if not all are collapsed
+      {anyConfessionExpanded && ( // Only show the button if at least one is expanded
         <div className="flex justify-end mb-4">
           <Button variant="outline" onClick={collapseAllConfessions} className="flex items-center space-x-2">
             <ChevronUp className="h-4 w-4" />
@@ -277,7 +319,8 @@ const Index: React.FC = () => {
               }}
               onAddComment={handleAddComment}
               onLikeConfession={handleLikeConfession}
-              allCollapsed={allCollapsed}
+              isContentOpen={expandedConfessionsState[confession.id]} // Pass controlled state
+              onToggleExpand={handleConfessionToggle} // Pass callback
             />
           ))}
         </div>

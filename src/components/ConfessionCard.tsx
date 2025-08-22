@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, MessageCircle, Heart } from "lucide-react"; // Import MessageCircle and Heart icons
+import { ChevronDown, ChevronUp, MessageCircle, Heart } from "lucide-react";
 import GenderAvatar from "./GenderAvatar";
 import CommentCard from "./CommentCard";
 import CommentForm from "./CommentForm";
@@ -23,51 +23,57 @@ interface ConfessionCardProps {
     gender: "male" | "female";
     timestamp: Date;
     comments: Comment[];
-    likes: number; // Added likes property
+    likes: number;
   };
   onAddComment: (confessionId: string, content: string, gender: "male" | "female") => void;
-  onLikeConfession: (confessionId: string) => void; // New prop for liking
-  allCollapsed: boolean; // New prop for global collapse
+  onLikeConfession: (confessionId: string) => void;
+  isContentOpen: boolean; // Now controlled by parent
+  onToggleExpand: (confessionId: string, isOpen: boolean) => void;
 }
 
 const ConfessionCard: React.FC<ConfessionCardProps> = ({
   confession,
   onAddComment,
   onLikeConfession,
-  allCollapsed,
+  isContentOpen, // Now controlled by parent
+  onToggleExpand,
 }) => {
-  const [isContentOpen, setIsContentOpen] = useState(false); // State for main confession content
-  const [isCommentsOpen, setIsCommentsOpen] = useState(false); // State for comments section
-  const cardRef = useRef<HTMLDivElement>(null); // Ref for the entire confession card
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false); // Comments section remains local
+  const cardRef = useRef<HTMLDivElement>(null);
 
-  // Effect to handle global collapse/expand
-  useEffect(() => {
-    setIsContentOpen(!allCollapsed);
-    setIsCommentsOpen(!allCollapsed);
-  }, [allCollapsed]);
-
-  // Re-enabled: Scroll to the card when its content expands
+  // Effect to handle scrolling when content expands
   useEffect(() => {
     if (isContentOpen && cardRef.current) {
       cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [isContentOpen]);
 
-  // Re-enabled: Scroll to the card when its comments section expands
+  // Effect to handle scrolling when comments section expands (only if content is already open)
   useEffect(() => {
-    if (isCommentsOpen && cardRef.current) {
+    if (isCommentsOpen && isContentOpen && cardRef.current) {
       cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-  }, [isCommentsOpen]);
+  }, [isCommentsOpen, isContentOpen]);
 
   const handleAddComment = (content: string, gender: "male" | "female") => {
     onAddComment(confession.id, content, gender);
     setIsCommentsOpen(true); // Ensure comments section is open after adding a comment
+    onToggleExpand(confession.id, true); // Ensure main content is open if a comment is added
   };
 
   const handleToggleComments = () => {
     setIsCommentsOpen((prev) => !prev);
-    setIsContentOpen(true); // Ensure main content is open if comments are toggled
+    // If comments are being opened, ensure the main content is also open
+    if (!isCommentsOpen && !isContentOpen) {
+      onToggleExpand(confession.id, true);
+    }
+  };
+
+  const handleContentOpenChange = (open: boolean) => {
+    onToggleExpand(confession.id, open);
+    if (!open) { // If main content is closing, also close comments
+      setIsCommentsOpen(false);
+    }
   };
 
   const bubbleBackgroundColor =
@@ -85,16 +91,13 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
       ? "text-blue-600 dark:text-blue-400"
       : "text-pink-600 dark:text-pink-400";
 
-  // Sort comments by timestamp, newest first
   const sortedComments = [...confession.comments].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
   return (
-    <div className="w-full max-w-2xl mx-auto mb-6" ref={cardRef}> {/* Overall container for confession and its comments */}
-      {/* Main Confession Bubble */}
+    <div className="w-full max-w-2xl mx-auto mb-6" ref={cardRef}>
       <div className="flex items-start space-x-3">
         <GenderAvatar gender={confession.gender} className="h-10 w-10 flex-shrink-0 mt-2" />
         <div className={cn("flex-1 p-4 rounded-xl shadow-md relative", bubbleBackgroundColor)}>
-          {/* Speech bubble tail */}
           <div
             className={cn(
               "absolute top-3 -left-2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent",
@@ -125,7 +128,7 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
             </Button>
           </div>
 
-          <Collapsible open={isContentOpen} onOpenChange={setIsContentOpen}>
+          <Collapsible open={isContentOpen} onOpenChange={handleContentOpenChange}>
             <div className="flex items-center justify-between space-x-4 mb-2">
               <CollapsibleTrigger asChild>
                 <Button variant="link" className={cn("p-0 h-auto text-left text-lg font-semibold hover:no-underline", textColor)}>
@@ -147,9 +150,8 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
         </div>
       </div>
 
-      {/* Comments Section - threaded outside the main bubble, only visible when content is open */}
       {isContentOpen && (
-        <div className="ml-14 mt-4"> {/* Indent comments section to align with main bubble content */}
+        <div className="ml-14 mt-4">
           <Collapsible open={isCommentsOpen} onOpenChange={setIsCommentsOpen}>
             <CollapsibleTrigger asChild>
               <Button variant="link" className={cn("w-full justify-start p-0 h-auto", linkColor)}>
@@ -158,7 +160,7 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-3 pt-2">
-              <CommentForm onSubmit={handleAddComment} /> {/* Moved to the top */}
+              <CommentForm onSubmit={handleAddComment} />
               {sortedComments.length === 0 ? (
                 <p className="text-sm text-center text-gray-500 dark:text-gray-400 py-4">No comments yet. Be the first!</p>
               ) : (
