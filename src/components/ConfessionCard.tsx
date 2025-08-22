@@ -88,27 +88,29 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({ confession, onAddCommen
         </div>
       </div>
 
-      {/* Comments Section - threaded outside the main bubble */}
-      <div className="ml-14 mt-4"> {/* Indent comments section to align with main bubble content */}
-        <Collapsible open={isCommentsOpen} onOpenChange={setIsCommentsOpen}>
-          <CollapsibleTrigger asChild>
-            <Button variant="link" className={cn("w-full justify-start p-0 h-auto", linkColor)}>
-              See all comments ({confession.comments.length})
-              {isCommentsOpen ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="space-y-3 pt-2">
-            {confession.comments.length === 0 ? (
-              <p className="text-sm text-gray-500 dark:text-gray-400">No comments yet. Be the first!</p>
-            ) : (
-              confession.comments.map((comment) => (
-                <CommentCard key={comment.id} comment={comment} />
-              ))
-            )}
-            <CommentForm onSubmit={handleAddComment} />
-          </CollapsibleContent>
-        </Collapsible>
-      </div>
+      {/* Comments Section - threaded outside the main bubble, only visible when content is open */}
+      {isContentOpen && (
+        <div className="ml-14 mt-4"> {/* Indent comments section to align with main bubble content */}
+          <Collapsible open={isCommentsOpen} onOpenChange={setIsCommentsOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="link" className={cn("w-full justify-start p-0 h-auto", linkColor)}>
+                See all comments ({confession.comments.length})
+                {isCommentsOpen ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-3 pt-2">
+              {confession.comments.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">No comments yet. Be the first!</p>
+              ) : (
+                confession.comments.map((comment) => (
+                  <CommentCard key={comment.id} comment={comment} />
+                ))
+              )}
+              <CommentForm onSubmit={handleAddComment} />
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
+      )}
     </div>
   );
 };
