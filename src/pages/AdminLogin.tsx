@@ -49,7 +49,6 @@ const AdminLogin: React.FC = () => {
 
   // If session exists and user is an admin, and useEffect has already handled navigation,
   // return null to avoid rendering the login form momentarily.
-  // This case should ideally be handled by the useEffect redirect.
   if (session && isAdmin(profile)) {
     return null;
   }
@@ -62,17 +61,8 @@ const AdminLogin: React.FC = () => {
         <Auth
           supabaseClient={supabase}
           providers={[]}
-          appearance={{
-            theme: ThemeSupa,
-            variables: {
-              default: {
-                colors: {
-                  brand: 'hsl(var(--primary))',
-                  brandAccent: 'hsl(var(--primary-foreground))',
-                },
-              },
-            }}
-          }
+          // The 'appearance' prop has been temporarily removed to resolve a parsing error.
+          // If the error is fixed, we can re-introduce it carefully.
           theme="dark"
           view="sign_in" {/* Ensures only the sign-in form is shown */}
         />
