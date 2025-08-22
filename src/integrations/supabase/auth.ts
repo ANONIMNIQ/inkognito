@@ -62,3 +62,7 @@ export const useSession = () => {
 
   return { session, user, profile, loading };
 };
+
+export const isAdmin = (profile: Profile | null): boolean => {
+  return profile?.role === 'admin';
+};
