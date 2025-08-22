@@ -30,6 +30,7 @@ interface ConfessionCardProps {
   onLikeConfession: (confessionId: string) => void;
   isContentOpen: boolean;
   onToggleExpand: (confessionId: string) => void;
+  animationDelay?: number;
 }
 
 const ConfessionCard: React.FC<ConfessionCardProps> = ({
@@ -38,6 +39,7 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
   onLikeConfession,
   isContentOpen,
   onToggleExpand,
+  animationDelay = 0,
 }) => {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -103,7 +105,7 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
   const linkColor = "text-gray-600 dark:text-gray-400";
 
   return (
-    <div className="w-full max-w-2xl mx-auto mb-6 animate-fade-zoom-in" style={{ animationDelay: '0ms' }} ref={cardRef}>
+    <div className="w-full max-w-2xl mx-auto mb-6 animate-fade-zoom-in" style={{ animationDelay: `${animationDelay}ms` }} ref={cardRef}>
       <div className="flex items-start space-x-3">
         <GenderAvatar gender={confession.gender} className="h-10 w-10 flex-shrink-0 mt-2" />
         <div className={cn("flex-1 p-4 rounded-xl shadow-md", bubbleBackgroundColor)}>

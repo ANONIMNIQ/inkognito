@@ -4,7 +4,6 @@ import ConfessionForm from "@/components/ConfessionForm";
 import ConfessionCard from "@/components/ConfessionCard";
 import { toast } from "sonner";
 import { useSessionContext } from "@/components/SessionProvider";
-import ConfessionCardSkeleton from "@/components/ConfessionCardSkeleton"; // Import the skeleton component
 
 interface Comment {
   id: string;
@@ -257,30 +256,18 @@ const Index: React.FC = () => {
     );
   }, []);
 
-  if (authLoading || loadingConfessions) {
-    return (
-      <div className="container mx-auto p-4 max-w-3xl">
-        <h1 className="text-3xl font-bold text-center mb-8">Anonymous Confessions</h1>
-        <ConfessionForm onSubmit={handleAddConfession} /> {/* Form is always visible */}
-        <div className="space-y-6">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <ConfessionCardSkeleton key={i} />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="container mx-auto p-4 max-w-3xl">
       <h1 className="text-3xl font-bold text-center mb-8">Anonymous Confessions</h1>
       <ConfessionForm onSubmit={handleAddConfession} />
 
-      {confessions.length === 0 ? (
+      {(authLoading || loadingConfessions) && confessions.length === 0 ? (
+        <p className="text-center text-gray-500 dark:text-gray-400 mt-8">Loading confessions...</p>
+      ) : confessions.length === 0 ? (
         <p className="text-center text-gray-500 dark:text-gray-400 mt-8">No confessions yet. Be the first to share!</p>
       ) : (
         <div className="space-y-6">
-          {confessions.map((confession) => (
+          {confessions.map((confession, index) => (
             <ConfessionCard
               key={confession.id}
               confession={{
@@ -295,6 +282,7 @@ const Index: React.FC = () => {
               onLikeConfession={handleLikeConfession}
               isContentOpen={expandedConfessionId === confession.id}
               onToggleExpand={handleConfessionToggle}
+              animationDelay={index * 150}
             />
           ))}
         </div>
