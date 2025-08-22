@@ -102,8 +102,6 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
   const textColor = "text-gray-800 dark:text-gray-200";
   const linkColor = "text-gray-600 dark:text-gray-400";
 
-  const sortedComments = [...confession.comments].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-
   return (
     <div className="w-full max-w-2xl mx-auto mb-6 animate-fade-zoom-in" style={{ animationDelay: '0ms' }} ref={cardRef}>
       <div className="flex items-start space-x-3">
@@ -165,11 +163,11 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-3 pt-2">
               <CommentForm onSubmit={handleAddComment} />
-              {sortedComments.length === 0 ? (
+              {confession.comments.length === 0 ? (
                 <p className="text-sm text-center text-gray-500 dark:text-gray-400 py-4">No comments yet. Be the first!</p>
               ) : (
-                sortedComments.map((comment, index) => (
-                  <CommentCard key={comment.id} comment={comment} animationDelay={index * 100} /> {/* Staggered delay */}
+                confession.comments.map((comment, index) => (
+                  <CommentCard key={comment.id} comment={comment} animationDelay={index * 100} />
                 ))
               )}
             </CollapsibleContent>

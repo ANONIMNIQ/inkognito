@@ -66,14 +66,10 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
       ? "bg-blue-100 dark:bg-blue-950"
       : "bg-pink-100 dark:bg-pink-950";
 
-  // Updated to grey/black
   const textColor = "text-gray-800 dark:text-gray-200";
   const linkColor = "text-gray-600 dark:text-gray-400";
   const borderColor = "border-gray-300 dark:border-gray-700";
   const placeholderColor = "placeholder:text-gray-500 dark:placeholder:text-gray-400";
-
-
-  const sortedComments = [...confession.comments].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   const handleSaveConfession = () => {
     onEditConfession(confession.id, editedConfessionTitle, editedConfessionContent);
@@ -122,10 +118,10 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
               {isEditingConfession ? (
                 <>
                   <Button variant="ghost" size="icon" onClick={handleSaveConfession}>
-                    <Save className="h-4 w-4" /> {/* Removed explicit color */}
+                    <Save className="h-4 w-4" />
                   </Button>
                   <Button variant="ghost" size="icon" onClick={handleCancelConfessionEdit}>
-                    <X className="h-4 w-4" /> {/* Removed explicit color */}
+                    <X className="h-4 w-4" />
                   </Button>
                 </>
               ) : (
@@ -136,7 +132,7 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="ghost" size="icon">
-                        <Trash2 className="h-4 w-4 text-red-500" /> {/* Kept red for danger icon */}
+                        <Trash2 className="h-4 w-4 text-red-500" />
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
@@ -148,7 +144,7 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => onDeleteConfession(confession.id)} variant="secondary" className="text-red-500">Delete</AlertDialogAction> {/* Changed to secondary variant with red text */}
+                        <AlertDialogAction onClick={() => onDeleteConfession(confession.id)} variant="secondary" className="text-red-500">Delete</AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
@@ -208,10 +204,10 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-3 pt-2">
-            {sortedComments.length === 0 ? (
+            {confession.comments.length === 0 ? (
               <p className="text-sm text-center text-gray-500 dark:text-gray-400 py-4">No comments yet.</p>
             ) : (
-              sortedComments.map((comment) => (
+              confession.comments.map((comment) => (
                 <div key={comment.id} className="flex items-start space-x-2">
                   <CommentCard
                     comment={{ ...comment, timestamp: new Date(comment.created_at) }}
@@ -223,10 +219,10 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
                     {editingCommentId === comment.id ? (
                       <>
                         <Button variant="ghost" size="icon" onClick={() => handleSaveComment(comment.id)}>
-                          <Save className="h-4 w-4" /> {/* Removed explicit color */}
+                          <Save className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="icon" onClick={handleCancelCommentEdit}>
-                          <X className="h-4 w-4" /> {/* Removed explicit color */}
+                          <X className="h-4 w-4" />
                         </Button>
                       </>
                     ) : (
@@ -237,7 +233,7 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon">
-                              <Trash2 className="h-4 w-4 text-red-500" /> {/* Kept red for danger icon */}
+                              <Trash2 className="h-4 w-4 text-red-500" />
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
@@ -249,7 +245,7 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => onDeleteComment(comment.id)} variant="secondary" className="text-red-500">Delete</AlertDialogAction> {/* Changed to secondary variant with red text */}
+                              <AlertDialogAction onClick={() => onDeleteComment(comment.id)} variant="secondary" className="text-red-500">Delete</AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
