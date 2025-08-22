@@ -12,14 +12,25 @@ const AdminLogin: React.FC = () => {
   const { session, profile, loading } = useSessionContext(); // Get profile here
 
   useEffect(() => {
-    // Only navigate if loading is complete AND a session exists AND the user is an admin
-    if (!loading && session && isAdmin(profile)) {
-      navigate("/admin/dashboard", { replace: true }); // Use replace to prevent going back to login
-      toast.info("You are already logged in as an admin.");
-    } else if (!loading && session && !isAdmin(profile)) {
-      // If logged in but not admin, redirect to main page
-      navigate("/", { replace: true });
-      toast.warning("You are logged in, but do not have admin access.");
+    if (loading) {
+      // Still loading session or profile, do nothing yet.
+      return;
+    }
+
+    if (session) {
+      // User is authenticated
+      if (isAdmin(profile)) {
+        // User is an admin, redirect to dashboard
+        navigate("/admin/dashboard", { replace: true });
+        toast.info("Redirecting to admin dashboard.");
+      } else {
+        // User is authenticated but not an admin (or profile not found/role not admin)
+        navigate("/", { replace: true });
+        toast.warning("You are logged in, but do not have admin access.");
+      }
+    } else {
+      // No session, user is not authenticated, stay on login page.
+      // The Auth component will be rendered.
     }
   }, [session, profile, loading, navigate]); // Add profile to dependencies
 
@@ -31,8 +42,10 @@ const AdminLogin: React.FC = () => {
     );
   }
 
-  // Only render the Auth component if not loading and no session exists OR session exists but not admin
-  if (!session || (session && !isAdmin(profile))) {
+  // Render Auth component only if no session or if session exists but user is not an admin
+  // This ensures the login form is shown if they need to log in, or if they are logged in
+  // but not as an admin and were redirected here (e.g., by manually typing /admin/login).
+  if (!session || !isAdmin(profile)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
         <div className="w-full max-w-md bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg">
@@ -52,16 +65,14 @@ const AdminLogin: React.FC = () => {
               },
             }}
             theme="dark"
-            // Removed redirectTo to prevent full page reloads.
-            // Navigation is now handled by the useEffect above.
           />
         </div>
       </div>
     );
   }
 
-  // If loading is false and session exists and is admin, but useEffect hasn't navigated yet,
-  // return null to avoid rendering anything until the redirect happens.
+  // If loading is false, session exists, and user is admin,
+  // but useEffect hasn't navigated yet, return null to avoid flickering.
   return null;
 };
 
