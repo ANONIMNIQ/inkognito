@@ -119,7 +119,12 @@ const Index: React.FC = () => {
       .channel('public:confessions')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'confessions' }, (payload) => {
         const newConfession = payload.new as Omit<Confession, 'comments' | 'comment_count'>;
-        setConfessions((prev) => [{ ...newConfession, comments: [], comment_count: 0 }, ...prev]);
+        setConfessions((prev) => {
+          if (prev.some(c => c.id === newConfession.id)) {
+            return prev;
+          }
+          return [{ ...newConfession, comments: [], comment_count: 0 }, ...prev];
+        });
         setExpandedConfessionId(newConfession.id);
       })
       .subscribe();
@@ -129,11 +134,58 @@ const Index: React.FC = () => {
   }, []);
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female") => {
-    const { error } = await supabase
+    const { data: newConfessionData, error: insertError } = await supabase
       .from("confessions")
-      .insert({ title, content, gender });
-    if (error) toast.error("Error posting confession: " + error.message);
-    else toast.success("Confession posted successfully!");
+      .insert({ title, content, gender })
+      .select()
+      .single();
+
+    if (insertError) {
+      toast.error("Error posting confession: " + insertError.message);
+      return;
+    }
+
+    toast.success("Confession posted successfully!");
+
+    const newConfessionForState = { ...newConfessionData, comments: [], comment_count: 0 };
+    setConfessions((prev) => [newConfessionForState, ...prev]);
+    setExpandedConfessionId(newConfessionData.id);
+
+    try {
+      toast.info("Generating an AI comment...");
+      const { data: aiCommentData, error: functionError } = await supabase.functions.invoke('generate-ai-comment', {
+        body: { confessionContent: content },
+      });
+
+      if (functionError) throw functionError;
+
+      const { error: commentInsertError } = await supabase
+        .from('comments')
+        .insert({
+          confession_id: newConfessionData.id,
+          content: aiCommentData.content,
+          gender: aiCommentData.gender,
+        });
+
+      if (commentInsertError) {
+        toast.error("Failed to save AI comment: " + commentInsertError.message);
+      } else {
+        const newCommentForState = {
+          ...aiCommentData,
+          confession_id: newConfessionData.id,
+          created_at: aiCommentData.timestamp,
+        };
+        setConfessions(prev => prev.map(conf =>
+          conf.id === newConfessionData.id
+            ? { ...conf, comments: [newCommentForState, ...conf.comments], comment_count: conf.comment_count + 1 }
+            : conf
+        ));
+        toast.success("AI added a comment!");
+      }
+    } catch (error: any) {
+      console.error("Error invoking AI comment function:", error);
+      toast.error("Could not generate an AI comment: " + error.message);
+    }
   };
 
   const handleFetchComments = async (confessionId: string) => {
