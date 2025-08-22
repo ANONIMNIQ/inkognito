@@ -22,7 +22,7 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
       return;
     }
     onSubmit(content, gender);
-    setContent("");
+setContent("");
     setGender("male"); // Reset to default
     toast.success("Your comment has been posted!");
   };
@@ -40,7 +40,15 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
   return (
     <div className="flex items-start space-x-2 mb-2">
       <GenderAvatar gender={gender} className="h-7 w-7 flex-shrink-0 mt-1" />
-      <form onSubmit={handleSubmit} className={cn("flex-1 p-3 rounded-xl shadow-sm space-y-2", bubbleBackgroundColor)}>
+      <form onSubmit={handleSubmit} className={cn("flex-1 p-3 rounded-xl shadow-sm space-y-2 relative", bubbleBackgroundColor)}>
+        <div
+          className={cn(
+            "absolute top-3 -left-2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent",
+            gender === "male"
+              ? "border-r-blue-50 dark:border-r-blue-900"
+              : "border-r-pink-50 dark:border-r-pink-900"
+          )}
+        ></div>
         <div>
           <Textarea
             placeholder="Add your anonymous comment..."
