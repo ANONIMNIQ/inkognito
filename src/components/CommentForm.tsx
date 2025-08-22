@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import GenderAvatar from "./GenderAvatar"; // Import GenderAvatar
-import { cn } from "@/lib/utils"; // Import cn utility
+import GenderAvatar from "./GenderAvatar";
+import { cn } from "@/lib/utils";
 
 interface CommentFormProps {
   onSubmit: (content: string, gender: "male" | "female") => void;
@@ -38,7 +38,7 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
       : "text-pink-800 dark:text-pink-200";
 
   return (
-    <div className="flex items-start space-x-2 mb-2"> {/* Wrapper for the bubble structure */}
+    <div className="flex items-start space-x-2 mb-2">
       <GenderAvatar gender={gender} className="h-7 w-7 flex-shrink-0 mt-1" />
       <form onSubmit={handleSubmit} className={cn("flex-1 p-3 rounded-xl shadow-sm relative space-y-2", bubbleBackgroundColor)}>
         {/* Speech bubble tail */}
@@ -69,17 +69,17 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
             className="flex space-x-4 mt-1"
           >
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="male" id="comment-gender-male" className="sr-only" /> {/* Visually hide radio input */}
+              <RadioGroupItem value="male" id="comment-gender-male" className="sr-only" />
               <Label htmlFor="comment-gender-male" className="flex items-center space-x-1 cursor-pointer">
-                <GenderAvatar gender="male" className={cn("h-6 w-6", gender === "male" && "ring-2 ring-primary ring-offset-2")} />
-                <span className={cn("text-sm", textColor)}>Male</span>
+                <GenderAvatar gender="male" className="h-6 w-6" />
+                <span className={cn("text-sm", gender === "male" ? cn(textColor, "font-bold underline") : "text-gray-500 dark:text-gray-400")}>Male</span>
               </Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="female" id="comment-gender-female" className="sr-only" /> {/* Visually hide radio input */}
+              <RadioGroupItem value="female" id="comment-gender-female" className="sr-only" />
               <Label htmlFor="comment-gender-female" className="flex items-center space-x-1 cursor-pointer">
-                <GenderAvatar gender="female" className={cn("h-6 w-6", gender === "female" && "ring-2 ring-primary ring-offset-2")} />
-                <span className={cn("text-sm", textColor)}>Female</span>
+                <GenderAvatar gender="female" className="h-6 w-6" />
+                <span className={cn("text-sm", gender === "female" ? cn(textColor, "font-bold underline") : "text-gray-500 dark:text-gray-400")}>Female</span>
               </Label>
             </div>
           </RadioGroup>
