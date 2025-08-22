@@ -115,6 +115,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
           onChange={(e) => setTitle(e.target.value)}
           onFocus={handleTitleFocus}
           required
+          maxLength={100}
           className={cn("w-full bg-transparent", generalTextColor, placeholderColor, borderColor)}
         />
 

@@ -150,7 +150,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
       : "bg-gray-100 dark:bg-gray-800";
 
   const textColor = "text-gray-800 dark:text-gray-200";
-  const linkColor = "text-gray-600 dark:text-gray-400";
+  const linkColor = "text-gray-500 dark:text-gray-400";
 
   return (
     <div ref={cardRootRef} className="w-full max-w-2xl mx-auto mb-6 opacity-0 animate-fade-zoom-in" style={{ animationDelay: `${animationDelay}ms` }}>
@@ -192,13 +192,18 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                 <Button
                   variant="link"
                   className={cn(
-                    "p-0 h-auto text-left text-2xl font-semibold hover:no-underline font-serif transition-colors",
+                    "p-0 h-auto text-left text-2xl font-semibold hover:no-underline font-serif transition-colors w-full",
                     isContentOpen
                       ? textColor
                       : [linkColor, "hover:text-gray-800 dark:hover:text-gray-200"]
                   )}
                 >
-                  <TypingText text={confession.title} delay={animationDelay + 300} speed={30} className="block" />
+                  <TypingText
+                    text={confession.title}
+                    delay={animationDelay + 300}
+                    speed={30}
+                    className={cn("block", !isContentOpen && "truncate")}
+                  />
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleTrigger asChild>
