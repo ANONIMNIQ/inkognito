@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -9,12 +9,18 @@ import { toast } from "sonner";
 
 interface ConfessionFormProps {
   onSubmit: (title: string, content: string, gender: "male" | "female") => void;
+  initialTitle?: string; // New prop for initial title
 }
 
-const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit }) => {
-  const [title, setTitle] = useState("");
+const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, initialTitle = "" }) => {
+  const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState("");
   const [gender, setGender] = useState<"male" | "female">("male");
+
+  // Update title state if initialTitle prop changes (e.g., when form expands)
+  useEffect(() => {
+    setTitle(initialTitle);
+  }, [initialTitle]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,18 +29,18 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit }) => {
       return;
     }
     onSubmit(title, content, gender);
-    setTitle("");
+    setTitle(""); // Clear title after submission
     setContent("");
     setGender("male"); // Reset to default
     toast.success("Your confession has been posted!");
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold">Share Your Confession</CardTitle>
+    <Card className="w-full max-w-2xl mx-auto border-none shadow-none"> {/* Removed border and shadow for nested card */}
+      <CardHeader className="p-0 pb-4">
+        <CardTitle className="text-xl font-bold">Complete Your Confession</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="title">Title</Label>
