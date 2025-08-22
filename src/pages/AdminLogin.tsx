@@ -38,48 +38,47 @@ const AdminLogin: React.FC = () => {
     }
   }, [session, profile, loading, navigate]);
 
-  // Determine what content to render based on the current state
-  let content;
-
+  // If still loading, show a loading message
   if (loading) {
-    content = (
+    return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
         <p className="text-gray-700 dark:text-gray-300">Loading authentication...</p>
       </div>
     );
-  } else if (session && isAdmin(profile)) {
-    // If an admin is logged in, and the useEffect has already handled navigation,
-    // we return null here to prevent rendering the login form.
-    content = null;
-  } else {
-    // Otherwise, render the login form for non-admins or unauthenticated users
-    content = (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
-        <div className="w-full max-w-md bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg">
-          <h2 className="text-2xl font-bold text-center mb-6 text-gray-900 dark:text-white">Admin Login</h2>
-          <Auth
-            supabaseClient={supabase}
-            providers={[]}
-            appearance={{
-              theme: ThemeSupa,
-              variables: {
-                default: {
-                  colors: {
-                    brand: 'hsl(var(--primary))',
-                    brandAccent: 'hsl(var(--primary-foreground))',
-                  },
+  }
+
+  // If session exists and user is an admin, and useEffect has already handled navigation,
+  // return null to avoid rendering the login form momentarily.
+  // This case should ideally be handled by the useEffect redirect.
+  if (session && isAdmin(profile)) {
+    return null;
+  }
+
+  // Otherwise (no session, or session but not admin), render the login form
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
+      <div className="w-full max-w-md bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg">
+        <h2 className="text-2xl font-bold text-center mb-6 text-gray-900 dark:text-white">Admin Login</h2>
+        <Auth
+          supabaseClient={supabase}
+          providers={[]}
+          appearance={{
+            theme: ThemeSupa,
+            variables: {
+              default: {
+                colors: {
+                  brand: 'hsl(var(--primary))',
+                  brandAccent: 'hsl(var(--primary-foreground))',
                 },
               },
             }}
-            theme="dark"
-            view="sign_in" {/* Ensures only the sign-in form is shown */}
-          />
-        </div>
+          }
+          theme="dark"
+          view="sign_in" {/* Ensures only the sign-in form is shown */}
+        />
       </div>
-    );
-  }
-
-  return <>{content}</>; // Return the determined content
+    </div>
+  );
 };
 
 export default AdminLogin;
