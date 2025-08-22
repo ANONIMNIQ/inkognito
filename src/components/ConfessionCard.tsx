@@ -42,11 +42,27 @@ const ConfessionCard: React.FC<ConfessionCardProps> = ({
   const cardRef = useRef<HTMLDivElement>(null); // Ref for the entire confession card
   const commentsSectionRef = useRef<HTMLDivElement>(null); // Ref for the comments section
 
-  // Removed the useEffect that scrolled the cardRef when isContentOpen changed.
-  // The browser's default scroll behavior on click is usually sufficient.
+  // Refs to prevent scrolling on initial mount
+  const isInitialMountForContentScroll = useRef(true);
+  const isInitialMountForCommentsScroll = useRef(true);
+
+  // Effect to handle scrolling when main content expands
+  useEffect(() => {
+    if (isInitialMountForContentScroll.current) {
+      isInitialMountForContentScroll.current = false;
+      return; // Skip on initial render
+    }
+    if (isContentOpen && cardRef.current) {
+      cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [isContentOpen]);
 
   // Effect to handle scrolling when comments section expands
   useEffect(() => {
+    if (isInitialMountForCommentsScroll.current) {
+      isInitialMountForCommentsScroll.current = false;
+      return; // Skip on initial render
+    }
     if (isCommentsOpen && commentsSectionRef.current) {
       commentsSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
