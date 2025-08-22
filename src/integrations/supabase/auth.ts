@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
-import { useState, useEffect } from "react";
-import { toast } from "sonner"; // Import toast for user-facing errors
+import { useState, useEffect, useCallback } from "react";
+import { toast } from "sonner";
 
 export type Profile = {
   id: string;
@@ -16,9 +16,9 @@ export const useSession = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Initial state is true
 
-  const fetchUserProfile = async (userId: string) => {
+  const fetchUserProfile = useCallback(async (userId: string) => {
     const { data: profileData, error: profileError } = await supabase
       .from("profiles")
       .select("*")
@@ -34,68 +34,31 @@ export const useSession = () => {
     } else {
       setProfile(null); // No profile found
     }
-  };
+  }, []);
 
   useEffect(() => {
-    const initializeSession = async () => {
-      setLoading(true); // Ensure loading is true at the start
-      try {
-        const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error("Error getting initial session:", sessionError);
-          toast.error("Authentication error: " + sessionError.message);
-          setSession(null);
-          setUser(null);
-          setProfile(null);
-        } else {
-          setSession(initialSession);
-          setUser(initialSession?.user || null);
-          if (initialSession?.user) {
-            await fetchUserProfile(initialSession.user.id);
-          } else {
-            setProfile(null);
-          }
-        }
-      } catch (e) {
-        console.error("Unexpected error during initial session fetch:", e);
-        toast.error("An unexpected authentication error occurred.");
-        setSession(null);
-        setUser(null);
-        setProfile(null);
-      } finally {
-        setLoading(false); // Always set loading to false after initial attempt
-      }
-    };
-
-    initializeSession();
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, currentSession) => {
-        setLoading(true); // Set loading true for state changes
+      async (event, currentSession) => {
+        setLoading(true); // Start loading for any auth state change
         try {
           setSession(currentSession);
           setUser(currentSession?.user || null);
           if (currentSession?.user) {
             await fetchUserProfile(currentSession.user.id);
           } else {
-            setProfile(null); // Clear profile on sign out
+            setProfile(null); // Clear profile on sign out or no user
           }
         } catch (e) {
           console.error("Unexpected error during auth state change:", e);
           toast.error("An unexpected authentication error occurred during state change.");
         } finally {
-          setLoading(false); // Always set loading to false after state change processing
+          setLoading(false); // Always set loading to false after processing
         }
       }
     );
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [fetchUserProfile]); // Add fetchUserProfile to dependencies
 
   return { session, user, profile, loading };
-};
-
-export const isAdmin = (profile: Profile | null): boolean => {
-  return profile?.role === "admin";
 };
