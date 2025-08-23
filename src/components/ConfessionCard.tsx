@@ -55,6 +55,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const [isFetchingComments, setIsFetchingComments] = useState(false);
   const [isStickyHeaderVisible, setIsStickyHeaderVisible] = useState(false);
   const [headerStyle, setHeaderStyle] = useState<React.CSSProperties>({});
+  const [isScrolling, setIsScrolling] = useState(false);
   
   const cardRootRef = useRef<HTMLDivElement>(null);
   const commentsContainerRef = useRef<HTMLDivElement>(null);
@@ -62,6 +63,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const commentsToggleRef = useRef<HTMLButtonElement>(null);
   const prevVisibleCountRef = useRef(COMMENTS_PER_PAGE);
   const autoScrollTimeout = useRef<NodeJS.Timeout | null>(null);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (ref) {
@@ -94,6 +96,32 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     return () => {
       window.removeEventListener('resize', updateHeaderPosition);
       window.removeEventListener('scroll', updateHeaderPosition);
+    };
+  }, [isStickyHeaderVisible]);
+
+  // Effect for scroll detection to hide header while scrolling
+  useEffect(() => {
+    if (!isStickyHeaderVisible) {
+      return;
+    }
+
+    const handleScroll = () => {
+      setIsScrolling(true);
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      scrollTimeoutRef.current = setTimeout(() => {
+        setIsScrolling(false);
+      }, 150);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
     };
   }, [isStickyHeaderVisible]);
 
@@ -138,7 +166,6 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
       return;
     }
 
-    // If opening...
     setIsCommentsOpen(true);
 
     if (!isContentOpen) {
@@ -151,7 +178,6 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
       setIsFetchingComments(false);
     }
 
-    // Use a timeout to allow the collapsible content to render before scrolling
     setTimeout(() => {
       if (autoScrollTimeout.current) {
         clearTimeout(autoScrollTimeout.current);
@@ -159,8 +185,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
 
       commentsToggleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       
-      // After the scroll animation, show the header
-      const scrollAnimationDuration = 800; // A safe duration for smooth scroll
+      const scrollAnimationDuration = 800;
       autoScrollTimeout.current = setTimeout(() => {
         setIsStickyHeaderVisible(true);
       }, scrollAnimationDuration);
@@ -188,19 +213,24 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
 
   return (
     <div ref={cardRootRef} className="w-full max-w-2xl mx-auto mb-6 opacity-0 animate-fade-zoom-in" style={{ animationDelay: `${animationDelay}ms` }}>
-      {isStickyHeaderVisible && createPortal(
+      {createPortal(
         <div
           style={headerStyle}
           className={cn(
             "fixed top-0 z-20 px-4",
             "flex items-center justify-end py-1",
             "pointer-events-none",
-            "animate-slide-fade-in-top"
+            "transition-all duration-300 ease-out",
+            isStickyHeaderVisible && !isScrolling
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 -translate-y-2"
           )}
         >
-          <p className="font-serif text-sm font-semibold truncate text-foreground">
-            {confession.title}
-          </p>
+          <div className="w-2/3 text-right">
+            <p className="font-serif text-sm font-semibold truncate text-foreground inline-block">
+              {confession.title}
+            </p>
+          </div>
         </div>,
         document.body
       )}
