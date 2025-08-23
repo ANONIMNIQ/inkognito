@@ -40,7 +40,7 @@ const Index: React.FC = () => {
   const [expandedConfessionId, setExpandedConfessionId] = useState<string | null>(null);
   const { loading: authLoading } = useSessionContext();
   const [isComposeButtonVisible, setIsComposeButtonVisible] = useState(false);
-  const [forceExpandForm, setForceExpandForm] = useState(false);
+  const [forceExpand, setForceExpand] = useState(false); // Renamed from forceExpandForm
   const [selectedCategory, setSelectedCategory] = useState<string>("Всички"); // New state for selected category
   const confessionFormContainerRef = useRef<HTMLDivElement>(null);
 
@@ -61,7 +61,7 @@ const Index: React.FC = () => {
 
   const handleComposeClick = () => {
     confessionFormContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    setForceExpandForm(true);
+    setForceExpand(true); // Updated setter
     lockScroll(500); // Lock scroll for form expansion and scroll
   };
 
@@ -326,8 +326,8 @@ const Index: React.FC = () => {
         <ConfessionForm
           onSubmit={handleAddConfession}
           onFormFocus={handleFormFocus}
-          forceExpand={forceExpand}
-          onFormExpanded={() => setForceExpandForm(false)}
+          forceExpand={forceExpand} // Now uses the renamed state variable
+          onFormExpanded={() => setForceExpand(false)} // Updated setter
         />
       </div>
 
