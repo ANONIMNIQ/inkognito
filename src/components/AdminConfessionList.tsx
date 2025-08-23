@@ -19,6 +19,7 @@ interface Confession {
   likes: number;
   created_at: string;
   comments: Comment[];
+  author_email?: string; // Added author_email
 }
 
 const AdminConfessionList: React.FC = () => {
@@ -30,7 +31,7 @@ const AdminConfessionList: React.FC = () => {
     try {
       const { data: confessionsData, error: confessionsError } = await supabase
         .from("confessions")
-        .select("*")
+        .select("*") // Selects all columns, including the new author_email
         .order("created_at", { ascending: false });
 
       if (confessionsError) {

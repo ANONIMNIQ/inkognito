@@ -320,6 +320,12 @@ const Index: React.FC = () => {
       );
       setExpandedConfessionId(confessionId);
       toast.success("Comment posted!");
+
+      // Trigger the notification function without waiting for it
+      supabase.functions.invoke('send-comment-notification', {
+        body: { confession_id: confessionId, comment_content: content },
+      }).catch(err => console.error("Error invoking notification function:", err));
+
       setTimeout(() => unlockScroll(), 600);
     }
   };

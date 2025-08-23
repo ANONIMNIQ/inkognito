@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, MessageCircle, Heart, Edit, Trash2, Save, X } from "lucide-react";
+import { ChevronDown, ChevronUp, MessageCircle, Heart, Edit, Trash2, Save, X, Mail } from "lucide-react";
 import GenderAvatar from "./GenderAvatar";
 import CommentCard from "./CommentCard";
 import { formatDistanceToNow } from "date-fns";
@@ -36,6 +36,7 @@ interface Confession {
   likes: number;
   created_at: string;
   comments: Comment[];
+  author_email?: string;
 }
 
 interface AdminConfessionCardProps {
@@ -115,6 +116,12 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
                 <Heart className="h-4 w-4" />
                 <span className="text-sm">{confession.likes}</span>
               </div>
+              {confession.author_email && (
+                <div className={cn("flex items-center space-x-1 p-0 h-auto", linkColor)}>
+                  <Mail className="h-4 w-4" />
+                  <span className="text-sm">{confession.author_email}</span>
+                </div>
+              )}
             </div>
             <div className="flex space-x-2">
               {isEditingConfession ? (
