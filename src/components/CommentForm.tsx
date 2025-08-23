@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import GenderAvatar from "./GenderAvatar";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
 
 interface CommentFormProps {
   onSubmit: (content: string, gender: "male" | "female" | "incognito") => void;
@@ -14,6 +15,19 @@ interface CommentFormProps {
 const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
   const [content, setContent] = useState("");
   const [gender, setGender] = useState<"male" | "female" | "incognito">("incognito");
+  const [captchaNum1, setCaptchaNum1] = useState(0);
+  const [captchaNum2, setCaptchaNum2] = useState(0);
+  const [captchaAnswer, setCaptchaAnswer] = useState("");
+
+  const generateCaptcha = () => {
+    setCaptchaNum1(Math.floor(Math.random() * 10) + 1);
+    setCaptchaNum2(Math.floor(Math.random() * 10) + 1);
+    setCaptchaAnswer("");
+  };
+
+  useEffect(() => {
+    generateCaptcha();
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,9 +35,15 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
       toast.error("Comment content cannot be empty.");
       return;
     }
+    if (parseInt(captchaAnswer, 10) !== captchaNum1 + captchaNum2) {
+      toast.error("Грешен отговор на въпроса. Моля, опитайте отново.");
+      generateCaptcha();
+      return;
+    }
     onSubmit(content, gender);
     setContent("");
     setGender("incognito"); // Reset to default
+    generateCaptcha();
     toast.success("Your comment has been posted!");
   };
 
@@ -34,7 +54,6 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
       ? "bg-pink-50 dark:bg-pink-900"
       : "bg-gray-100 dark:bg-gray-700";
 
-  // Updated to grey/black
   const generalTextColor = "text-gray-800 dark:text-gray-200";
   const placeholderColor = "placeholder:text-gray-500 dark:placeholder:text-gray-400";
   const borderColor = "border-gray-300 dark:border-gray-700";
@@ -108,6 +127,19 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
               </Label>
             </div>
           </RadioGroup>
+        </div>
+        <div>
+          <Label htmlFor="comment-captcha" className={cn("text-xs", generalTextColor)}>
+            Колко е {captchaNum1} + {captchaNum2}?
+          </Label>
+          <Input
+            id="comment-captcha"
+            type="number"
+            value={captchaAnswer}
+            onChange={(e) => setCaptchaAnswer(e.target.value)}
+            required
+            className={cn("mt-1 h-8 bg-transparent", generalTextColor, placeholderColor, borderColor)}
+          />
         </div>
         <div className="flex justify-center pt-1">
           <Button

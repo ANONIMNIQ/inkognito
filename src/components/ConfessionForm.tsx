@@ -21,13 +21,27 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [gender, setGender] = useState<"male" | "female" | "incognito">("incognito");
+  const [captchaNum1, setCaptchaNum1] = useState(0);
+  const [captchaNum2, setCaptchaNum2] = useState(0);
+  const [captchaAnswer, setCaptchaAnswer] = useState("");
   const formRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
+
+  const generateCaptcha = () => {
+    setCaptchaNum1(Math.floor(Math.random() * 10) + 1);
+    setCaptchaNum2(Math.floor(Math.random() * 10) + 1);
+    setCaptchaAnswer("");
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !content.trim()) {
       toast.error("Title and confession content cannot be empty.");
+      return;
+    }
+    if (parseInt(captchaAnswer, 10) !== captchaNum1 + captchaNum2) {
+      toast.error("Грешен отговор на въпроса. Моля, опитайте отново.");
+      generateCaptcha();
       return;
     }
     onSubmit(title, content, gender);
@@ -47,15 +61,12 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // If the form is open and the click is outside the form, close it.
-      // This now happens regardless of whether the form has content.
       if (formRef.current && !formRef.current.contains(event.target as Node)) {
         setOpen(false);
       }
     };
 
     if (open) {
-      // Listen for 'click' events instead of 'mousedown' to allow other elements' click handlers to fire first.
       document.addEventListener("click", handleClickOutside);
     } else {
       document.removeEventListener("click", handleClickOutside);
@@ -64,17 +75,23 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
     return () => {
       document.removeEventListener("click", handleClickOutside);
     };
-  }, [open]); // Dependencies updated as title and content are no longer needed for closing logic
+  }, [open]);
 
   useEffect(() => {
     if (forceExpand) {
       setOpen(true);
       setTimeout(() => {
         titleInputRef.current?.focus();
-      }, 100); 
+      }, 100);
       onFormExpanded();
     }
   }, [forceExpand, onFormExpanded]);
+
+  useEffect(() => {
+    if (open) {
+      generateCaptcha();
+    }
+  }, [open]);
 
   const bubbleBackgroundColor =
     gender === "male"
@@ -180,6 +197,19 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
                     </Label>
                   </div>
                 </RadioGroup>
+              </div>
+              <div>
+                <Label htmlFor="captcha" className={cn("text-sm", generalTextColor)}>
+                  Колко е {captchaNum1} + {captchaNum2}?
+                </Label>
+                <Input
+                  id="captcha"
+                  type="number"
+                  value={captchaAnswer}
+                  onChange={(e) => setCaptchaAnswer(e.target.value)}
+                  required
+                  className={cn("mt-1 bg-transparent", generalTextColor, placeholderColor, borderColor)}
+                />
               </div>
               <div className="flex justify-center pt-2">
                 <Button
