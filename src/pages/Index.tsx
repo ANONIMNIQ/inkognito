@@ -50,6 +50,7 @@ const Index: React.FC = () => {
   const [isComposeButtonVisible, setIsComposeButtonVisible] = useState(false);
   const [forceExpandForm, setForceExpandForm] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("Всички");
+  const [visibleConfessionCount, setVisibleConfessionCount] = useState(0);
 
   const confessionFormContainerRef = useRef<HTMLDivElement>(null);
   const observer = useRef<IntersectionObserver>();
@@ -111,18 +112,15 @@ const Index: React.FC = () => {
     const categoryFromUrl = searchParams.get('category') || "Всички";
     const confessionIsLoaded = confessions.some(c => c.id === paramId);
 
-    // A "context change" requires a full data reload. This happens if:
-    // 1. It's a direct link to a confession that isn't in our current list.
-    // 2. The category filter has changed.
-    // 3. It's the very first time the page is loading (confessions array is empty).
     const isContextChange = (paramId && !confessionIsLoaded) || (!paramId && selectedCategory !== categoryFromUrl) || confessions.length === 0;
 
     if (isContextChange) {
-      setLoading(true); // Set loading here immediately for initial context change
+      setLoading(true);
       setConfessions([]);
       setPage(0);
       setHasMore(true);
       setSelectedCategory(categoryFromUrl);
+      setVisibleConfessionCount(0); // Reset animation chain
 
       if (paramId) {
         fetchConfessions({ initialLoad: true, targetId: paramId, targetSlug: paramSlug });
@@ -131,11 +129,8 @@ const Index: React.FC = () => {
       }
     }
     
-    // This runs on EVERY render triggered by a URL change. It ensures the correct card is expanded
-    // without needing to reload the data if it's already present.
     setExpandedConfessionId(paramId || null);
 
-    // Handle the ?compose=true parameter for opening the form
     if (searchParams.get('compose') === 'true') {
       setForceExpandForm(true);
       setTimeout(() => {
@@ -161,7 +156,7 @@ const Index: React.FC = () => {
 
   useEffect(() => {
     if (page > 0 && !paramId) {
-      setLoadingMore(true); // Set loadingMore here, before fetchConfessions is called
+      setLoadingMore(true);
       fetchConfessions({ initialLoad: false, category: selectedCategory, currentPage: page });
     }
   }, [page, paramId, selectedCategory, fetchConfessions]);
@@ -173,11 +168,33 @@ const Index: React.FC = () => {
       if (el) {
         setTimeout(() => {
           el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          // The ConfessionCard itself will handle scrolling to comments if the hash is present
         }, 300);
       }
     }
   }, [loading, expandedConfessionId, location.hash]);
+
+  // New effect to manage the animation chain
+  useEffect(() => {
+    if (!loading) {
+      if (paramId) {
+        // If it's a direct link, show all loaded confessions immediately without animation chain
+        setVisibleConfessionCount(confessions.length);
+      } else if (confessions.length > 0 && visibleConfessionCount === 0) {
+        // Otherwise, start the animation chain for the first card
+        setVisibleConfessionCount(1);
+      }
+    }
+  }, [loading, paramId, confessions.length, visibleConfessionCount]);
+
+  const handleTitleAnimationComplete = useCallback(() => {
+    setVisibleConfessionCount(prev => {
+      // Only increment if there are more confessions to show
+      if (prev < confessions.length) {
+        return prev + 1;
+      }
+      return prev;
+    });
+  }, [confessions.length]);
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string, slug: string, email?: string) => {
     const { data, error } = await supabase.from("confessions").insert({ title, content, gender, category, slug, author_email: email }).select().single();
@@ -250,19 +267,6 @@ const Index: React.FC = () => {
     setForceExpandForm(true);
   };
 
-  // Determine animation delay for each card
-  const getCardAnimationDelay = useCallback((cardIndex: number) => {
-    // If it's a direct link to a confession, no animation delay for that specific card
-    if (paramId) return 0; 
-    // If it's the initial load (page 0) and not loading more, apply staggered animation
-    if (page === 0 && !loadingMore) {
-      return 50 + (cardIndex * 100); // Reduced base delay for initial load
-    }
-    // For all other cases (paginated items), no animation delay
-    return 0;
-  }, [paramId, page, loadingMore]);
-
-
   return (
     <div className="container mx-auto p-4 max-w-3xl">
       <div className="flex justify-center mb-8 opacity-0 animate-fade-zoom-in">
@@ -283,7 +287,7 @@ const Index: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-6">
-          {confessions.map((conf, index) => (
+          {confessions.slice(0, visibleConfessionCount).map((conf, index) => (
             <ConfessionCard
               ref={!paramId && confessions.length === index + 1 ? lastConfessionElementRef : null}
               key={conf.id}
@@ -294,9 +298,9 @@ const Index: React.FC = () => {
               isContentOpen={conf.id === expandedConfessionId}
               isDirectLinkTarget={conf.id === paramId}
               onToggleExpand={handleConfessionToggle}
-              animationDelay={getCardAnimationDelay(index)}
               onSelectCategory={handleSelectCategory}
               shouldOpenCommentsOnLoad={conf.id === expandedConfessionId && location.hash === '#comments'}
+              onTitleAnimationComplete={handleTitleAnimationComplete}
             />
           ))}
         </div>

@@ -52,9 +52,9 @@ interface ConfessionCardProps {
   isContentOpen: boolean;
   isDirectLinkTarget?: boolean;
   onToggleExpand: (confessionId: string, slug: string) => void;
-  animationDelay?: number;
   onSelectCategory: (category: string) => void;
   shouldOpenCommentsOnLoad?: boolean;
+  onTitleAnimationComplete?: () => void;
 }
 
 const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
@@ -65,9 +65,9 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   isContentOpen,
   isDirectLinkTarget = false,
   onToggleExpand,
-  animationDelay = 0,
   onSelectCategory,
   shouldOpenCommentsOnLoad = false,
+  onTitleAnimationComplete,
 }, ref: Ref<HTMLDivElement>) => {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(COMMENTS_PER_PAGE);
@@ -86,7 +86,10 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
 
   const handleAnimationComplete = useCallback(() => {
     setHasAnimated(true);
-  }, []);
+    if (onTitleAnimationComplete) {
+      onTitleAnimationComplete();
+    }
+  }, [onTitleAnimationComplete]);
 
   useEffect(() => {
     if (ref) {
@@ -215,7 +218,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const linkColor = "text-gray-500 dark:text-gray-400";
 
   return (
-    <div id={confession.id} ref={cardRootRef} className="w-full max-w-2xl mx-auto mb-6 opacity-0 animate-fade-zoom-in" style={{ animationDelay: `${animationDelay}ms` }}>
+    <div id={confession.id} ref={cardRootRef} className="w-full max-w-2xl mx-auto mb-6 opacity-0 animate-fade-zoom-in">
       <div className={cn("flex items-start", isMobile ? "space-x-0" : "space-x-3")}>
         {!isMobile && <GenderAvatar gender={confession.gender} className="h-10 w-10 flex-shrink-0 mt-2" />}
         <div className={cn("flex-1 p-4 rounded-xl shadow-md relative min-w-0", bubbleBackgroundColor, isMobile ? "ml-0" : "")}>
@@ -299,7 +302,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                     <TypingText
                       text={confession.title}
                       delay={50}
-                      speed={60} // Slower speed to make animation noticeable on short titles
+                      speed={40}
                       className={cn("w-full", isContentOpen ? "whitespace-pre-wrap" : "truncate")}
                       onComplete={handleAnimationComplete}
                     />
