@@ -46,42 +46,25 @@ const Index: React.FC = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const [expandedConfessionId, setExpandedConfessionId] = useState<string | null>(paramId || null);
+  const [expandedConfessionId, setExpandedConfessionId] = useState<string | null>(null);
   const [isComposeButtonVisible, setIsComposeButtonVisible] = useState(false);
   const [forceExpandForm, setForceExpandForm] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>("Вsiчки");
+  const [selectedCategory, setSelectedCategory] = useState<string>("Всички");
 
   const confessionFormContainerRef = useRef<HTMLDivElement>(null);
   const observer = useRef<IntersectionObserver>();
   const { lockScroll, unlockScroll } = useScrollLock();
 
-  // Effect to handle scrolling and compose button visibility
-  useEffect(() => {
-    const handleScroll = () => {
-      if (confessionFormContainerRef.current) {
-        const { bottom } = confessionFormContainerRef.current.getBoundingClientRect();
-        setIsComposeButtonVisible(bottom < 0);
-      }
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const handleComposeClick = () => {
-    confessionFormContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    setForceExpandForm(true);
-  };
-
-  // Unified data fetching logic
   const fetchConfessions = useCallback(async (
     { initialLoad = false, category = "Всички", currentPage = 0, targetId, targetSlug }:
     { initialLoad?: boolean; category?: string; currentPage?: number; targetId?: string; targetSlug?: string }
   ) => {
-    setLoading(initialLoad);
-    if (!initialLoad && !targetId) setLoadingMore(true);
+    if (initialLoad) setLoading(true);
+    else setLoadingMore(true);
 
     try {
       let allConfessions: Confession[] = [];
+      let newHasMore = true;
 
       if (targetId) { // Detail View Logic
         const { data: target, error: targetError } = await supabase.from("confessions").select("*, comments(count)").eq("id", targetId).single();
@@ -96,7 +79,7 @@ const Index: React.FC = () => {
         
         const format = (c: any) => ({ ...c, comment_count: c.comments[0]?.count || 0, comments: [] });
         allConfessions = [...(after || []).reverse().map(format), format(target), ...(before || []).map(format)];
-        setHasMore((before || []).length === CONFESSIONS_PER_PAGE);
+        newHasMore = (before || []).length === CONFESSIONS_PER_PAGE;
       } else { // Index View Logic
         const from = currentPage * CONFESSIONS_PER_PAGE;
         const to = from + CONFESSIONS_PER_PAGE - 1;
@@ -106,9 +89,10 @@ const Index: React.FC = () => {
         if (error) throw error;
 
         allConfessions = data.map((c: any) => ({ ...c, comment_count: c.comments[0]?.count || 0, comments: [] }));
-        setHasMore(data.length === CONFESSIONS_PER_PAGE);
+        newHasMore = data.length === CONFESSIONS_PER_PAGE;
       }
 
+      setHasMore(newHasMore);
       setConfessions(prev => initialLoad ? allConfessions : [...prev, ...allConfessions]);
 
     } catch (error: any) {
@@ -120,24 +104,37 @@ const Index: React.FC = () => {
     }
   }, [navigate]);
 
-  // Main effect to trigger data fetching based on URL and filters
+  // This is the main effect that reacts to URL changes
   useEffect(() => {
     if (authLoading) return;
 
-    setExpandedConfessionId(paramId || null);
     const categoryFromUrl = searchParams.get('category') || "Всички";
-    setSelectedCategory(categoryFromUrl);
+    const confessionIsLoaded = confessions.some(c => c.id === paramId);
 
-    setConfessions([]);
-    setPage(0);
-    setHasMore(true);
+    // A "context change" requires a full data reload. This happens if:
+    // 1. It's a direct link to a confession that isn't in our current list.
+    // 2. The category filter has changed.
+    // 3. It's the very first time the page is loading (confessions array is empty).
+    const isContextChange = (paramId && !confessionIsLoaded) || (!paramId && selectedCategory !== categoryFromUrl) || confessions.length === 0;
 
-    if (paramId) {
-      fetchConfessions({ initialLoad: true, targetId: paramId, targetSlug: paramSlug });
-    } else {
-      fetchConfessions({ initialLoad: true, category: categoryFromUrl, currentPage: 0 });
+    if (isContextChange) {
+      setConfessions([]);
+      setPage(0);
+      setHasMore(true);
+      setSelectedCategory(categoryFromUrl);
+
+      if (paramId) {
+        fetchConfessions({ initialLoad: true, targetId: paramId, targetSlug: paramSlug });
+      } else {
+        fetchConfessions({ initialLoad: true, category: categoryFromUrl, currentPage: 0 });
+      }
     }
+    
+    // This runs on EVERY render triggered by a URL change. It ensures the correct card is expanded
+    // without needing to reload the data if it's already present.
+    setExpandedConfessionId(paramId || null);
 
+    // Handle the ?compose=true parameter for opening the form
     if (searchParams.get('compose') === 'true') {
       setForceExpandForm(true);
       setTimeout(() => {
@@ -147,11 +144,11 @@ const Index: React.FC = () => {
         setSearchParams(newSearchParams, { replace: true });
       }, 100);
     }
-  }, [authLoading, paramId, paramSlug, searchParams, fetchConfessions, setSearchParams]);
+  }, [authLoading, paramId, paramSlug, searchParams, fetchConfessions]);
 
   // Effect for infinite scroll on index view
   const lastConfessionElementRef = useCallback(node => {
-    if (loadingMore || paramId) return; // Don't trigger on detail view
+    if (loadingMore || paramId) return;
     if (observer.current) observer.current.disconnect();
     observer.current = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting && hasMore) {
@@ -162,7 +159,7 @@ const Index: React.FC = () => {
   }, [loadingMore, hasMore, paramId]);
 
   useEffect(() => {
-    if (page > 0 && !paramId) { // Only for index view
+    if (page > 0 && !paramId) {
       fetchConfessions({ initialLoad: false, category: selectedCategory, currentPage: page });
     }
   }, [page, paramId, selectedCategory, fetchConfessions]);
@@ -181,7 +178,7 @@ const Index: React.FC = () => {
         }, 300);
       }
     }
-  }, [loading, expandedConfessionId, confessions, location.hash]);
+  }, [loading, expandedConfessionId, location.hash]);
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string, slug: string, email?: string) => {
     const { data, error } = await supabase.from("confessions").insert({ title, content, gender, category, slug, author_email: email }).select().single();
@@ -224,17 +221,34 @@ const Index: React.FC = () => {
 
   const handleConfessionToggle = (confessionId: string, slug: string) => {
     if (expandedConfessionId === confessionId) {
-      setExpandedConfessionId(null);
-      navigate('/'); // Go back to index if collapsing the currently viewed confession
+      navigate('/');
     } else {
-      setExpandedConfessionId(confessionId);
       navigate(`/confessions/${confessionId}/${slug}`);
     }
   };
 
   const handleSelectCategory = (category: string) => {
-    setSelectedCategory(category);
-    navigate(`/?category=${category}`);
+    if (category === "Всички") {
+      navigate('/');
+    } else {
+      navigate(`/?category=${category}`);
+    }
+  };
+  
+  useEffect(() => {
+    const handleScroll = () => {
+      if (confessionFormContainerRef.current) {
+        const { bottom } = confessionFormContainerRef.current.getBoundingClientRect();
+        setIsComposeButtonVisible(bottom < 0);
+      }
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const handleComposeClick = () => {
+    confessionFormContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setForceExpandForm(true);
   };
 
   return (
