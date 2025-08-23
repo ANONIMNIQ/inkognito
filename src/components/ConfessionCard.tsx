@@ -13,6 +13,8 @@ import CommentCardSkeleton from "./CommentCardSkeleton";
 import { useScrollLock } from "@/hooks/use-scroll-lock";
 import { useIsMobile } from "@/hooks/use-mobile";
 
+const COMMENTS_PER_PAGE = 5; // Define the constant here
+
 interface Comment {
   id: string;
   content: string;
