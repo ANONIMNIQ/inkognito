@@ -72,34 +72,29 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   }, [ref]);
 
   useEffect(() => {
-    const commentsToggleElement = commentsToggleRef.current;
-    const cardElement = cardRootRef.current;
+    const handleScroll = () => {
+      const commentsToggleElement = commentsToggleRef.current;
+      const cardElement = cardRootRef.current;
 
-    if (!isCommentsOpen || !commentsToggleElement || !cardElement) {
-      setIsStickyHeaderVisible(false);
-      return;
-    }
+      if (!isCommentsOpen || !commentsToggleElement || !cardElement) {
+        setIsStickyHeaderVisible(false);
+        return;
+      }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const toggleEntry = entries.find((e) => e.target === commentsToggleElement);
-        const cardEntry = entries.find((e) => e.target === cardElement);
+      const toggleRect = commentsToggleElement.getBoundingClientRect();
+      const cardRect = cardElement.getBoundingClientRect();
 
-        if (toggleEntry && cardEntry) {
-          const isToggleScrolledPast = !toggleEntry.isIntersecting && toggleEntry.boundingClientRect.top < 0;
-          const isCardStillInView = cardEntry.isIntersecting;
-          const isCardScrolledCompletelyPast = cardEntry.boundingClientRect.bottom <= 0;
+      const shouldBeVisible = toggleRect.top < 0 && cardRect.bottom > 0;
+      
+      setIsStickyHeaderVisible(shouldBeVisible);
+    };
 
-          setIsStickyHeaderVisible(isToggleScrolledPast && isCardStillInView && !isCardScrolledCompletelyPast);
-        }
-      },
-      { threshold: [0, 1] }
-    );
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Initial check
 
-    observer.observe(commentsToggleElement);
-    observer.observe(cardElement);
-
-    return () => observer.disconnect();
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, [isCommentsOpen]);
 
   useEffect(() => {
