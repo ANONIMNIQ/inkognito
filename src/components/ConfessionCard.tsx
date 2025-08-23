@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, forwardRef, Ref } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, MessageCircle, Heart, Share2 } from "lucide-react"; // Added Share2 icon
+import { ChevronDown, ChevronUp, MessageCircle, Heart, Share2 } from "lucide-react";
 import GenderAvatar from "./GenderAvatar";
 import CommentCard from "./CommentCard";
 import CommentForm from "./CommentForm";
@@ -12,10 +12,16 @@ import TypingText from "./TypingText";
 import CommentCardSkeleton from "./CommentCardSkeleton";
 import { useScrollLock } from "@/hooks/use-scroll-lock";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Link, useNavigate } from "react-router-dom"; // Import Link and useNavigate
-import { toast } from "sonner"; // Import toast for copy feedback
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-const COMMENTS_PER_PAGE = 5; // Define the constant here
+const COMMENTS_PER_PAGE = 5;
 
 interface Comment {
   id: string;
@@ -35,7 +41,7 @@ interface Confession {
   likes: number;
   comment_count: number;
   category: string;
-  slug: string; // Added slug
+  slug: string;
 }
 
 interface ConfessionCardProps {
@@ -43,8 +49,9 @@ interface ConfessionCardProps {
   onAddComment: (confessionId: string, content: string, gender: "male" | "female" | "incognito") => void;
   onLikeConfession: (confessionId: string) => void;
   onFetchComments: (confessionId: string) => Promise<void>;
-  isContentOpen: boolean; // This prop now dictates if content is open, controlled by parent
-  onToggleExpand: (confessionId: string, slug: string) => void; // Updated signature
+  isContentOpen: boolean;
+  isDirectLinkTarget?: boolean;
+  onToggleExpand: (confessionId: string, slug: string) => void;
   animationDelay?: number;
   onSelectCategory: (category: string) => void;
 }
@@ -54,8 +61,9 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   onAddComment,
   onLikeConfession,
   onFetchComments,
-  isContentOpen, // Controlled by parent
-  onToggleExpand, // Now handles navigation or local toggle
+  isContentOpen,
+  isDirectLinkTarget = false,
+  onToggleExpand,
   animationDelay = 0,
   onSelectCategory,
 }, ref: Ref<HTMLDivElement>) => {
@@ -68,7 +76,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const commentsListRef = useRef<HTMLDivElement>(null);
   const commentsToggleRef = useRef<HTMLButtonElement>(null);
   const prevVisibleCountRef = useRef(COMMENTS_PER_PAGE);
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
 
   const isMobile = useIsMobile();
 
@@ -82,16 +90,14 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     }
   }, [ref]);
 
-  // Scroll to top of the card when content is opened (controlled by parent)
   useEffect(() => {
     if (isContentOpen) {
       setTimeout(() => {
         cardRootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 300); // Allow animation to start before scrolling
+      }, 300);
     }
   }, [isContentOpen]);
 
-  // Reset comments open state if content is closed by parent
   useEffect(() => {
     if (!isContentOpen) {
       setIsCommentsOpen(false);
@@ -116,19 +122,17 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const handleAddCommentLocal = (content: string, gender: "male" | "female" | "incognito") => {
     onAddComment(confession.id, content, gender);
     if (!isCommentsOpen) {
-      handleToggleCommentsLocal(); // Ensure comments open if not already
+      handleToggleCommentsLocal();
     }
   };
 
   const handleToggleCommentsLocal = async () => {
     const willBeOpen = !isCommentsOpen;
-
     setIsCommentsOpen(willBeOpen);
 
     if (willBeOpen) {
-      // If comments are opening, and content is not already open, expand content first
       if (!isContentOpen) {
-        onToggleExpand(confession.id, confession.slug); // This will trigger parent to open content
+        onToggleExpand(confession.id, confession.slug);
       }
 
       if (confession.comments.length === 0 && confession.comment_count > 0) {
@@ -139,11 +143,11 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
 
       setTimeout(() => {
         commentsToggleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 600); // Allow animation to start before scrolling
+      }, 600);
     } else {
       setTimeout(() => {
         cardRootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 250); // Allow animation to start before scrolling
+      }, 250);
     }
   };
 
@@ -210,7 +214,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
             <Button
               variant="link"
               className="flex items-center p-0 h-auto text-gray-400 hover:text-black dark:text-gray-500 dark:hover:text-white transition-colors hover:no-underline"
-              onClick={handleToggleCommentsLocal} // Use local toggle for comments
+              onClick={handleToggleCommentsLocal}
             >
               <MessageCircle className="h-3.5 w-3.5" />
               <span className="text-xs font-medium ml-1">{confession.comment_count}</span>
@@ -223,15 +227,26 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
               <Heart className="h-3.5 w-3.5" />
               <span className="text-xs font-medium ml-1">{confession.likes}</span>
             </Button>
-            <Button
-              variant="link"
-              className="flex items-center p-0 h-auto text-gray-400 hover:text-black dark:text-gray-500 dark:hover:text-white transition-colors hover:no-underline"
-              onClick={handleShareConfession}
-              aria-label="Share confession"
-            >
-              <Share2 className="h-3.5 w-3.5" />
-              <span className="text-xs font-medium ml-1">Share</span>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="link"
+                  className="flex items-center p-0 h-auto text-gray-400 hover:text-black dark:text-gray-500 dark:hover:text-white transition-colors hover:no-underline"
+                  aria-label="Share"
+                >
+                  <Share2 className="h-3.5 w-3.5" />
+                  <span className="text-xs font-medium ml-1">Share</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleShareConfession}>
+                  Copy Confession Link
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleShareComments}>
+                  Copy Comments Link
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           <Collapsible open={isContentOpen} onOpenChange={() => onToggleExpand(confession.id, confession.slug)}>
@@ -240,21 +255,24 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                 <Link
                   to={`/confessions/${confession.id}/${confession.slug}`}
                   className={cn(
-                    "p-0 h-auto text-left text-lg md:text-2xl font-semibold hover:no-underline font-serif transition-colors justify-start min-w-0 flex-1", // Smaller title on mobile, larger on desktop
+                    "p-0 h-auto text-left text-lg md:text-2xl font-semibold hover:no-underline font-serif transition-colors justify-start min-w-0 flex-1",
                     isContentOpen
                       ? textColor
                       : [linkColor, "hover:text-gray-800 dark:hover:text-gray-200"]
                   )}
                 >
-                  <TypingText
-                    text={confession.title}
-                    delay={animationDelay + 300}
-                    speed={30}
-                    className={cn(
-                      "w-full",
-                      isContentOpen ? "whitespace-pre-wrap" : "truncate"
-                    )}
-                  />
+                  {isDirectLinkTarget ? (
+                    <span className={cn("w-full", isContentOpen ? "whitespace-pre-wrap" : "truncate")}>
+                      {confession.title}
+                    </span>
+                  ) : (
+                    <TypingText
+                      text={confession.title}
+                      delay={animationDelay + 300}
+                      speed={30}
+                      className={cn("w-full", isContentOpen ? "whitespace-pre-wrap" : "truncate")}
+                    />
+                  )}
                 </Link>
               </CollapsibleTrigger>
               <CollapsibleTrigger asChild>
@@ -265,7 +283,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
               </CollapsibleTrigger>
             </div>
             <CollapsibleContent className="space-y-4 pt-2">
-              <p className={cn("whitespace-pre-wrap font-serif text-lg md:text-xl", textColor)}>{confession.content}</p> {/* Base text on mobile, larger on desktop */}
+              <p className={cn("whitespace-pre-wrap font-serif text-lg md:text-xl", textColor)}>{confession.content}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
                 Публикувано на {format(confession.timestamp, "dd MMMM yyyy 'г.'", { locale: bg })}
               </p>
@@ -277,23 +295,12 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
       {isContentOpen && (
         <div id={`comments-section-${confession.id}`} className={cn("mt-4", isMobile ? "ml-0" : "ml-14")}>
           <Collapsible open={isCommentsOpen}>
-            <div className="flex justify-between items-center min-w-0">
-              <CollapsibleTrigger asChild>
-                <Button ref={commentsToggleRef} variant="link" className={cn("justify-start p-0 h-auto flex-shrink-0", linkColor)} onClick={handleToggleCommentsLocal}>
-                  {isCommentsOpen ? "Скрий коментарите" : "Покажи коментарите"} ({confession.comment_count})
-                  {isCommentsOpen ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
-                </Button>
-              </CollapsibleTrigger>
-              <Button
-                variant="link"
-                className="flex items-center p-0 h-auto text-gray-400 hover:text-black dark:text-gray-500 dark:hover:text-white transition-colors hover:no-underline ml-2"
-                onClick={handleShareComments}
-                aria-label="Share comments section"
-              >
-                <Share2 className="h-3.5 w-3.5" />
-                <span className="text-xs font-medium ml-1">Share Comments</span>
+            <CollapsibleTrigger asChild>
+              <Button ref={commentsToggleRef} variant="link" className={cn("justify-start p-0 h-auto", linkColor)} onClick={handleToggleCommentsLocal}>
+                {isCommentsOpen ? "Скрий коментарите" : "Покажи коментарите"} ({confession.comment_count})
+                {isCommentsOpen ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
               </Button>
-            </div>
+            </CollapsibleTrigger>
             <CollapsibleContent className="space-y-3 pt-2">
               {isFetchingComments ? (
                 <>

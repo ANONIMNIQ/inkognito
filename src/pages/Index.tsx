@@ -280,6 +280,7 @@ const Index: React.FC = () => {
               onLikeConfession={handleLikeConfession}
               onFetchComments={handleFetchComments}
               isContentOpen={conf.id === expandedConfessionId}
+              isDirectLinkTarget={conf.id === paramId}
               onToggleExpand={handleConfessionToggle}
               animationDelay={200 + (index * 100)}
               onSelectCategory={handleSelectCategory}
