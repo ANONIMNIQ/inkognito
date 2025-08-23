@@ -54,7 +54,6 @@ interface ConfessionCardProps {
   onToggleExpand: (confessionId: string, slug: string) => void;
   onSelectCategory: (category: string) => void;
   shouldOpenCommentsOnLoad?: boolean;
-  onTitleAnimationComplete?: () => void;
 }
 
 const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
@@ -67,13 +66,11 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   onToggleExpand,
   onSelectCategory,
   shouldOpenCommentsOnLoad = false,
-  onTitleAnimationComplete,
 }, ref: Ref<HTMLDivElement>) => {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(COMMENTS_PER_PAGE);
   const [isLoadingMoreComments, setIsLoadingMoreComments] = useState(false);
   const [isFetchingComments, setIsFetchingComments] = useState(false);
-  const [hasAnimated, setHasAnimated] = useState(false);
   
   const cardRootRef = useRef<HTMLDivElement>(null);
   const commentsListRef = useRef<HTMLDivElement>(null);
@@ -83,13 +80,6 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const location = useLocation();
 
   const isMobile = useIsMobile();
-
-  const handleAnimationComplete = useCallback(() => {
-    setHasAnimated(true);
-    if (onTitleAnimationComplete) {
-      onTitleAnimationComplete();
-    }
-  }, [onTitleAnimationComplete]);
 
   useEffect(() => {
     if (ref) {
@@ -294,20 +284,9 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                       : [linkColor, "hover:text-gray-800 dark:hover:text-gray-200"]
                   )}
                 >
-                  {isDirectLinkTarget || hasAnimated ? (
-                    <span className={cn("block w-full", isContentOpen ? "whitespace-pre-wrap" : "truncate")}>
-                      {confession.title}
-                    </span>
-                  ) : (
-                    <TypingText
-                      text={confession.title}
-                      delay={50}
-                      speed={20}
-                      className={cn("w-full", isContentOpen ? "whitespace-pre-wrap" : "truncate")}
-                      onComplete={handleAnimationComplete}
-                      maxAnimateLength={60}
-                    />
-                  )}
+                  <span className={cn("block w-full", isContentOpen ? "whitespace-pre-wrap" : "truncate")}>
+                    {confession.title}
+                  </span>
                 </Link>
               </CollapsibleTrigger>
               <CollapsibleTrigger asChild>
@@ -338,9 +317,12 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                 </Button>
               </CollapsibleTrigger>
               {isCommentsOpen && (
-                <p className="font-serif text-sm font-semibold text-gray-500 dark:text-gray-400 truncate ml-4 flex-shrink min-w-0">
-                  "{confession.title}"
-                </p>
+                <TypingText
+                  text={`"${confession.title}"`}
+                  speed={30}
+                  className="font-serif text-sm font-semibold text-gray-500 dark:text-gray-400 truncate ml-4 flex-shrink min-w-0"
+                  maxAnimateLength={50}
+                />
               )}
             </div>
             <CollapsibleContent className="space-y-3 pt-2">

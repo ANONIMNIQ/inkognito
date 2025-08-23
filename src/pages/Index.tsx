@@ -50,7 +50,6 @@ const Index: React.FC = () => {
   const [isComposeButtonVisible, setIsComposeButtonVisible] = useState(false);
   const [forceExpandForm, setForceExpandForm] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("Всички");
-  const [visibleConfessionCount, setVisibleConfessionCount] = useState(0);
 
   const confessionFormContainerRef = useRef<HTMLDivElement>(null);
   const observer = useRef<IntersectionObserver>();
@@ -120,7 +119,6 @@ const Index: React.FC = () => {
       setPage(0);
       setHasMore(true);
       setSelectedCategory(categoryFromUrl);
-      setVisibleConfessionCount(0); // Reset animation chain
 
       if (paramId) {
         fetchConfessions({ initialLoad: true, targetId: paramId, targetSlug: paramSlug });
@@ -172,29 +170,6 @@ const Index: React.FC = () => {
       }
     }
   }, [loading, expandedConfessionId, location.hash]);
-
-  // Effect to manage the animation chain
-  useEffect(() => {
-    if (!loading) {
-      if (paramId) {
-        // If it's a direct link, show all loaded confessions immediately without animation chain
-        setVisibleConfessionCount(confessions.length);
-      } else if (confessions.length > 0 && visibleConfessionCount === 0) {
-        // Otherwise, start the animation chain for the first card
-        setVisibleConfessionCount(1);
-      }
-    }
-  }, [loading, paramId, confessions.length, visibleConfessionCount]);
-
-  const handleTitleAnimationComplete = useCallback(() => {
-    setVisibleConfessionCount(prev => {
-      // Only increment if there are more confessions to show
-      if (prev < confessions.length) {
-        return prev + 1;
-      }
-      return prev;
-    });
-  }, [confessions.length]);
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string, slug: string, email?: string) => {
     const { data, error } = await supabase.from("confessions").insert({ title, content, gender, category, slug, author_email: email }).select().single();
@@ -287,7 +262,7 @@ const Index: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-6">
-          {confessions.slice(0, visibleConfessionCount).map((conf, index) => (
+          {confessions.map((conf) => (
             <ConfessionCard
               key={conf.id}
               confession={{ ...conf, timestamp: new Date(conf.created_at), comments: conf.comments.map(c => ({ ...c, timestamp: new Date(c.created_at) })) }}
@@ -299,7 +274,6 @@ const Index: React.FC = () => {
               onToggleExpand={handleConfessionToggle}
               onSelectCategory={handleSelectCategory}
               shouldOpenCommentsOnLoad={conf.id === expandedConfessionId && location.hash === '#comments'}
-              onTitleAnimationComplete={handleTitleAnimationComplete}
             />
           ))}
         </div>
