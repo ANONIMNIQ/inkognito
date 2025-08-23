@@ -72,30 +72,20 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   }, [ref]);
 
   useEffect(() => {
-    const handleScroll = () => {
-      const commentsToggleElement = commentsToggleRef.current;
-      const cardElement = cardRootRef.current;
-
-      if (!isCommentsOpen || !commentsToggleElement || !cardElement) {
+    const handleScrollToHide = () => {
+      if (isStickyHeaderVisible) {
         setIsStickyHeaderVisible(false);
-        return;
       }
-
-      const toggleRect = commentsToggleElement.getBoundingClientRect();
-      const cardRect = cardElement.getBoundingClientRect();
-
-      const shouldBeVisible = toggleRect.top < 0 && cardRect.bottom > 0;
-      
-      setIsStickyHeaderVisible(shouldBeVisible);
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll(); // Initial check
+    if (isCommentsOpen && isStickyHeaderVisible) {
+      window.addEventListener('scroll', handleScrollToHide, { once: true });
+    }
 
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('scroll', handleScrollToHide);
     };
-  }, [isCommentsOpen]);
+  }, [isCommentsOpen, isStickyHeaderVisible]);
 
   useEffect(() => {
     if (isInitialMount.current) {
@@ -148,6 +138,12 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
 
   const handleToggleComments = async () => {
     const willBeOpen = !isCommentsOpen;
+
+    if (willBeOpen) {
+      setIsStickyHeaderVisible(true);
+    } else {
+      setIsStickyHeaderVisible(false);
+    }
 
     if (willBeOpen && !isContentOpen) {
       onToggleExpand(confession.id);
