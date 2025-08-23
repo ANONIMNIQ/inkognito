@@ -203,12 +203,12 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
           ></div>
           
           <div className={cn(
-            "sticky top-0 z-10 flex items-center justify-between p-2 -mx-4 -mt-4 mb-2 rounded-t-xl",
+            "sticky top-0 z-10 flex items-center justify-between -mx-4 -mt-4 rounded-t-xl",
             "bg-opacity-80 backdrop-blur-sm transition-all duration-300",
             bubbleBackgroundColor,
             isStickyHeaderVisible
-              ? "opacity-100 animate-slide-fade-in-top"
-              : "opacity-0 pointer-events-none"
+              ? "p-2 mb-2 opacity-100 animate-slide-fade-in-top"
+              : "h-0 opacity-0 pointer-events-none"
           )}>
             <Button variant="link" className={cn("p-0 h-auto text-sm", linkColor)} onClick={handleToggleComments}>
               Скрий коментарите
