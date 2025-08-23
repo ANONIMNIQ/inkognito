@@ -60,6 +60,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const commentsToggleRef = useRef<HTMLButtonElement>(null);
   const prevVisibleCountRef = useRef(COMMENTS_PER_PAGE);
   const isAutoScrolling = useRef(false);
+  const autoScrollTimeout = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (ref) {
@@ -95,41 +96,21 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     };
   }, [isStickyHeaderVisible]);
 
-  // Effect for auto-scrolling and showing the header
+  // Effect for hiding the header on MANUAL user scroll
   useEffect(() => {
-    if (isCommentsOpen) {
-      isAutoScrolling.current = true;
-      const scrollTimeout = setTimeout(() => {
-        commentsToggleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
-
-      const showHeaderTimeout = setTimeout(() => {
-        setIsStickyHeaderVisible(true);
-        // After the scroll is definitely over, reset the flag
-        isAutoScrolling.current = false;
-      }, 700); // 100ms delay + 600ms scroll animation
-
-      return () => {
-        clearTimeout(scrollTimeout);
-        clearTimeout(showHeaderTimeout);
-      };
-    }
-  }, [isCommentsOpen]);
-
-  // Effect for hiding the header on user scroll
-  useEffect(() => {
-    const handleScrollToHide = () => {
-      if (!isAutoScrolling.current) {
-        setIsStickyHeaderVisible(false);
+    const handleManualScroll = () => {
+      if (isAutoScrolling.current) {
+        return; // Ignore scroll events during auto-scroll
       }
+      setIsStickyHeaderVisible(false); // Hide on first manual scroll
     };
 
     if (isStickyHeaderVisible) {
-      window.addEventListener('scroll', handleScrollToHide, { once: true });
+      window.addEventListener('scroll', handleManualScroll, { once: true });
     }
 
     return () => {
-      window.removeEventListener('scroll', handleScrollToHide);
+      window.removeEventListener('scroll', handleManualScroll);
     };
   }, [isStickyHeaderVisible]);
 
@@ -157,28 +138,48 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const handleAddComment = (content: string, gender: "male" | "female" | "incognito") => {
     onAddComment(confession.id, content, gender);
     if (!isCommentsOpen) {
-      setIsCommentsOpen(true);
+      handleToggleComments();
     }
   };
 
   const handleToggleComments = async () => {
     const willBeOpen = !isCommentsOpen;
 
-    if (willBeOpen && !isContentOpen) {
+    if (!willBeOpen) {
+      setIsCommentsOpen(false);
+      setIsStickyHeaderVisible(false);
+      return;
+    }
+
+    // If opening...
+    setIsCommentsOpen(true);
+
+    if (!isContentOpen) {
       onToggleExpand(confession.id);
     }
 
-    if (willBeOpen && confession.comments.length === 0 && confession.comment_count > 0) {
+    if (confession.comments.length === 0 && confession.comment_count > 0) {
       setIsFetchingComments(true);
       await onFetchComments(confession.id);
       setIsFetchingComments(false);
     }
 
-    setIsCommentsOpen(willBeOpen);
+    // Use a timeout to allow the collapsible content to render before scrolling
+    setTimeout(() => {
+      if (autoScrollTimeout.current) {
+        clearTimeout(autoScrollTimeout.current);
+      }
 
-    if (!willBeOpen) {
-      setIsStickyHeaderVisible(false);
-    }
+      isAutoScrolling.current = true;
+      commentsToggleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      
+      // After the scroll animation, show the header and allow manual scroll to hide it
+      const scrollAnimationDuration = 800; // A safe duration for smooth scroll
+      autoScrollTimeout.current = setTimeout(() => {
+        setIsStickyHeaderVisible(true);
+        isAutoScrolling.current = false;
+      }, scrollAnimationDuration);
+    }, 100);
   };
 
   const handleLoadMoreComments = () => {
