@@ -128,6 +128,7 @@ const Index: React.FC = () => {
     if (!authLoading) {
       setPage(0); // Reset page when category changes
       setConfessions([]); // Clear confessions when category changes
+      setHasMore(true); // Explicitly reset hasMore for the new category
       fetchConfessions(0, true, selectedCategory);
     }
   }, [authLoading, fetchConfessions, selectedCategory]); // Re-fetch when selectedCategory changes
