@@ -266,7 +266,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                         className={linkColor}
                         onClick={handleLoadMoreComments}
                       >
-                        Load More Comments
+                        Покажи по-стари коментари
                       </Button>
                     </div>
                   )}
