@@ -81,8 +81,15 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     }
   }, [ref]);
 
-  // Removed the useEffect block that was locking/unlocking scroll based on isContentOpen
-  // as it was causing the mobile scroll issues.
+  // Re-adding scrollIntoView for content expansion
+  useEffect(() => {
+    if (isContentOpen) {
+      setTimeout(() => {
+        cardRootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300); // Allow animation to start before scrolling
+    }
+  }, [isContentOpen]);
+
   useEffect(() => {
     if (!isContentOpen) {
       setIsCommentsOpen(false);
@@ -114,7 +121,6 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const handleToggleComments = async () => {
     const willBeOpen = !isCommentsOpen;
 
-    // Removed lockScroll/unlockScroll from here
     setIsCommentsOpen(willBeOpen);
 
     if (willBeOpen) {
@@ -130,22 +136,20 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
 
       setTimeout(() => {
         commentsToggleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 600);
+      }, 600); // Allow animation to start before scrolling
     } else {
       setTimeout(() => {
         cardRootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 250);
+      }, 250); // Allow animation to start before scrolling
     }
   };
 
   const handleLoadMoreComments = () => {
     prevVisibleCountRef.current = visibleCommentsCount;
     setIsLoadingMoreComments(true);
-    // Removed lockScroll from here
     setTimeout(() => {
       setVisibleCommentsCount(prev => prev + COMMENTS_PER_PAGE);
       setIsLoadingMoreComments(false);
-      // Removed unlockScroll from here
     }, 500);
   };
 
