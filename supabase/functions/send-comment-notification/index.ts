@@ -64,15 +64,15 @@ serve(async (req) => {
             ${comment_content}
           </blockquote>
           <p>Можете да видите всички коментари, като посетите сайта.</p>
-          <p>Поздрави,<br/>Екипът на Анонимни Изповеди</p>
+          <p>Поздрави,<br/>Екипът на Инкогнито Online</p>
         </body>
       </html>
     `;
 
     const emailPayload = {
-      from: 'noreply@inkognito.online', // Updated to your specified domain
+      from: 'noreply@inkognito.online',
       to: confession.author_email,
-      subject: `Нов коментар на вашата изпоved: "${confession.title}"`,
+      subject: `Нов коментар на вашата изповед: "${confession.title}"`,
       html: emailHtml,
     };
     console.log("Sending email with payload:", emailPayload);
