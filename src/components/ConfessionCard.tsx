@@ -152,10 +152,10 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
 
     onToggleExpand(toggledConfessionId); // Update parent state, which will trigger Collapsible animation
 
-    // Unlock scroll after animation duration (0.6s for accordion + a small buffer)
+    // Unlock scroll after animation duration (0.7s for accordion-up + a small buffer)
     setTimeout(() => {
       setScrollLocked(false);
-    }, 650); 
+    }, 750); 
   };
 
   const bubbleBackgroundColor =
