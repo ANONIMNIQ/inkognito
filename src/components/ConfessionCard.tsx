@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, forwardRef } from "react";
+import React, { useState, useEffect, useRef, forwardRef, Ref } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, MessageCircle, Heart } from "lucide-react";
@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import TypingText from "./TypingText";
 import CommentCardSkeleton from "./CommentCardSkeleton";
 import { useScrollLock } from "@/hooks/use-scroll-lock";
-import { useIsMobile } from "@/hooks/use-mobile"; // Import useIsMobile
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Comment {
   id: string;
@@ -54,7 +54,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   onToggleExpand,
   animationDelay = 0,
   onSelectCategory,
-}, ref) => {
+}, ref: Ref<HTMLDivElement>) => {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(COMMENTS_PER_PAGE);
   const [isLoadingMoreComments, setIsLoadingMoreComments] = useState(false);
@@ -67,14 +67,14 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const prevIsContentOpen = useRef(isContentOpen);
 
   const { lockScroll, unlockScroll } = useScrollLock();
-  const isMobile = useIsMobile(); // Use the hook
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (ref) {
       if (typeof ref === 'function') {
         ref(cardRootRef.current);
-      } else {
-        ref.current = cardRootRef.current;
+      } else if (cardRootRef.current) {
+        (ref as React.MutableRefObject<HTMLDivElement>).current = cardRootRef.current;
       }
     }
   }, [ref]);
@@ -186,7 +186,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
           <div
             className={cn(
               "absolute top-3 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent",
-              isMobile ? "left-2" : "-left-2", // Adjust arrow position for mobile
+              isMobile ? "left-2" : "-left-2",
               confession.gender === "male"
                 ? "border-r-blue-100 dark:border-r-blue-950"
                 : confession.gender === "female"
@@ -229,7 +229,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                 <Button
                   variant="link"
                   className={cn(
-                    "p-0 h-auto text-left text-xl md:text-2xl font-semibold hover:no-underline font-serif transition-colors justify-start min-w-0 flex-1", // Smaller title on mobile
+                    "p-0 h-auto text-left text-lg md:text-2xl font-semibold hover:no-underline font-serif transition-colors justify-start min-w-0 flex-1", // Smaller title on mobile, larger on desktop
                     isContentOpen
                       ? textColor
                       : [linkColor, "hover:text-gray-800 dark:hover:text-gray-200"]
@@ -254,7 +254,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
               </CollapsibleTrigger>
             </div>
             <CollapsibleContent className="space-y-4 pt-2">
-              <p className={cn("whitespace-pre-wrap font-serif text-base", textColor)}>{confession.content}</p> {/* Content text size remains base */}
+              <p className={cn("whitespace-pre-wrap font-serif text-base md:text-lg", textColor)}>{confession.content}</p> {/* Base text on mobile, larger on desktop */}
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
                 Публикувано на {format(confession.timestamp, "dd MMMM yyyy 'г.'", { locale: bg })}
               </p>
@@ -264,7 +264,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
       </div>
 
       {isContentOpen && (
-        <div className={cn("mt-4", isMobile ? "ml-0" : "ml-14")}> {/* Adjust margin for mobile */}
+        <div className={cn("mt-4", isMobile ? "ml-0" : "ml-14")}>
           <Collapsible open={isCommentsOpen}>
             <div className="flex justify-between items-center min-w-0">
               <CollapsibleTrigger asChild>
@@ -291,11 +291,11 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
               ) : (
                 <>
                   <div className="opacity-0 animate-fade-zoom-in" style={{ animationDelay: '0ms' }}>
-                    <CommentForm onSubmit={handleAddComment} hideAvatarOnMobile={true} /> {/* Pass prop to hide avatar */}
+                    <CommentForm onSubmit={handleAddComment} hideAvatarOnMobile={true} />
                   </div>
                   <div ref={commentsListRef} className="space-y-3">
                     {confession.comments.slice(0, visibleCommentsCount).map((comment, index) => (
-                      <CommentCard key={comment.id} comment={comment} animationDelay={(index + 1) * 100} hideAvatarOnMobile={true} /> {/* Pass prop to hide avatar */}
+                      <CommentCard key={comment.id} comment={comment} animationDelay={(index + 1) * 100} hideAvatarOnMobile={true} />
                     ))}
                   </div>
                   {isLoadingMoreComments && (
