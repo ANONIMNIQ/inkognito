@@ -97,24 +97,22 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     };
   }, [isStickyHeaderVisible]);
 
-  // Effect to hide the header permanently on the first scroll or click after it becomes visible
+  // Effect to hide the header permanently on the first scroll after it becomes visible
   useEffect(() => {
     if (!isStickyHeaderVisible) {
       return;
     }
 
-    const dismissHeader = () => {
+    const dismissOnScroll = () => {
       setIsStickyHeaderVisible(false);
     };
 
-    // Add one-time listeners that remove themselves after firing
-    window.addEventListener('scroll', dismissHeader, { once: true, passive: true });
-    window.addEventListener('click', dismissHeader, { once: true, capture: true });
+    // Add a one-time listener that removes itself after firing
+    window.addEventListener('scroll', dismissOnScroll, { once: true, passive: true });
 
-    // Cleanup in case the component unmounts before an event happens
+    // Cleanup in case the component unmounts before a scroll happens
     return () => {
-      window.removeEventListener('scroll', dismissHeader);
-      window.removeEventListener('click', dismissHeader, { capture: true });
+      window.removeEventListener('scroll', dismissOnScroll);
     };
   }, [isStickyHeaderVisible]);
 
