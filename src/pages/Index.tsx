@@ -73,10 +73,8 @@ const Index: React.FC = () => {
     console.log(`[fetchConfessions] START: page=${currentPage}, initialLoad=${initialLoad}, category=${categoryFilter}`);
     if (initialLoad) {
       setLoadingConfessions(true);
-      lockScroll(); // Lock scroll for initial load animation
     } else {
       setLoadingMore(true);
-      lockScroll(); // Lock scroll for loading more animation
     }
 
     try {
@@ -111,23 +109,11 @@ const Index: React.FC = () => {
       if (initialLoad) {
         setConfessions(confessionsWithCommentCount);
         setLoadingConfessions(false);
-        // Unlock after the longest possible animation for the initial batch
-        const maxAnimationDuration = 200 + ((Math.min(confessionsWithCommentCount.length, CONFESSIONS_PER_PAGE) - 1) * 150) + 500;
-        console.log(`[fetchConfessions] Initial load complete. Unlocking scroll in ${maxAnimationDuration}ms.`);
-        setTimeout(() => {
-          unlockScroll();
-        }, maxAnimationDuration);
       } else {
         // Delay before new items appear and animate
         setTimeout(() => {
           setConfessions((prev) => [...prev, ...confessionsWithCommentCount]);
           setLoadingMore(false);
-          // Unlock after the longest possible animation for the new batch
-          const maxAnimationDuration = ((Math.min(confessionsWithCommentCount.length, CONFESSIONS_PER_PAGE) - 1) * 150) + 500;
-          console.log(`[fetchConfessions] Loading more complete. Unlocking scroll in ${maxAnimationDuration}ms.`);
-          setTimeout(() => {
-            unlockScroll();
-          }, maxAnimationDuration);
         }, 500); // Delay before new items appear
       }
     } catch (error: any) {
@@ -139,9 +125,8 @@ const Index: React.FC = () => {
       } else {
         setLoadingMore(false);
       }
-      unlockScroll(); // Ensure unlock on error
     }
-  }, [lockScroll, unlockScroll]); // Add lockScroll, unlockScroll to dependencies
+  }, []);
 
   useEffect(() => {
     if (!authLoading) {
