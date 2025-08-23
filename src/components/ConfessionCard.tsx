@@ -54,6 +54,7 @@ interface ConfessionCardProps {
   onToggleExpand: (confessionId: string, slug: string) => void;
   onSelectCategory: (category: string) => void;
   shouldOpenCommentsOnLoad?: boolean;
+  onAnimationComplete?: () => void;
 }
 
 const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
@@ -66,6 +67,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   onToggleExpand,
   onSelectCategory,
   shouldOpenCommentsOnLoad = false,
+  onAnimationComplete,
 }, ref: Ref<HTMLDivElement>) => {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(COMMENTS_PER_PAGE);
@@ -208,7 +210,12 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const linkColor = "text-gray-500 dark:text-gray-400";
 
   return (
-    <div id={confession.id} ref={cardRootRef} className="w-full max-w-2xl mx-auto mb-6 opacity-0 animate-fade-zoom-in">
+    <div
+      id={confession.id}
+      ref={cardRootRef}
+      className="w-full max-w-2xl mx-auto mb-6 opacity-0 animate-fade-zoom-in"
+      onAnimationEnd={onAnimationComplete}
+    >
       <div className={cn("flex items-start", isMobile ? "space-x-0" : "space-x-3")}>
         {!isMobile && <GenderAvatar gender={confession.gender} className="h-10 w-10 flex-shrink-0 mt-2" />}
         <div className={cn("flex-1 p-4 rounded-xl shadow-md relative min-w-0", bubbleBackgroundColor, isMobile ? "ml-0" : "")}>
