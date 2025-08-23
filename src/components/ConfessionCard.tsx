@@ -268,18 +268,18 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                 <Button
                   variant="link"
                   className="flex items-center p-0 h-auto text-gray-400 hover:text-black dark:text-gray-500 dark:hover:text-white transition-colors hover:no-underline"
-                  aria-label="Share"
+                  aria-label="Сподели"
                 >
                   <Share2 className="h-3.5 w-3.5" />
-                  <span className="text-xs font-medium ml-1">Share</span>
+                  <span className="text-xs font-medium ml-1">Сподели</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={handleShareConfession}>
-                  Copy Confession Link
+                  Сподели линк към историята
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleShareComments}>
-                  Copy Comments Link
+                  Сподели линк към коментарите
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
