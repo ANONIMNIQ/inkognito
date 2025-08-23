@@ -59,7 +59,7 @@ const CommentCard: React.FC<CommentCardProps> = ({ comment, isEditing = false, e
         ) : (
           <p className={cn("font-serif text-base md:text-sm pl-1", textColor)}>{comment.content}</p>
         )}
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+        <p className={cn("text-xs text-gray-500 dark:text-gray-400 mt-1 pl-1")}>
           {formatDistanceToNow(comment.timestamp, { addSuffix: true, locale: bg })}
         </p>
       </div>
