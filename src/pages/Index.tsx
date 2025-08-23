@@ -144,7 +144,7 @@ const Index: React.FC = () => {
         setSearchParams(newSearchParams, { replace: true });
       }, 100);
     }
-  }, [authLoading, paramId, paramSlug, searchParams, fetchConfessions]);
+  }, [authLoading, paramId, paramSlug, searchParams, fetchConfessions, selectedCategory, confessions.length]); // Added selectedCategory and confessions.length to dependencies
 
   // Effect for infinite scroll on index view
   const lastConfessionElementRef = useCallback(node => {
@@ -164,21 +164,18 @@ const Index: React.FC = () => {
     }
   }, [page, paramId, selectedCategory, fetchConfessions]);
 
-  // Scroll to expanded confession
+  // Scroll to expanded confession and potentially comments
   useEffect(() => {
     if (!loading && expandedConfessionId) {
       const el = document.getElementById(expandedConfessionId);
       if (el) {
         setTimeout(() => {
           el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          if (location.hash === '#comments') {
-            const commentsSection = document.getElementById(`comments-section-${expandedConfessionId}`);
-            commentsSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
+          // The ConfessionCard itself will handle scrolling to comments if the hash is present
         }, 300);
       }
     }
-  }, [loading, expandedConfessionId, location.hash]);
+  }, [loading, expandedConfessionId, location.hash]); // Added location.hash to dependencies
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string, slug: string, email?: string) => {
     const { data, error } = await supabase.from("confessions").insert({ title, content, gender, category, slug, author_email: email }).select().single();
@@ -284,6 +281,7 @@ const Index: React.FC = () => {
               onToggleExpand={handleConfessionToggle}
               animationDelay={200 + (index * 100)}
               onSelectCategory={handleSelectCategory}
+              shouldOpenCommentsOnLoad={conf.id === expandedConfessionId && location.hash === '#comments'} // New prop
             />
           ))}
         </div>

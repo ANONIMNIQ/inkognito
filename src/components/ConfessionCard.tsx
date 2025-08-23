@@ -5,7 +5,7 @@ import { ChevronDown, ChevronUp, MessageCircle, Heart, Share2 } from "lucide-rea
 import GenderAvatar from "./GenderAvatar";
 import CommentCard from "./CommentCard";
 import CommentForm from "./CommentForm";
-import { format } from "date-fns";
+import { format } => "date-fns";
 import { bg } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import TypingText from "./TypingText";
@@ -54,6 +54,7 @@ interface ConfessionCardProps {
   onToggleExpand: (confessionId: string, slug: string) => void;
   animationDelay?: number;
   onSelectCategory: (category: string) => void;
+  shouldOpenCommentsOnLoad?: boolean; // New prop
 }
 
 const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
@@ -66,6 +67,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   onToggleExpand,
   animationDelay = 0,
   onSelectCategory,
+  shouldOpenCommentsOnLoad = false, // Default to false
 }, ref: Ref<HTMLDivElement>) => {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(COMMENTS_PER_PAGE);
@@ -104,6 +106,18 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
       setIsCommentsOpen(false);
     }
   }, [isContentOpen]);
+
+  // Effect to open comments if shouldOpenCommentsOnLoad is true
+  useEffect(() => {
+    if (isContentOpen && shouldOpenCommentsOnLoad && !isCommentsOpen) {
+      handleToggleCommentsLocal(); // This will also fetch comments if needed
+      // Scroll to comments section after it opens
+      setTimeout(() => {
+        document.getElementById(`comments-section-${confession.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 600); // Give time for collapsible to open
+    }
+  }, [isContentOpen, shouldOpenCommentsOnLoad, isCommentsOpen, confession.id]);
+
 
   useEffect(() => {
     if (!isLoadingMoreComments && visibleCommentsCount > prevVisibleCountRef.current) {
