@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, forwardRef } from "react";
+import { createPortal } from "react-dom";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, MessageCircle, Heart } from "lucide-react";
@@ -98,6 +99,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   useEffect(() => {
     if (!isContentOpen) {
       setIsCommentsOpen(false);
+      setIsStickyHeaderVisible(false); // Also hide header if confession collapses
     }
   }, [isContentOpen]);
 
@@ -182,26 +184,27 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
 
   return (
     <div ref={cardRootRef} className="w-full max-w-2xl mx-auto mb-6 opacity-0 animate-fade-zoom-in" style={{ animationDelay: `${animationDelay}ms` }}>
-      <div
-        style={headerStyle}
-        className={cn(
-          "fixed top-0 z-20 px-4 border-b",
-          "flex items-center justify-between py-2",
-          "bg-background", // Solid background to prevent visual glitches
-          "transition-opacity duration-300",
-          isStickyHeaderVisible
-            ? "opacity-100 animate-slide-fade-in-top"
-            : "opacity-0 pointer-events-none"
-        )}
-      >
-        <Button variant="link" className={cn("p-0 h-auto text-sm", linkColor)} onClick={handleToggleComments}>
-          Скрий коментарите
-          <ChevronUp className="ml-1 h-4 w-4" />
-        </Button>
-        <p className="font-serif text-sm font-semibold truncate ml-4 flex-1 text-right">
-          {confession.title}
-        </p>
-      </div>
+      {isStickyHeaderVisible && createPortal(
+        <div
+          style={headerStyle}
+          className={cn(
+            "fixed top-0 z-20 px-4 border-b",
+            "flex items-center justify-between py-2",
+            "bg-background", // Solid background to prevent visual glitches
+            "transition-opacity duration-300",
+            "opacity-100 animate-slide-fade-in-top"
+          )}
+        >
+          <Button variant="link" className={cn("p-0 h-auto text-sm", linkColor)} onClick={handleToggleComments}>
+            Скрий коментарите
+            <ChevronUp className="ml-1 h-4 w-4" />
+          </Button>
+          <p className="font-serif text-sm font-semibold truncate ml-4 flex-1 text-right">
+            {confession.title}
+          </p>
+        </div>,
+        document.body
+      )}
 
       <div className="flex items-start space-x-3">
         <GenderAvatar gender={confession.gender} className="h-10 w-10 flex-shrink-0 mt-2" />
