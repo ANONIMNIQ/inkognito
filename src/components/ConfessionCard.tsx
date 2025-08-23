@@ -303,7 +303,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                 </Button>
               </CollapsibleTrigger>
               {isCommentsOpen && (
-                <p className="font-serif text-sm text-gray-500 dark:text-gray-400 truncate ml-4 flex-shrink min-w-0">
+                <p className="font-serif text-sm font-semibold text-gray-500 dark:text-gray-400 truncate ml-4 flex-shrink min-w-0">
                   "{confession.title}"
                 </p>
               )}
