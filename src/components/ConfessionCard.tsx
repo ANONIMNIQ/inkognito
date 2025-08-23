@@ -11,7 +11,6 @@ import { cn } from "@/lib/utils";
 import TypingText from "./TypingText";
 import CommentCardSkeleton from "./CommentCardSkeleton";
 import { useScrollLock } from "@/hooks/use-scroll-lock";
-import { useInView } from "@/hooks/use-in-view";
 
 interface Comment {
   id: string;
@@ -61,7 +60,6 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const [isFetchingComments, setIsFetchingComments] = useState(false);
   
   const cardRootRef = useRef<HTMLDivElement>(null);
-  const isInView = useInView(cardRootRef, { threshold: 0.1 });
   const commentsListRef = useRef<HTMLDivElement>(null);
   const commentsToggleRef = useRef<HTMLButtonElement>(null);
   const prevVisibleCountRef = useRef(COMMENTS_PER_PAGE);
@@ -173,10 +171,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   return (
     <div
       ref={cardRootRef}
-      className={cn(
-        "w-full max-w-2xl mx-auto mb-6",
-        isInView ? "animate-fade-zoom-in" : "opacity-0"
-      )}
+      className="w-full max-w-2xl mx-auto mb-6 opacity-0 animate-fade-zoom-in"
       style={{ animationDelay: `${animationDelay}ms` }}
     >
       <div className="flex items-start space-x-3">
@@ -241,7 +236,6 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                       "w-full",
                       isContentOpen ? "whitespace-pre-wrap" : "truncate"
                     )}
-                    startCondition={isInView}
                   />
                 </Button>
               </CollapsibleTrigger>
