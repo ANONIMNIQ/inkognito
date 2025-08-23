@@ -112,7 +112,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
       }
       scrollTimeoutRef.current = setTimeout(() => {
         setIsScrolling(false);
-      }, 150);
+      }, 300); // Match this with the transition duration
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -226,8 +226,8 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
               : "opacity-0 -translate-y-2"
           )}
         >
-          <div className="w-2/3 text-right">
-            <p className="font-serif text-sm font-semibold truncate text-foreground inline-block">
+          <div className="w-2/3 text-right min-w-0">
+            <p className="font-serif text-sm font-semibold truncate text-foreground">
               {confession.title}
             </p>
           </div>
