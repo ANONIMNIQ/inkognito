@@ -40,7 +40,7 @@ const Index: React.FC = () => {
   const [expandedConfessionId, setExpandedConfessionId] = useState<string | null>(null);
   const { loading: authLoading } = useSessionContext();
   const [isComposeButtonVisible, setIsComposeButtonVisible] = useState(false);
-  const [forceExpand, setForceExpand] = useState(false); // Renamed from forceExpandForm
+  const [forceExpand, setForceExpand] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("Всички"); // New state for selected category
   const confessionFormContainerRef = useRef<HTMLDivElement>(null);
 
@@ -61,7 +61,7 @@ const Index: React.FC = () => {
 
   const handleComposeClick = () => {
     confessionFormContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    setForceExpand(true); // Updated setter
+    setForceExpand(true);
     lockScroll(500); // Lock scroll for form expansion and scroll
   };
 
@@ -326,8 +326,8 @@ const Index: React.FC = () => {
         <ConfessionForm
           onSubmit={handleAddConfession}
           onFormFocus={handleFormFocus}
-          forceExpand={forceExpand} // Now uses the renamed state variable
-          onFormExpanded={() => setForceExpand(false)} // Updated setter
+          forceExpand={forceExpand}
+          onFormExpanded={() => setForceExpand(false)}
         />
       </div>
 
@@ -362,7 +362,13 @@ const Index: React.FC = () => {
           ))}
         </div>
       )}
-      {loadingMore && <ConfessionCardSkeleton />}
+      {loadingMore && (
+        <div className="space-y-6 mt-8">
+          <ConfessionCardSkeleton />
+          <ConfessionCardSkeleton />
+          <ConfessionCardSkeleton />
+        </div>
+      )}
       {!hasMore && confessions.length > 0 && (
         <p className="text-center text-gray-500 dark:text-gray-400 mt-8">Това са всички изповеди.</p>
       )}
