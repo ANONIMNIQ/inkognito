@@ -326,7 +326,7 @@ const Index: React.FC = () => {
         <ConfessionForm
           onSubmit={handleAddConfession}
           onFormFocus={handleFormFocus}
-          forceExpand={forceExpandForm}
+          forceExpand={forceExpand}
           onFormExpanded={() => setForceExpandForm(false)}
         />
       </div>
@@ -357,6 +357,7 @@ const Index: React.FC = () => {
               isContentOpen={expandedConfessionId === confession.id}
               onToggleExpand={handleConfessionToggle}
               animationDelay={200 + (index * 150)}
+              onSelectCategory={setSelectedCategory} // Pass the setSelectedCategory function
             />
           ))}
         </div>

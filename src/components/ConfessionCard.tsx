@@ -39,6 +39,7 @@ interface ConfessionCardProps {
   isContentOpen: boolean;
   onToggleExpand: (confessionId: string) => void;
   animationDelay?: number;
+  onSelectCategory: (category: string) => void; // New prop for category selection
 }
 
 const COMMENTS_PER_PAGE = 10;
@@ -51,6 +52,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   isContentOpen,
   onToggleExpand,
   animationDelay = 0,
+  onSelectCategory, // Destructure new prop
 }, ref) => {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(COMMENTS_PER_PAGE);
@@ -189,10 +191,15 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
             )}
           ></div>
           
-          {/* Category label positioned absolutely */}
-          <span className="absolute top-2 right-2 text-xs font-medium text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-full bg-white dark:bg-gray-700 shadow-sm">
+          {/* Category label positioned absolutely and made clickable */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="absolute top-2 right-2 h-auto px-2 py-0.5 text-xs font-medium text-gray-700 dark:text-gray-300 rounded-full bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+            onClick={() => onSelectCategory(confession.category)}
+          >
             {confession.category}
-          </span>
+          </Button>
 
           <div className="flex items-center space-x-4 mb-2"> {/* This div now only contains icons */}
             <Button
