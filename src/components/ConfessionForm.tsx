@@ -180,7 +180,14 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
                   </div>
                 </RadioGroup>
               </div>
-              <Button type="submit" variant="secondary" className={cn(generalTextColor, "w-full")}>Публикувай</Button>
+              <div className="flex justify-center pt-2">
+                <Button
+                  type="submit"
+                  className="w-auto rounded-full bg-gray-900 px-8 py-2 text-white transition-colors hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-300"
+                >
+                  Публикувай
+                </Button>
+              </div>
             </form>
           </CollapsibleContent>
         </Collapsible>

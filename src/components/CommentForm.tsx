@@ -109,7 +109,15 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
             </div>
           </RadioGroup>
         </div>
-        <Button type="submit" size="sm" variant="secondary" className={cn(generalTextColor, "w-full")}>Публикувай Коментар</Button>
+        <div className="flex justify-center pt-1">
+          <Button
+            type="submit"
+            size="sm"
+            className="w-auto rounded-full bg-gray-900 px-6 text-white transition-colors hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-300"
+          >
+            Публикувай Коментар
+          </Button>
+        </div>
       </form>
     </div>
   );
