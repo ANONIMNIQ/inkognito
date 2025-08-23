@@ -55,7 +55,6 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const [isFetchingComments, setIsFetchingComments] = useState(false);
   const [isStickyHeaderVisible, setIsStickyHeaderVisible] = useState(false);
   const [headerStyle, setHeaderStyle] = useState<React.CSSProperties>({});
-  const [isScrolling, setIsScrolling] = useState(false);
   
   const cardRootRef = useRef<HTMLDivElement>(null);
   const commentsContainerRef = useRef<HTMLDivElement>(null);
@@ -63,7 +62,6 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const commentsToggleRef = useRef<HTMLButtonElement>(null);
   const prevVisibleCountRef = useRef(COMMENTS_PER_PAGE);
   const autoScrollTimeout = useRef<NodeJS.Timeout | null>(null);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (ref) {
@@ -99,29 +97,22 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     };
   }, [isStickyHeaderVisible]);
 
-  // Effect for scroll detection to hide header while scrolling
+  // Effect to hide the header permanently on the first scroll after it becomes visible
   useEffect(() => {
     if (!isStickyHeaderVisible) {
       return;
     }
 
-    const handleScroll = () => {
-      setIsScrolling(true);
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-      scrollTimeoutRef.current = setTimeout(() => {
-        setIsScrolling(false);
-      }, 300); // Match this with the transition duration
+    const handleFirstScroll = () => {
+      setIsStickyHeaderVisible(false);
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    // Add a one-time listener that removes itself after firing
+    window.addEventListener('scroll', handleFirstScroll, { once: true, passive: true });
 
+    // Cleanup in case the component unmounts before a scroll happens
     return () => {
-      window.removeEventListener('scroll', handleScroll);
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
+      window.removeEventListener('scroll', handleFirstScroll);
     };
   }, [isStickyHeaderVisible]);
 
@@ -219,11 +210,10 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
           className={cn(
             "fixed top-0 z-20 px-4",
             "flex items-center justify-end py-1",
-            "pointer-events-none",
             "transition-all duration-300 ease-out",
-            isStickyHeaderVisible && !isScrolling
+            isStickyHeaderVisible
               ? "opacity-100 translate-y-0"
-              : "opacity-0 -translate-y-2"
+              : "opacity-0 -translate-y-2 pointer-events-none"
           )}
         >
           <div className="w-2/3 text-right min-w-0">
