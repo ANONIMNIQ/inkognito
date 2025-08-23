@@ -33,6 +33,8 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
   const [captchaNum1, setCaptchaNum1] = useState(0);
   const [captchaNum2, setCaptchaNum2] = useState(0);
   const [captchaAnswer, setCaptchaAnswer] = useState("");
+  const [isSelectOpen, setIsSelectOpen] = useState(false); // New state to track if Select is open
+
   const formRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
 
@@ -71,23 +73,15 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const targetElement = event.target as HTMLElement;
-
-      // Check if the click is inside the form itself
-      if (formRef.current && formRef.current.contains(targetElement)) {
-        return; // Click is inside the form, do nothing
+      // If the Select dropdown is open, do not close the form
+      if (isSelectOpen) {
+        return;
       }
 
-      // Check if the click is inside a Radix UI Select content (which is portal-rendered)
-      // Radix UI SelectContent typically has role="listbox" or is within a data-radix-popper-content-wrapper
-      const isClickInsideSelectContent = targetElement.closest('[role="listbox"]') || targetElement.closest('[data-radix-popper-content-wrapper]');
-
-      if (isClickInsideSelectContent) {
-        return; // Click is inside the select dropdown, do nothing
+      // If the click is outside the form, close the form
+      if (formRef.current && !formRef.current.contains(event.target as Node)) {
+        setOpen(false);
       }
-
-      // If the click is neither in the form nor in the select dropdown, then close the form
-      setOpen(false);
     };
 
     if (open) {
@@ -99,7 +93,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
     return () => {
       document.removeEventListener("click", handleClickOutside);
     };
-  }, [open]);
+  }, [open, isSelectOpen]); // Add isSelectOpen to dependencies
 
   useEffect(() => {
     if (forceExpand) {
@@ -178,7 +172,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
               </div>
               <div>
                 <Label htmlFor="category" className={cn("text-sm text-right w-full", generalTextColor)}>Категория</Label>
-                <Select value={category} onValueChange={setCategory}>
+                <Select value={category} onValueChange={setCategory} onOpenChange={setIsSelectOpen}> {/* Added onOpenChange */}
                   <SelectTrigger id="category" className={cn("mt-1 w-full bg-transparent", generalTextColor, borderColor)}>
                     <SelectValue placeholder="Избери категория" />
                   </SelectTrigger>
