@@ -78,7 +78,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
       // and to ensure the scroll feels connected to the expansion.
       setTimeout(() => {
         cardRootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
+      }, 200); // Increased delay slightly
     }
     // Update the ref for the next render.
     prevIsContentOpen.current = isContentOpen;
@@ -246,13 +246,11 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
             <CollapsibleContent className="space-y-4 px-4 pb-4 overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
               <p className={cn(
                 "whitespace-pre-wrap font-serif",
-                textColor,
-                isContentOpen ? "animate-fade-in" : "animate-fade-out"
-              )} style={{ animationDelay: isContentOpen ? '200ms' : '0ms' }}>{confession.content}</p>
+                textColor
+              )}>{confession.content}</p>
               <p className={cn(
-                "text-xs text-gray-500 dark:text-gray-400 mt-1 text-right",
-                isContentOpen ? "animate-fade-in" : "animate-fade-out"
-              )} style={{ animationDelay: isContentOpen ? '250ms' : '0ms' }}>
+                "text-xs text-gray-500 dark:text-gray-400 mt-1 text-right"
+              )}>
                 Публикувано на {format(confession.timestamp, "dd MMMM yyyy 'г.'", { locale: bg })}
               </p>
             </CollapsibleContent>
