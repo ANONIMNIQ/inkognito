@@ -305,6 +305,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                       speed={20}
                       className={cn("w-full", isContentOpen ? "whitespace-pre-wrap" : "truncate")}
                       onComplete={handleAnimationComplete}
+                      maxAnimateLength={60}
                     />
                   )}
                 </Link>

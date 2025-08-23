@@ -7,9 +7,10 @@ interface TypingTextProps {
   speed?: number;
   className?: string;
   onComplete?: () => void;
+  maxAnimateLength?: number;
 }
 
-const TypingText: React.FC<TypingTextProps> = ({ text, delay = 0, speed = 50, className, onComplete }) => {
+const TypingText: React.FC<TypingTextProps> = ({ text, delay = 0, speed = 50, className, onComplete, maxAnimateLength }) => {
   const [displayedText, setDisplayedText] = useState("");
   const [isTypingComplete, setIsTypingComplete] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -25,11 +26,16 @@ const TypingText: React.FC<TypingTextProps> = ({ text, delay = 0, speed = 50, cl
     indexRef.current = 0;
 
     const type = () => {
-      if (indexRef.current < text.length) {
+      const isMaxLength = maxAnimateLength && indexRef.current >= maxAnimateLength;
+
+      if (indexRef.current < text.length && !isMaxLength) {
         setDisplayedText(text.substring(0, indexRef.current + 1));
         indexRef.current++;
         timeoutRef.current = setTimeout(type, speed);
       } else {
+        // End of string or max animation length reached.
+        // Show the full text so CSS can handle truncation.
+        setDisplayedText(text);
         setIsTypingComplete(true);
         if (onComplete) {
           onComplete();
@@ -44,7 +50,7 @@ const TypingText: React.FC<TypingTextProps> = ({ text, delay = 0, speed = 50, cl
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [text, delay, speed, onComplete]);
+  }, [text, delay, speed, onComplete, maxAnimateLength]);
 
   return (
     <div className={cn(className)}>
