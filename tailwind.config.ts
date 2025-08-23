@@ -124,9 +124,9 @@ export default {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "fade-in": "fade-in 0.5s ease-out forwards",
-        "fade-zoom-in": "fade-zoom-in 0.5s ease-out forwards",
-        "slide-fade-in-top": "slide-fade-in-top 0.4s ease-out forwards",
+        "fade-in": "fade-in 0.3s ease-out forwards",
+        "fade-zoom-in": "fade-zoom-in 0.4s ease-out forwards",
+        "slide-fade-in-top": "slide-fade-in-top 0.3s ease-out forwards",
       },
     },
   },

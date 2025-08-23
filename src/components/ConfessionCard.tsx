@@ -217,7 +217,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     >
       <div className={cn("flex items-start", isMobile ? "space-x-0" : "space-x-3")}>
         {!isMobile && (
-          <div className="opacity-0 animate-fade-in" style={{ animationDuration: '0.4s' }}>
+          <div className="opacity-0 animate-fade-in">
             <GenderAvatar gender={confession.gender} className="h-10 w-10 flex-shrink-0 mt-2" />
           </div>
         )}
