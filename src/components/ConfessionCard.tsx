@@ -294,8 +294,8 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                   ) : (
                     <TypingText
                       text={confession.title}
-                      delay={animationDelay + 500} // Adjusted delay here
-                      speed={30}
+                      delay={animationDelay + 500} // Adjusted delay here to match card fade-in duration
+                      speed={20} // Faster typing speed
                       className={cn("w-full", isContentOpen ? "whitespace-pre-wrap" : "truncate")}
                       onComplete={() => setHasAnimated(true)}
                     />

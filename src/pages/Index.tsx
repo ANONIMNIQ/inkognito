@@ -59,10 +59,6 @@ const Index: React.FC = () => {
     { initialLoad = false, category = "Всички", currentPage = 0, targetId, targetSlug }:
     { initialLoad?: boolean; category?: string; currentPage?: number; targetId?: string; targetSlug?: string }
   ) => {
-    if (!initialLoad) {
-      setLoadingMore(true);
-    }
-
     try {
       let allConfessions: Confession[] = [];
       let newHasMore = true;
@@ -165,6 +161,7 @@ const Index: React.FC = () => {
 
   useEffect(() => {
     if (page > 0 && !paramId) {
+      setLoadingMore(true); // Set loadingMore here, before fetchConfessions is called
       fetchConfessions({ initialLoad: false, category: selectedCategory, currentPage: page });
     }
   }, [page, paramId, selectedCategory, fetchConfessions]);
@@ -259,7 +256,7 @@ const Index: React.FC = () => {
     if (paramId) return 0; 
     // If it's the initial load (page 0) and not loading more, apply staggered animation
     if (page === 0 && !loadingMore) {
-      return 200 + (cardIndex * 100);
+      return 50 + (cardIndex * 100); // Reduced base delay for initial load
     }
     // For all other cases (paginated items), no animation delay
     return 0;
