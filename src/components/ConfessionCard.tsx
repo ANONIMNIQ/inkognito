@@ -172,7 +172,10 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     <div ref={cardRootRef} className="w-full max-w-2xl mx-auto mb-6 opacity-0 animate-fade-zoom-in" style={{ animationDelay: `${animationDelay}ms` }}>
       <div className="flex items-start space-x-3">
         <GenderAvatar gender={confession.gender} className="h-10 w-10 flex-shrink-0 mt-2" />
-        <div className={cn("flex-1 p-4 rounded-xl shadow-md relative min-w-0", bubbleBackgroundColor)}>
+        
+        {/* Main bubble container, now without fixed padding */}
+        <div className={cn("flex-1 rounded-xl shadow-md relative min-w-0", bubbleBackgroundColor)}>
+          {/* Triangle for the bubble */}
           <div
             className={cn(
               "absolute top-3 -left-2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent",
@@ -184,56 +187,63 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
             )}
           ></div>
           
-          <div className="flex items-center space-x-4 mb-2">
-            <Button
-              variant="link"
-              className="flex items-center p-0 h-auto text-gray-400 hover:text-black dark:text-gray-500 dark:hover:text-white transition-colors hover:no-underline"
-              onClick={handleToggleComments}
-            >
-              <MessageCircle className="h-3.5 w-3.5" />
-              <span className="text-xs font-medium ml-1">{confession.comment_count}</span>
-            </Button>
-            <Button
-              variant="link"
-              className="flex items-center p-0 h-auto text-gray-400 hover:text-black dark:text-gray-500 dark:hover:text-white transition-colors hover:no-underline"
-              onClick={() => onLikeConfession(confession.id)}
-            >
-              <Heart className="h-3.5 w-3.5" />
-              <span className="text-xs font-medium ml-1">{confession.likes}</span>
-            </Button>
-          </div>
-
           <Collapsible open={isContentOpen} onOpenChange={() => handleToggleExpandAndScrollLock(confession.id)}>
-            <div className="flex items-center justify-between space-x-4 mb-2">
-              <CollapsibleTrigger asChild>
+            {/* Always visible header part of the bubble, with its own padding */}
+            <div className="p-4 pb-2">
+              {/* Action buttons */}
+              <div className="flex items-center space-x-4 mb-2">
                 <Button
                   variant="link"
-                  className={cn(
-                    "p-0 h-auto text-left text-2xl font-semibold hover:no-underline font-serif transition-colors justify-start min-w-0 flex-1",
-                    isContentOpen
-                      ? textColor
-                      : [linkColor, "hover:text-gray-800 dark:hover:text-gray-200"]
-                  )}
+                  className="flex items-center p-0 h-auto text-gray-400 hover:text-black dark:text-gray-500 dark:hover:text-white transition-colors hover:no-underline"
+                  onClick={handleToggleComments}
                 >
-                  <TypingText
-                    text={confession.title}
-                    delay={animationDelay + 300}
-                    speed={30}
+                  <MessageCircle className="h-3.5 w-3.5" />
+                  <span className="text-xs font-medium ml-1">{confession.comment_count}</span>
+                </Button>
+                <Button
+                  variant="link"
+                  className="flex items-center p-0 h-auto text-gray-400 hover:text-black dark:text-gray-500 dark:hover:text-white transition-colors hover:no-underline"
+                  onClick={() => onLikeConfession(confession.id)}
+                >
+                  <Heart className="h-3.5 w-3.5" />
+                  <span className="text-xs font-medium ml-1">{confession.likes}</span>
+                </Button>
+              </div>
+
+              {/* Title and Chevron Trigger */}
+              <div className="flex items-center justify-between space-x-4">
+                <CollapsibleTrigger asChild>
+                  <Button
+                    variant="link"
                     className={cn(
-                      "w-full",
-                      isContentOpen ? "whitespace-pre-wrap" : "truncate"
+                      "p-0 h-auto text-left text-2xl font-semibold hover:no-underline font-serif transition-colors justify-start min-w-0 flex-1",
+                      isContentOpen
+                        ? textColor
+                        : [linkColor, "hover:text-gray-800 dark:hover:text-gray-200"]
                     )}
-                  />
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="w-9 p-0 text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white hover:bg-transparent dark:hover:bg-transparent">
-                  {isContentOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  <span className="sr-only">Toggle confession content</span>
-                </Button>
-              </CollapsibleTrigger>
+                  >
+                    <TypingText
+                      text={confession.title}
+                      delay={animationDelay + 300}
+                      speed={30}
+                      className={cn(
+                        "w-full",
+                        isContentOpen ? "whitespace-pre-wrap" : "truncate"
+                      )}
+                    />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="w-9 p-0 text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white hover:bg-transparent dark:hover:bg-transparent">
+                    {isContentOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    <span className="sr-only">Toggle confession content</span>
+                  </Button>
+                </CollapsibleTrigger>
+              </div>
             </div>
-            <CollapsibleContent className="space-y-4 pt-2 overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
+
+            {/* Collapsible Content for the main confession text and timestamp, with its own padding */}
+            <CollapsibleContent className="space-y-4 px-4 pb-4 overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
               <p className={cn("whitespace-pre-wrap font-serif", textColor, isContentOpen ? "animate-fade-in" : "")}>{confession.content}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
                 Публикувано на {format(confession.timestamp, "dd MMMM yyyy 'г.'", { locale: bg })}
