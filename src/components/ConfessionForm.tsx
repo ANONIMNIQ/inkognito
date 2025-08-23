@@ -47,23 +47,24 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // If the form is open and the click is outside the form, close it.
+      // This now happens regardless of whether the form has content.
       if (formRef.current && !formRef.current.contains(event.target as Node)) {
-        if (title.trim() === "" && content.trim() === "") {
-          setOpen(false);
-        }
+        setOpen(false);
       }
     };
 
     if (open) {
-      document.addEventListener("mousedown", handleClickOutside);
+      // Listen for 'click' events instead of 'mousedown' to allow other elements' click handlers to fire first.
+      document.addEventListener("click", handleClickOutside);
     } else {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("click", handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("click", handleClickOutside);
     };
-  }, [open, title, content]);
+  }, [open]); // Dependencies updated as title and content are no longer needed for closing logic
 
   useEffect(() => {
     if (forceExpand) {
