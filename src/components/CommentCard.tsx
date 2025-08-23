@@ -1,6 +1,7 @@
 import React from "react";
 import GenderAvatar from "./GenderAvatar";
 import { formatDistanceToNow } from "date-fns";
+import { bg } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea"; // Import Textarea
 
@@ -53,7 +54,7 @@ const CommentCard: React.FC<CommentCardProps> = ({ comment, isEditing = false, e
           <p className={cn("text-sm font-serif", textColor)}>{comment.content}</p>
         )}
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          {formatDistanceToNow(comment.timestamp, { addSuffix: true })}
+          {formatDistanceToNow(comment.timestamp, { addSuffix: true, locale: bg })}
         </p>
       </div>
     </div>
