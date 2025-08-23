@@ -57,6 +57,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const commentsListRef = useRef<HTMLDivElement>(null);
   const commentsToggleRef = useRef<HTMLButtonElement>(null);
   const prevVisibleCountRef = useRef(COMMENTS_PER_PAGE);
+  const prevIsContentOpen = useRef(isContentOpen);
 
   useEffect(() => {
     if (ref) {
@@ -67,6 +68,19 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
       }
     }
   }, [ref]);
+
+  useEffect(() => {
+    // If the card is being opened (was closed, now is open), scroll it into view.
+    if (isContentOpen && !prevIsContentOpen.current) {
+      // A small delay to allow the collapsible content to start animating open
+      // and to ensure the scroll feels connected to the expansion.
+      setTimeout(() => {
+        cardRootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+    // Update the ref for the next render.
+    prevIsContentOpen.current = isContentOpen;
+  }, [isContentOpen]);
 
   useEffect(() => {
     if (!isContentOpen) {
