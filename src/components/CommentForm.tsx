@@ -158,7 +158,6 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit, hideAvatarOnMobile 
               </div>
             </form>
           </div>
-        </div>
   );
 };
 
