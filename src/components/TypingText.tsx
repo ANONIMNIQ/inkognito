@@ -6,9 +6,10 @@ interface TypingTextProps {
   delay?: number;
   speed?: number;
   className?: string;
+  onComplete?: () => void;
 }
 
-const TypingText: React.FC<TypingTextProps> = ({ text, delay = 0, speed = 50, className }) => {
+const TypingText: React.FC<TypingTextProps> = ({ text, delay = 0, speed = 50, className, onComplete }) => {
   const [displayedText, setDisplayedText] = useState("");
   const [isTypingComplete, setIsTypingComplete] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -30,6 +31,9 @@ const TypingText: React.FC<TypingTextProps> = ({ text, delay = 0, speed = 50, cl
         timeoutRef.current = setTimeout(type, speed);
       } else {
         setIsTypingComplete(true);
+        if (onComplete) {
+          onComplete();
+        }
       }
     };
 
@@ -40,7 +44,7 @@ const TypingText: React.FC<TypingTextProps> = ({ text, delay = 0, speed = 50, cl
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [text, delay, speed]);
+  }, [text, delay, speed, onComplete]);
 
   return (
     <div className={cn(className)}>

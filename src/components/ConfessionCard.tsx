@@ -71,6 +71,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(COMMENTS_PER_PAGE);
   const [isLoadingMoreComments, setIsLoadingMoreComments] = useState(false);
   const [isFetchingComments, setIsFetchingComments] = useState(false);
+  const [hasAnimated, setHasAnimated] = useState(false);
   
   const cardRootRef = useRef<HTMLDivElement>(null);
   const commentsListRef = useRef<HTMLDivElement>(null);
@@ -261,7 +262,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                       : [linkColor, "hover:text-gray-800 dark:hover:text-gray-200"]
                   )}
                 >
-                  {isDirectLinkTarget ? (
+                  {isDirectLinkTarget || hasAnimated ? (
                     <span className={cn("w-full", isContentOpen ? "whitespace-pre-wrap" : "truncate")}>
                       {confession.title}
                     </span>
@@ -271,6 +272,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                       delay={animationDelay + 300}
                       speed={30}
                       className={cn("w-full", isContentOpen ? "whitespace-pre-wrap" : "truncate")}
+                      onComplete={() => setHasAnimated(true)}
                     />
                   )}
                 </Link>
