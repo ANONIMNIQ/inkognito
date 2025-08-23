@@ -7,6 +7,7 @@ import { useSessionContext } from "@/components/SessionProvider";
 import ConfessionCardSkeleton from "@/components/ConfessionCardSkeleton";
 import ComposeButton from "@/components/ComposeButton";
 import { useScrollLock } from "@/hooks/use-scroll-lock"; // Import useScrollLock
+import CategoryFilter, { categories } from "@/components/CategoryFilter"; // Import CategoryFilter and categories
 
 interface Comment {
   id: string;
@@ -25,6 +26,7 @@ interface Confession {
   created_at: string;
   comments: Comment[];
   comment_count: number;
+  category: string; // Added category
 }
 
 const CONFESSIONS_PER_PAGE = 10;
@@ -39,6 +41,7 @@ const Index: React.FC = () => {
   const { loading: authLoading } = useSessionContext();
   const [isComposeButtonVisible, setIsComposeButtonVisible] = useState(false);
   const [forceExpandForm, setForceExpandForm] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>("Всички"); // New state for selected category
   const confessionFormContainerRef = useRef<HTMLDivElement>(null);
 
   const observer = useRef<IntersectionObserver>();
@@ -62,7 +65,7 @@ const Index: React.FC = () => {
     lockScroll(500); // Lock scroll for form expansion and scroll
   };
 
-  const fetchConfessions = useCallback(async (currentPage: number, initialLoad: boolean) => {
+  const fetchConfessions = useCallback(async (currentPage: number, initialLoad: boolean, categoryFilter: string) => {
     if (initialLoad) {
       setLoadingConfessions(true);
     } else {
@@ -73,11 +76,16 @@ const Index: React.FC = () => {
     const to = from + CONFESSIONS_PER_PAGE - 1;
 
     try {
-      const { data: confessionsData, error: confessionsError } = await supabase
+      let query = supabase
         .from("confessions")
         .select("*, comments(count)")
-        .order("created_at", { ascending: false })
-        .range(from, to);
+        .order("created_at", { ascending: false });
+
+      if (categoryFilter !== "Всички") {
+        query = query.eq("category", categoryFilter);
+      }
+
+      const { data: confessionsData, error: confessionsError } = await query.range(from, to);
 
       if (confessionsError) {
         toast.error("Error fetching confessions: " + confessionsError.message);
@@ -87,6 +95,8 @@ const Index: React.FC = () => {
 
       if (confessionsData.length < CONFESSIONS_PER_PAGE) {
         setHasMore(false);
+      } else {
+        setHasMore(true); // Reset hasMore if we get a full page
       }
 
       const confessionsWithCommentCount = confessionsData.map((c: any) => ({
@@ -112,15 +122,17 @@ const Index: React.FC = () => {
 
   useEffect(() => {
     if (!authLoading) {
-      fetchConfessions(0, true);
+      setPage(0); // Reset page when category changes
+      setConfessions([]); // Clear confessions when category changes
+      fetchConfessions(0, true, selectedCategory);
     }
-  }, [authLoading, fetchConfessions]);
+  }, [authLoading, fetchConfessions, selectedCategory]); // Re-fetch when selectedCategory changes
 
   useEffect(() => {
     if (page > 0) {
-      fetchConfessions(page, false);
+      fetchConfessions(page, false, selectedCategory);
     }
-  }, [page, fetchConfessions]);
+  }, [page, fetchConfessions, selectedCategory]);
 
   const lastConfessionElementRef = useCallback(
     (node: HTMLDivElement) => {
@@ -141,25 +153,28 @@ const Index: React.FC = () => {
       .channel('public:confessions')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'confessions' }, (payload) => {
         const newConfession = payload.new as Omit<Confession, 'comments' | 'comment_count'>;
-        setConfessions((prev) => {
-          if (prev.some(c => c.id === newConfession.id)) {
-            return prev;
-          }
-          return [{ ...newConfession, comments: [], comment_count: 0 }, ...prev];
-        });
-        setExpandedConfessionId(newConfession.id);
+        // Only add new confession if it matches the current filter
+        if (selectedCategory === "Всички" || newConfession.category === selectedCategory) {
+          setConfessions((prev) => {
+            if (prev.some(c => c.id === newConfession.id)) {
+              return prev;
+            }
+            return [{ ...newConfession, comments: [], comment_count: 0 }, ...prev];
+          });
+          setExpandedConfessionId(newConfession.id);
+        }
       })
       .subscribe();
     return () => {
       supabase.removeChannel(confessionsSubscription);
     };
-  }, []);
+  }, [selectedCategory]); // Re-subscribe when selectedCategory changes
 
-  const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito") => {
+  const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string) => {
     lockScroll(1500); // Lock scroll for confession post, AI comment, and fade-in
     const { data: newConfessionData, error: insertError } = await supabase
       .from("confessions")
-      .insert({ title, content, gender })
+      .insert({ title, content, gender, category }) // Include category
       .select()
       .single();
 
@@ -172,8 +187,12 @@ const Index: React.FC = () => {
     toast.success("Confession posted successfully!");
 
     const newConfessionForState = { ...newConfessionData, comments: [], comment_count: 0 };
-    setConfessions((prev) => [newConfessionForState, ...prev]);
-    setExpandedConfessionId(newConfessionData.id);
+    // Only add to state if it matches the current filter
+    if (selectedCategory === "Всички" || newConfessionForState.category === selectedCategory) {
+      setConfessions((prev) => [newConfessionForState, ...prev]);
+      setExpandedConfessionId(newConfessionData.id);
+    }
+
 
     try {
       toast.info("Generating an AI comment...");
@@ -298,6 +317,7 @@ const Index: React.FC = () => {
   return (
     <div className="container mx-auto p-4 max-w-3xl">
       <h1 className="text-3xl font-bold text-center mb-8 opacity-0 animate-fade-zoom-in">Анонимни изповеди</h1>
+      <CategoryFilter selectedCategory={selectedCategory} onSelectCategory={setSelectedCategory} /> {/* Add CategoryFilter */}
       <div
         ref={confessionFormContainerRef}
         className="opacity-0 animate-fade-zoom-in"

@@ -19,17 +19,20 @@ interface Comment {
   timestamp: Date;
 }
 
+interface Confession {
+  id:string;
+  title: string;
+  content: string;
+  gender: "male" | "female" | "incognito";
+  timestamp: Date;
+  comments: Comment[];
+  likes: number;
+  comment_count: number;
+  category: string; // Added category
+}
+
 interface ConfessionCardProps {
-  confession: {
-    id:string;
-    title: string;
-    content: string;
-    gender: "male" | "female" | "incognito";
-    timestamp: Date;
-    comments: Comment[];
-    likes: number;
-    comment_count: number;
-  };
+  confession: Confession;
   onAddComment: (confessionId: string, content: string, gender: "male" | "female" | "incognito") => void;
   onLikeConfession: (confessionId: string) => void;
   onFetchComments: (confessionId: string) => Promise<void>;
@@ -203,6 +206,9 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
               <Heart className="h-3.5 w-3.5" />
               <span className="text-xs font-medium ml-1">{confession.likes}</span>
             </Button>
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 ml-auto px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700">
+              {confession.category}
+            </span>
           </div>
 
           <Collapsible open={isContentOpen} onOpenChange={() => onToggleExpand(confession.id)}>

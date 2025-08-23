@@ -8,9 +8,17 @@ import { toast } from "sonner";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import GenderAvatar from "./GenderAvatar";
 import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { categories } from "./CategoryFilter"; // Import categories
 
 interface ConfessionFormProps {
-  onSubmit: (title: string, content: string, gender: "male" | "female" | "incognito") => void;
+  onSubmit: (title: string, content: string, gender: "male" | "female" | "incognito", category: string) => void;
   onFormFocus?: () => void;
   forceExpand: boolean;
   onFormExpanded: () => void;
@@ -21,6 +29,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [gender, setGender] = useState<"male" | "female" | "incognito">("incognito");
+  const [category, setCategory] = useState<string>("Други"); // New state for category, default to "Други"
   const [captchaNum1, setCaptchaNum1] = useState(0);
   const [captchaNum2, setCaptchaNum2] = useState(0);
   const [captchaAnswer, setCaptchaAnswer] = useState("");
@@ -44,10 +53,11 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
       generateCaptcha();
       return;
     }
-    onSubmit(title, content, gender);
+    onSubmit(title, content, gender, category); // Pass category to onSubmit
     setTitle("");
     setContent("");
     setGender("incognito");
+    setCategory("Други"); // Reset category
     setOpen(false);
     toast.success("Your confession has been posted!");
   };
@@ -151,6 +161,21 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
                   required
                   className={cn("bg-transparent", generalTextColor, placeholderColor, borderColor)}
                 />
+              </div>
+              <div>
+                <Label htmlFor="category" className={cn("text-sm", generalTextColor)}>Категория</Label>
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger id="category" className={cn("mt-1 w-full bg-transparent", generalTextColor, borderColor)}>
+                    <SelectValue placeholder="Избери категория" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700">
+                    {categories.filter(c => c !== "Всички").map((cat) => ( // Filter out "Всички" for posting
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label className={cn("text-sm", generalTextColor)}>Твоят пол</Label>
