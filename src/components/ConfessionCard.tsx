@@ -233,7 +233,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                 </Button>
               </CollapsibleTrigger>
             </div>
-            <CollapsibleContent className="space-y-4 pt-2">
+            <CollapsibleContent className="space-y-4 pt-2 overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
               <p className={cn("whitespace-pre-wrap font-serif", textColor, isContentOpen ? "animate-fade-in" : "")}>{confession.content}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
                 Публикувано на {format(confession.timestamp, "dd MMMM yyyy 'г.'", { locale: bg })}
