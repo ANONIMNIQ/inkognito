@@ -24,9 +24,10 @@ interface ConfessionFormProps {
   onFormFocus?: () => void;
   forceExpand: boolean;
   onFormExpanded: () => void;
+  onAnimationComplete?: () => void;
 }
 
-const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, forceExpand, onFormExpanded }) => {
+const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, forceExpand, onFormExpanded, onAnimationComplete }) => {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -142,15 +143,21 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
   return (
     <div className={cn("w-full max-w-2xl mx-auto mb-6 flex items-start", isMobile ? "space-x-0" : "space-x-3")} ref={formRef}>
       {!isMobile && (
-        <GenderAvatar
-          gender={gender}
-          className={cn(
-            "h-10 w-10 flex-shrink-0 transition-all duration-300 mt-1.5",
-            !open && "self-center"
-          )}
-        />
+        <div className="opacity-0 animate-fade-in" style={{ animationDelay: '200ms' }}>
+          <GenderAvatar
+            gender={gender}
+            className={cn(
+              "h-10 w-10 flex-shrink-0 transition-all duration-300 mt-1.5",
+              !open && "self-center"
+            )}
+          />
+        </div>
       )}
-      <div className={cn("flex-1 rounded-xl shadow-md relative transition-all duration-300 ease-in-out", bubbleBackgroundColor, open ? "p-4" : "p-1.5 flex items-center", isMobile ? "ml-0" : "")}>
+      <div
+        className={cn("flex-1 rounded-xl shadow-md relative transition-all duration-300 ease-in-out opacity-0 animate-fade-zoom-in", bubbleBackgroundColor, open ? "p-4" : "p-1.5 flex items-center", isMobile ? "ml-0" : "")}
+        style={{ animationDelay: '200ms' }}
+        onAnimationEnd={onAnimationComplete}
+      >
         <div
           className={cn(
             "absolute top-3 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent",
