@@ -12,7 +12,7 @@ import TypingText from "./TypingText";
 import CommentCardSkeleton from "./CommentCardSkeleton";
 import { useScrollLock } from "@/hooks/use-scroll-lock";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Link, useNavigate, useLocation } from "react-router-dom"; // Import useLocation
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -54,7 +54,7 @@ interface ConfessionCardProps {
   onToggleExpand: (confessionId: string, slug: string) => void;
   animationDelay?: number;
   onSelectCategory: (category: string) => void;
-  shouldOpenCommentsOnLoad?: boolean; // New prop
+  shouldOpenCommentsOnLoad?: boolean;
 }
 
 const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
@@ -67,7 +67,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   onToggleExpand,
   animationDelay = 0,
   onSelectCategory,
-  shouldOpenCommentsOnLoad = false, // Default to false
+  shouldOpenCommentsOnLoad = false,
 }, ref: Ref<HTMLDivElement>) => {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(COMMENTS_PER_PAGE);
@@ -80,7 +80,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const commentsToggleRef = useRef<HTMLButtonElement>(null);
   const prevVisibleCountRef = useRef(COMMENTS_PER_PAGE);
   const navigate = useNavigate();
-  const location = useLocation(); // Use useLocation hook
+  const location = useLocation();
 
   const isMobile = useIsMobile();
 
@@ -111,7 +111,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   // Effect to open comments if shouldOpenCommentsOnLoad is true
   useEffect(() => {
     if (isContentOpen && shouldOpenCommentsOnLoad && !isCommentsOpen) {
-      handleToggleCommentsLocal(); // This will also fetch comments if needed
+      handleToggleCommentsLocal(true); // Pass true to force open and add hash
       // Scroll to comments section after it opens
       setTimeout(() => {
         document.getElementById(`comments-section-${confession.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -142,32 +142,38 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     }
   };
 
-  const handleToggleCommentsLocal = async () => {
-    const willBeOpen = !isCommentsOpen;
+  const handleToggleCommentsLocal = async (forceOpen: boolean = false) => {
+    // If the main confession content is not open, navigate to its dedicated page with #comments
+    if (!isContentOpen && !forceOpen) {
+      navigate(`/confessions/${confession.id}/${confession.slug}#comments`);
+      return; // Exit early, let the navigation and subsequent render handle the rest
+    }
+
+    // If the main confession content IS open, then we just toggle comments locally
+    const willBeOpen = forceOpen || !isCommentsOpen;
     setIsCommentsOpen(willBeOpen);
 
     if (willBeOpen) {
-      if (!isContentOpen) {
-        onToggleExpand(confession.id, confession.slug);
-      }
-
       if (confession.comments.length === 0 && confession.comment_count > 0) {
         setIsFetchingComments(true);
         await onFetchComments(confession.id);
         setIsFetchingComments(false);
       }
-
       setTimeout(() => {
         commentsToggleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 600);
-      // Add #comments to URL
-      navigate(location.pathname + location.search + '#comments', { replace: true });
+      // Add #comments to URL if not already there
+      if (location.hash !== '#comments') {
+        navigate(location.pathname + location.search + '#comments', { replace: true });
+      }
     } else {
       setTimeout(() => {
         cardRootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 250);
-      // Remove #comments from URL
-      navigate(location.pathname + location.search, { replace: true });
+      // Remove #comments from URL if present
+      if (location.hash === '#comments') {
+        navigate(location.pathname + location.search, { replace: true });
+      }
     }
   };
 
@@ -234,7 +240,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
             <Button
               variant="link"
               className="flex items-center p-0 h-auto text-gray-400 hover:text-black dark:text-gray-500 dark:hover:text-white transition-colors hover:no-underline"
-              onClick={handleToggleCommentsLocal}
+              onClick={() => handleToggleCommentsLocal()}
             >
               <MessageCircle className="h-3.5 w-3.5" />
               <span className="text-xs font-medium ml-1">{confession.comment_count}</span>
@@ -318,7 +324,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
           <Collapsible open={isCommentsOpen} onOpenChange={setIsCommentsOpen}>
             <div className="flex justify-between items-center">
               <CollapsibleTrigger asChild>
-                <Button ref={commentsToggleRef} variant="link" className={cn("p-0 h-auto", linkColor)} onClick={handleToggleCommentsLocal}>
+                <Button ref={commentsToggleRef} variant="link" className={cn("p-0 h-auto", linkColor)} onClick={() => handleToggleCommentsLocal()}>
                   {isCommentsOpen ? "Скрий коментарите" : "Покажи коментарите"} ({confession.comment_count})
                   {isCommentsOpen ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
                 </Button>
