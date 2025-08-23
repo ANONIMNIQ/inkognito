@@ -72,10 +72,10 @@ const Index: React.FC = () => {
       setLoadingMore(true);
     }
 
-    const from = currentPage * CONFESSIONS_PER_PAGE;
-    const to = from + CONFESSIONS_PER_PAGE - 1;
-
     try {
+      const from = currentPage * CONFESSIONS_PER_PAGE;
+      const to = from + CONFESSIONS_PER_PAGE - 1;
+
       let query = supabase
         .from("confessions")
         .select("*, comments(count)")
@@ -88,15 +88,7 @@ const Index: React.FC = () => {
       const { data: confessionsData, error: confessionsError } = await query.range(from, to);
 
       if (confessionsError) {
-        toast.error("Error fetching confessions: " + confessionsError.message);
-        setHasMore(false);
-        return;
-      }
-
-      if (confessionsData.length < CONFESSIONS_PER_PAGE) {
-        setHasMore(false);
-      } else {
-        setHasMore(true); // Reset hasMore if we get a full page
+        throw confessionsError;
       }
 
       const confessionsWithCommentCount = confessionsData.map((c: any) => ({
@@ -105,20 +97,29 @@ const Index: React.FC = () => {
         comments: [],
       }));
 
-      setConfessions((prev) =>
-        initialLoad ? confessionsWithCommentCount : [...prev, ...confessionsWithCommentCount]
-      );
-    } catch (e) {
-      console.error("Unexpected error fetching confessions:", e);
-      toast.error("An unexpected error occurred while loading confessions.");
-    } finally {
+      if (confessionsData.length < CONFESSIONS_PER_PAGE) {
+        setHasMore(false);
+      } else {
+        setHasMore(true);
+      }
+
+      if (initialLoad) {
+        setConfessions(confessionsWithCommentCount);
+        setLoadingConfessions(false);
+      } else {
+        setTimeout(() => {
+          setConfessions((prev) => [...prev, ...confessionsWithCommentCount]);
+          setLoadingMore(false);
+        }, 500);
+      }
+    } catch (error: any) {
+      console.error("Error fetching confessions:", error);
+      toast.error("Error fetching confessions: " + error.message);
+      setHasMore(false);
       if (initialLoad) {
         setLoadingConfessions(false);
       } else {
-        // Add a small delay to ensure skeletons are visible
-        setTimeout(() => {
-          setLoadingMore(false);
-        }, 500); // 500ms delay
+        setLoadingMore(false);
       }
     }
   }, []);
