@@ -213,12 +213,18 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     <div
       id={confession.id}
       ref={cardRootRef}
-      className="w-full max-w-2xl mx-auto mb-6 opacity-0 animate-fade-zoom-in"
-      onAnimationEnd={onAnimationComplete}
+      className="w-full max-w-2xl mx-auto mb-6"
     >
       <div className={cn("flex items-start", isMobile ? "space-x-0" : "space-x-3")}>
-        {!isMobile && <GenderAvatar gender={confession.gender} className="h-10 w-10 flex-shrink-0 mt-2" />}
-        <div className={cn("flex-1 p-4 rounded-xl shadow-md relative min-w-0", bubbleBackgroundColor, isMobile ? "ml-0" : "")}>
+        {!isMobile && (
+          <div className="opacity-0 animate-fade-in" style={{ animationDuration: '0.4s' }}>
+            <GenderAvatar gender={confession.gender} className="h-10 w-10 flex-shrink-0 mt-2" />
+          </div>
+        )}
+        <div 
+          className={cn("flex-1 p-4 rounded-xl shadow-md relative min-w-0 opacity-0 animate-fade-zoom-in", bubbleBackgroundColor, isMobile ? "ml-0" : "")}
+          onAnimationEnd={onAnimationComplete}
+        >
           <div
             className={cn(
               "absolute top-3 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent",
