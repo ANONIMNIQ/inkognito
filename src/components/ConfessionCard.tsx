@@ -57,11 +57,10 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const [headerStyle, setHeaderStyle] = useState<React.CSSProperties>({});
   
   const cardRootRef = useRef<HTMLDivElement>(null);
-  const commentsContainerRef = useRef<HTMLDivElement>(null); // New ref for the comments section
+  const commentsContainerRef = useRef<HTMLDivElement>(null);
   const commentsListRef = useRef<HTMLDivElement>(null);
   const commentsToggleRef = useRef<HTMLButtonElement>(null);
   const prevVisibleCountRef = useRef(COMMENTS_PER_PAGE);
-  const autoScrollTimeout = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (ref) {
@@ -76,7 +75,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   // Effect to dynamically position the sticky header
   useEffect(() => {
     const updateHeaderPosition = () => {
-      if (commentsContainerRef.current) { // Use the new ref for precise positioning
+      if (commentsContainerRef.current) {
         const rect = commentsContainerRef.current.getBoundingClientRect();
         setHeaderStyle({
           left: `${rect.left}px`,
@@ -97,10 +96,37 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     };
   }, [isStickyHeaderVisible]);
 
+  // Effect to control header visibility based on scroll position
+  useEffect(() => {
+    const observerTarget = commentsToggleRef.current;
+    if (!observerTarget) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // Show header if comments are open and the toggle button is NOT visible
+        if (isCommentsOpen) {
+          setIsStickyHeaderVisible(!entry.isIntersecting);
+        } else {
+          // Always hide if comments are closed
+          setIsStickyHeaderVisible(false);
+        }
+      },
+      {
+        root: null, // Observe intersections with the viewport
+        threshold: 0, // Trigger when the element is just about to leave/enter the view
+      }
+    );
+
+    observer.observe(observerTarget);
+
+    return () => {
+      observer.unobserve(observerTarget);
+    };
+  }, [isCommentsOpen]);
+
   useEffect(() => {
     if (!isContentOpen) {
       setIsCommentsOpen(false);
-      setIsStickyHeaderVisible(false); // Also hide header if confession collapses
     }
   }, [isContentOpen]);
 
@@ -128,15 +154,11 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
 
   const handleToggleComments = async () => {
     const willBeOpen = !isCommentsOpen;
+    setIsCommentsOpen(willBeOpen);
 
     if (!willBeOpen) {
-      setIsCommentsOpen(false);
-      setIsStickyHeaderVisible(false);
       return;
     }
-
-    // If opening...
-    setIsCommentsOpen(true);
 
     if (!isContentOpen) {
       onToggleExpand(confession.id);
@@ -148,19 +170,8 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
       setIsFetchingComments(false);
     }
 
-    // Use a timeout to allow the collapsible content to render before scrolling
     setTimeout(() => {
-      if (autoScrollTimeout.current) {
-        clearTimeout(autoScrollTimeout.current);
-      }
-
       commentsToggleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      
-      // After the scroll animation, show the header
-      const scrollAnimationDuration = 800; // A safe duration for smooth scroll
-      autoScrollTimeout.current = setTimeout(() => {
-        setIsStickyHeaderVisible(true);
-      }, scrollAnimationDuration);
     }, 100);
   };
 
@@ -189,14 +200,13 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
         <div
           style={headerStyle}
           className={cn(
-            "fixed top-0 z-20 px-4 border-b",
-            "flex items-center justify-end py-2", // Justify to the right
-            "bg-background",
-            "transition-opacity duration-300",
-            "opacity-100 animate-slide-fade-in-top"
+            "fixed top-0 z-20 px-4",
+            "flex items-center justify-end py-2",
+            "pointer-events-none", // Prevents the div from capturing mouse events
+            "transition-opacity duration-300"
           )}
         >
-          <p className="font-serif text-sm font-semibold truncate">
+          <p className="font-serif text-sm font-semibold truncate text-foreground">
             {confession.title}
           </p>
         </div>,
