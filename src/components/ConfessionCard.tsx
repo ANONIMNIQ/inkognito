@@ -12,7 +12,7 @@ import TypingText from "./TypingText";
 import CommentCardSkeleton from "./CommentCardSkeleton";
 import { useScrollLock } from "@/hooks/use-scroll-lock";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom"; // Import useLocation
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -80,6 +80,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const commentsToggleRef = useRef<HTMLButtonElement>(null);
   const prevVisibleCountRef = useRef(COMMENTS_PER_PAGE);
   const navigate = useNavigate();
+  const location = useLocation(); // Use useLocation hook
 
   const isMobile = useIsMobile();
 
@@ -159,10 +160,14 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
       setTimeout(() => {
         commentsToggleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 600);
+      // Add #comments to URL
+      navigate(location.pathname + location.search + '#comments', { replace: true });
     } else {
       setTimeout(() => {
         cardRootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 250);
+      // Remove #comments from URL
+      navigate(location.pathname + location.search, { replace: true });
     }
   };
 
