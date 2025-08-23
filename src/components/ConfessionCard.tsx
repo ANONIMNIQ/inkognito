@@ -67,7 +67,8 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
 
   // The useScrollLock hook is still available if needed elsewhere,
   // but we're removing its direct usage for content/comment expansion here.
-  const { lockScroll, unlockScroll } = useScrollLock(); 
+  // The global scroll lock is not ideal for in-page content expansions.
+  // const { lockScroll, unlockScroll } = useScrollLock(); 
   const isMobile = useIsMobile();
 
   useEffect(() => {
