@@ -152,10 +152,10 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
 
     onToggleExpand(toggledConfessionId); // Update parent state, which will trigger Collapsible animation
 
-    // Unlock scroll after animation duration (0.4s for accordion + a small buffer)
+    // Unlock scroll after animation duration (0.6s for accordion + a small buffer)
     setTimeout(() => {
       setScrollLocked(false);
-    }, 450); 
+    }, 650); 
   };
 
   const bubbleBackgroundColor =
@@ -248,11 +248,11 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                 "whitespace-pre-wrap font-serif",
                 textColor,
                 isContentOpen ? "animate-fade-in" : "animate-fade-out"
-              )} style={{ animationDelay: isContentOpen ? '100ms' : '0ms' }}>{confession.content}</p>
+              )} style={{ animationDelay: isContentOpen ? '200ms' : '0ms' }}>{confession.content}</p>
               <p className={cn(
                 "text-xs text-gray-500 dark:text-gray-400 mt-1 text-right",
                 isContentOpen ? "animate-fade-in" : "animate-fade-out"
-              )} style={{ animationDelay: isContentOpen ? '150ms' : '0ms' }}>
+              )} style={{ animationDelay: isContentOpen ? '250ms' : '0ms' }}>
                 Публикувано на {format(confession.timestamp, "dd MMMM yyyy 'г.'", { locale: bg })}
               </p>
             </CollapsibleContent>
