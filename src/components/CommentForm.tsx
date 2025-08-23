@@ -85,7 +85,7 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit, hideAvatarOnMobile 
             onChange={(e) => setContent(e.target.value)}
             rows={2}
             required
-            className={cn("resize-none text-base", generalTextColor, placeholderColor, borderColor)}
+            className={cn("resize-none text-base pl-1", generalTextColor, placeholderColor, borderColor)}
           />
         </div>
         <div>
