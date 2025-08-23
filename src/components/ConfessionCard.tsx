@@ -188,6 +188,23 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
 
   return (
     <div ref={cardRootRef} className="w-full max-w-2xl mx-auto mb-6 opacity-0 animate-fade-zoom-in" style={{ animationDelay: `${animationDelay}ms` }}>
+      <div className={cn(
+        "fixed top-0 left-1/2 -translate-x-1/2 z-20 w-full max-w-3xl px-4",
+        "flex items-center justify-between py-2",
+        "bg-background/80 backdrop-blur-sm transition-all duration-300",
+        isStickyHeaderVisible
+          ? "opacity-100 animate-slide-fade-in-top"
+          : "opacity-0 pointer-events-none"
+      )}>
+        <Button variant="link" className={cn("p-0 h-auto text-sm", linkColor)} onClick={handleToggleComments}>
+          Скрий коментарите
+          <ChevronUp className="ml-1 h-4 w-4" />
+        </Button>
+        <p className="font-serif text-sm font-semibold truncate ml-4 flex-1 text-right">
+          {confession.title}
+        </p>
+      </div>
+
       <div className="flex items-start space-x-3">
         <GenderAvatar gender={confession.gender} className="h-10 w-10 flex-shrink-0 mt-2" />
         <div className={cn("flex-1 p-4 rounded-xl shadow-md relative min-w-0", bubbleBackgroundColor)}>
@@ -202,23 +219,6 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
             )}
           ></div>
           
-          <div className={cn(
-            "sticky top-0 z-10 flex items-center justify-between -mx-4 -mt-4 rounded-t-xl",
-            "bg-opacity-80 backdrop-blur-sm transition-all duration-300",
-            bubbleBackgroundColor,
-            isStickyHeaderVisible
-              ? "p-2 mb-2 opacity-100 animate-slide-fade-in-top"
-              : "h-0 opacity-0 pointer-events-none"
-          )}>
-            <Button variant="link" className={cn("p-0 h-auto text-sm", linkColor)} onClick={handleToggleComments}>
-              Скрий коментарите
-              <ChevronUp className="ml-1 h-4 w-4" />
-            </Button>
-            <p className="font-serif text-sm font-semibold truncate ml-4 flex-1 text-right">
-              {confession.title}
-            </p>
-          </div>
-
           <div className="flex items-center space-x-4 mb-2">
             <Button
               variant="link"
