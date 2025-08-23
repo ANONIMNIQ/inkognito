@@ -28,7 +28,11 @@ interface Confession {
 
 const CONFESSIONS_PER_PAGE = 10;
 
-const Index: React.FC = () => {
+interface IndexProps {
+  setScrollLocked: (locked: boolean) => void;
+}
+
+const Index: React.FC<IndexProps> = ({ setScrollLocked }) => {
   const [confessions, setConfessions] = useState<Confession[]>([]);
   const [loadingConfessions, setLoadingConfessions] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -328,6 +332,7 @@ const Index: React.FC = () => {
               isContentOpen={expandedConfessionId === confession.id}
               onToggleExpand={handleConfessionToggle}
               animationDelay={200 + (index * 150)}
+              setScrollLocked={setScrollLocked} // Pass setScrollLocked
             />
           ))}
         </div>

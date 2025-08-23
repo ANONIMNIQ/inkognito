@@ -9,7 +9,7 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import { SessionProvider, useSessionContext } from "@/components/SessionProvider";
 import { isAdmin } from "@/integrations/supabase/auth";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import AdminRedirectWrapper from "@/components/AdminRedirectWrapper"; // Import the new wrapper
 
 const queryClient = new QueryClient();
@@ -36,38 +36,53 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <>{children}</>;
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <SessionProvider>
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <AdminRedirectWrapper> {/* Wrap Index with AdminRedirectWrapper */}
-                  <Index />
-                </AdminRedirectWrapper>
-              }
-            />
-            <Route path="/admin/login" element={<AdminLogin />} />
-            <Route
-              path="/admin/dashboard"
-              element={
-                <ProtectedRoute>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </SessionProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  const [isScrollLocked, setScrollLocked] = useState(false);
+
+  useEffect(() => {
+    if (isScrollLocked) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = ''; // Clean up on unmount
+    };
+  }, [isScrollLocked]);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <SessionProvider>
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  <AdminRedirectWrapper> {/* Wrap Index with AdminRedirectWrapper */}
+                    <Index setScrollLocked={setScrollLocked} /> {/* Pass setScrollLocked */}
+                  </AdminRedirectWrapper>
+                }
+              />
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route
+                path="/admin/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </SessionProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

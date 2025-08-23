@@ -35,6 +35,7 @@ interface ConfessionCardProps {
   isContentOpen: boolean;
   onToggleExpand: (confessionId: string) => void;
   animationDelay?: number;
+  setScrollLocked: (locked: boolean) => void; // New prop
 }
 
 const COMMENTS_PER_PAGE = 10;
@@ -47,6 +48,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   isContentOpen,
   onToggleExpand,
   animationDelay = 0,
+  setScrollLocked, // Destructure new prop
 }, ref) => {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(COMMENTS_PER_PAGE);
@@ -145,6 +147,17 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     }, 500);
   };
 
+  const handleToggleExpandAndScrollLock = (toggledConfessionId: string) => {
+    setScrollLocked(true); // Lock scroll immediately
+
+    onToggleExpand(toggledConfessionId); // Update parent state, which will trigger Collapsible animation
+
+    // Unlock scroll after animation duration
+    setTimeout(() => {
+      setScrollLocked(false);
+    }, 250); // A bit more than 200ms for safety
+  };
+
   const bubbleBackgroundColor =
     confession.gender === "male"
       ? "bg-blue-100 dark:bg-blue-950"
@@ -190,7 +203,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
             </Button>
           </div>
 
-          <Collapsible open={isContentOpen} onOpenChange={() => onToggleExpand(confession.id)}>
+          <Collapsible open={isContentOpen} onOpenChange={() => handleToggleExpandAndScrollLock(confession.id)}>
             <div className="flex items-center justify-between space-x-4 mb-2">
               <CollapsibleTrigger asChild>
                 <Button
@@ -221,7 +234,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
               </CollapsibleTrigger>
             </div>
             <CollapsibleContent className="space-y-4 pt-2">
-              <p className={cn("whitespace-pre-wrap font-serif", textColor)}>{confession.content}</p>
+              <p className={cn("whitespace-pre-wrap font-serif", textColor, isContentOpen ? "animate-fade-in" : "")}>{confession.content}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
                 Публикувано на {format(confession.timestamp, "dd MMMM yyyy 'г.'", { locale: bg })}
               </p>
