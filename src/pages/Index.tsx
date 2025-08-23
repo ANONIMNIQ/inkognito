@@ -27,7 +27,8 @@ interface Confession {
   created_at: string;
   comments: Comment[];
   comment_count: number;
-  category: string; // Added category
+  category: string;
+  slug: string; // Added slug
 }
 
 const CONFESSIONS_PER_PAGE = 10;
@@ -84,7 +85,7 @@ const Index: React.FC = () => {
 
       let query = supabase
         .from("confessions")
-        .select("id, title, content, gender, likes, created_at, category, comments(count)")
+        .select("id, title, content, gender, likes, created_at, category, slug, comments(count)") // Added slug
         .order("created_at", { ascending: false });
 
       if (categoryFilter !== "Всички") {
@@ -198,7 +199,7 @@ const Index: React.FC = () => {
     };
   }, [selectedCategory]);
 
-  const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string, email?: string) => {
+  const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string, slug: string, email?: string) => {
     lockScroll();
     
     const confessionData: {
@@ -206,8 +207,9 @@ const Index: React.FC = () => {
       content: string;
       gender: "male" | "female" | "incognito";
       category: string;
+      slug: string; // Added slug
       author_email?: string;
-    } = { title, content, gender, category };
+    } = { title, content, gender, category, slug };
 
     if (email) {
       confessionData.author_email = email;

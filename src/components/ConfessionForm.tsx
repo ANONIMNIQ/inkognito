@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import GenderAvatar from "./GenderAvatar";
-import { cn } from "@/lib/utils";
+import { cn, generateSlug } from "@/lib/utils"; // Import generateSlug
 import {
   Select,
   SelectContent,
@@ -20,7 +20,7 @@ import { Switch } from "@/components/ui/switch";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ConfessionFormProps {
-  onSubmit: (title: string, content: string, gender: "male" | "female" | "incognito", category: string, email?: string) => void;
+  onSubmit: (title: string, content: string, gender: "male" | "female" | "incognito", category: string, slug: string, email?: string) => void;
   onFormFocus?: () => void;
   forceExpand: boolean;
   onFormExpanded: () => void;
@@ -108,7 +108,9 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
         return;
       }
     }
-    onSubmit(title, content, gender, category, subscribe ? email : undefined);
+
+    const confessionSlug = generateSlug(title); // Generate slug here
+    onSubmit(title, content, gender, category, confessionSlug, subscribe ? email : undefined);
     setTitle("");
     setContent("");
     setGender("incognito");

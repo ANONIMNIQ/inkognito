@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
+import ConfessionDetail from "./pages/ConfessionDetail"; // Import the new ConfessionDetail page
 import { SessionProvider, useSessionContext } from "@/components/SessionProvider";
 import { isAdmin } from "@/integrations/supabase/auth";
 import React from "react";
@@ -61,6 +62,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route path="/confessions/:id/:slug" element={<ConfessionDetail />} /> {/* New route for individual confessions */}
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
