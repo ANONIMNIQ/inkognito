@@ -127,7 +127,7 @@ export default {
         "fade-zoom-in": "fade-zoom-in 0.5s ease-out forwards",
         "slide-fade-in-top": "slide-fade-in-top 0.4s ease-out forwards",
         "fade-in": "fade-in 0.4s ease-out forwards",
-        "fade-out": "fade-out 0.4s ease-out forwards",
+        "fade-out": "fade-out 0.2s ease-out forwards",
       },
     },
   },
