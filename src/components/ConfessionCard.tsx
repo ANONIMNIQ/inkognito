@@ -59,6 +59,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const commentsListRef = useRef<HTMLDivElement>(null);
   const commentsToggleRef = useRef<HTMLButtonElement>(null);
   const prevVisibleCountRef = useRef(COMMENTS_PER_PAGE);
+  const isAutoScrolling = useRef(false);
 
   useEffect(() => {
     if (ref) {
@@ -70,7 +71,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     }
   }, [ref]);
 
-  // Effect to dynamically position the sticky header to match the card's width and position
+  // Effect to dynamically position the sticky header
   useEffect(() => {
     const updateHeaderPosition = () => {
       if (cardRootRef.current) {
@@ -85,17 +86,40 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     if (isStickyHeaderVisible) {
       updateHeaderPosition();
       window.addEventListener('resize', updateHeaderPosition);
+      window.addEventListener('scroll', updateHeaderPosition, { passive: true });
     }
 
     return () => {
       window.removeEventListener('resize', updateHeaderPosition);
+      window.removeEventListener('scroll', updateHeaderPosition);
     };
   }, [isStickyHeaderVisible]);
 
-  // Effect to hide the sticky header on the first user scroll after it becomes visible
+  // Effect for auto-scrolling and showing the header
+  useEffect(() => {
+    if (isCommentsOpen) {
+      isAutoScrolling.current = true;
+      const scrollTimeout = setTimeout(() => {
+        commentsToggleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+
+      const showHeaderTimeout = setTimeout(() => {
+        setIsStickyHeaderVisible(true);
+        // After the scroll is definitely over, reset the flag
+        isAutoScrolling.current = false;
+      }, 700); // 100ms delay + 600ms scroll animation
+
+      return () => {
+        clearTimeout(scrollTimeout);
+        clearTimeout(showHeaderTimeout);
+      };
+    }
+  }, [isCommentsOpen]);
+
+  // Effect for hiding the header on user scroll
   useEffect(() => {
     const handleScrollToHide = () => {
-      if (isStickyHeaderVisible) {
+      if (!isAutoScrolling.current) {
         setIsStickyHeaderVisible(false);
       }
     };
@@ -108,26 +132,6 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
       window.removeEventListener('scroll', handleScrollToHide);
     };
   }, [isStickyHeaderVisible]);
-
-  // Effect to handle scrolling and header visibility when comments are opened
-  useEffect(() => {
-    if (isCommentsOpen) {
-      // Use a timeout to ensure the DOM has updated before scrolling
-      const domUpdateTimeout = setTimeout(() => {
-        commentsToggleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-        // After the scroll animation, show the sticky header
-        const scrollAnimationDuration = 600; // Estimated duration
-        const showHeaderTimeout = setTimeout(() => {
-          setIsStickyHeaderVisible(true);
-        }, scrollAnimationDuration);
-        
-        return () => clearTimeout(showHeaderTimeout);
-      }, 100); // Short delay for DOM update
-
-      return () => clearTimeout(domUpdateTimeout);
-    }
-  }, [isCommentsOpen]);
 
   useEffect(() => {
     if (!isContentOpen) {
@@ -203,7 +207,8 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
         className={cn(
           "fixed top-0 z-20 px-4 border-b",
           "flex items-center justify-between py-2",
-          "bg-background transition-all duration-300",
+          "bg-background", // Solid background to prevent visual glitches
+          "transition-opacity duration-300",
           isStickyHeaderVisible
             ? "opacity-100 animate-slide-fade-in-top"
             : "opacity-0 pointer-events-none"
