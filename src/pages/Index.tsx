@@ -9,7 +9,7 @@ import ComposeButton from "@/components/ComposeButton";
 import { useScrollLock } from "@/hooks/use-scroll-lock";
 import CategoryFilter, { categories } from "@/components/CategoryFilter";
 import { cn } from "@/lib/utils";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { useNavigate, useSearchParams } from "react-router-dom"; // Import useSearchParams
 
 interface Comment {
   id: string;
@@ -40,13 +40,13 @@ const Index: React.FC = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  // Removed expandedConfessionId from Index as expansion will now navigate to detail page
   const { loading: authLoading } = useSessionContext();
   const [isComposeButtonVisible, setIsComposeButtonVisible] = useState(false);
   const [forceExpand, setForceExpand] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("Всички");
   const confessionFormContainerRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams(); // Initialize useSearchParams
 
   const observer = useRef<IntersectionObserver>();
   const { lockScroll, unlockScroll } = useScrollLock();
@@ -136,10 +136,21 @@ const Index: React.FC = () => {
       setPage(0);
       setConfessions([]);
       setHasMore(true);
-      // No expandedConfessionId to reset here
       fetchConfessions(0, true, selectedCategory);
+
+      // Check for 'compose' query parameter
+      if (searchParams.get('compose') === 'true') {
+        setForceExpand(true);
+        // Remove the query parameter to prevent re-triggering on refresh
+        searchParams.delete('compose');
+        setSearchParams(searchParams, { replace: true });
+        // Scroll to form after a short delay to allow rendering
+        setTimeout(() => {
+          confessionFormContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
     }
-  }, [authLoading, selectedCategory, fetchConfessions]);
+  }, [authLoading, selectedCategory, fetchConfessions, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (page > 0) {
@@ -190,7 +201,6 @@ const Index: React.FC = () => {
             if (prev.some(c => c.id === newConfession.id)) return prev;
             return [{ ...newConfession, comments: [], comment_count: 0 }, ...prev];
           });
-          // No in-page expansion, so no need to set expandedConfessionId here
         }
       })
       .subscribe();
@@ -232,7 +242,6 @@ const Index: React.FC = () => {
     const newConfessionForState = { ...newConfessionData, comments: [], comment_count: 0 };
     if (selectedCategory === "Всички" || newConfessionForState.category === selectedCategory) {
       setConfessions((prev) => [newConfessionForState, ...prev]);
-      // No in-page expansion, so no need to set expandedConfessionId here
     }
 
     try {
@@ -274,7 +283,6 @@ const Index: React.FC = () => {
     }
   };
 
-  // This function is now only for the detail page, not used directly on Index for comments
   const handleFetchComments = async (confessionId: string) => {
     const confessionToUpdate = confessions.find(c => c.id === confessionId);
     if (!confessionToUpdate || confessionToUpdate.comments.length > 0) return;
@@ -303,7 +311,6 @@ const Index: React.FC = () => {
     }
   };
 
-  // This function is now only for the detail page, not used directly on Index for comments
   const handleAddComment = async (confessionId: string, content: string, gender: "male" | "female" | "incognito") => {
     lockScroll();
     const { data, error } = await supabase
@@ -323,7 +330,6 @@ const Index: React.FC = () => {
             : conf
         )
       );
-      // No in-page expansion, so no need to set expandedConfessionId here
       toast.success("Comment posted!");
 
       supabase.functions.invoke('send-comment-notification', {
@@ -351,7 +357,6 @@ const Index: React.FC = () => {
     }
   };
 
-  // This function now navigates to the detail page
   const handleConfessionToggle = useCallback((confessionId: string, slug: string) => {
     navigate(`/confessions/${confessionId}/${slug}`);
   }, [navigate]);
