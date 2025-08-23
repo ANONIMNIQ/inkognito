@@ -193,9 +193,9 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
           style={headerStyle}
           className={cn(
             "fixed top-0 z-20 px-4",
-            "flex items-center justify-end py-2",
+            "flex items-center justify-end py-1",
             "pointer-events-none",
-            "transition-opacity duration-300"
+            "animate-slide-fade-in-top"
           )}
         >
           <p className="font-serif text-sm font-semibold truncate text-foreground">
