@@ -70,9 +70,9 @@ serve(async (req) => {
     `;
 
     const emailPayload = {
-      from: 'noreply@yourdomain.com', // IMPORTANT: Replace 'yourdomain.com' with your actual verified domain on Resend
+      from: 'noreply@inkognito.online', // Updated to your specified domain
       to: confession.author_email,
-      subject: `Нов коментар на вашата изповед: "${confession.title}"`,
+      subject: `Нов коментар на вашата изпоved: "${confession.title}"`,
       html: emailHtml,
     };
     console.log("Sending email with payload:", emailPayload);
