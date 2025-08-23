@@ -296,9 +296,12 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
         <div id={`comments-section-${confession.id}`} className={cn("mt-4", isMobile ? "ml-0" : "ml-14")}>
           <Collapsible open={isCommentsOpen}>
             <CollapsibleTrigger asChild>
-              <Button ref={commentsToggleRef} variant="link" className={cn("justify-start p-0 h-auto", linkColor)} onClick={handleToggleCommentsLocal}>
-                {isCommentsOpen ? "Скрий коментарите" : "Покажи коментарите"} ({confession.comment_count})
-                {isCommentsOpen ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
+              <Button ref={commentsToggleRef} variant="link" className={cn("w-full justify-between p-0 h-auto", linkColor)} onClick={handleToggleCommentsLocal}>
+                <div className="flex items-center min-w-0">
+                  <span className="whitespace-nowrap">{isCommentsOpen ? "Скрий коментарите" : "Покажи коментарите"} ({confession.comment_count})</span>
+                  <span className="truncate ml-2 text-sm font-normal italic"> - "{confession.title}"</span>
+                </div>
+                {isCommentsOpen ? <ChevronUp className="h-4 w-4 flex-shrink-0" /> : <ChevronDown className="h-4 w-4 flex-shrink-0" />}
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-3 pt-2">
