@@ -226,11 +226,13 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                   {isCommentsOpen ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
                 </Button>
               </CollapsibleTrigger>
-              {isCommentsOpen && (
-                <p className="text-sm font-semibold font-serif text-right truncate ml-4 flex-1 text-gray-600 dark:text-gray-400">
-                  {confession.title}
-                </p>
-              )}
+              <p className={cn(
+                "text-sm font-semibold font-serif text-right truncate text-gray-600 dark:text-gray-400",
+                "transition-all duration-300 ease-in-out",
+                isCommentsOpen ? "opacity-100 flex-1 ml-4" : "opacity-0 flex-none w-0 ml-0"
+              )}>
+                {confession.title}
+              </p>
             </div>
             <CollapsibleContent className="space-y-3 pt-2">
               {isFetchingComments ? (
