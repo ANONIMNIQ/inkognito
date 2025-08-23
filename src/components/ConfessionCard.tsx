@@ -263,7 +263,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                   )}
                 >
                   {isDirectLinkTarget || hasAnimated ? (
-                    <span className={cn("w-full", isContentOpen ? "whitespace-pre-wrap" : "truncate")}>
+                    <span className={cn("block w-full", isContentOpen ? "whitespace-pre-wrap" : "truncate")}>
                       {confession.title}
                     </span>
                   ) : (
