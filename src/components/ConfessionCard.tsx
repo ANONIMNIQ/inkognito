@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, forwardRef, Ref } from "react";
+import React, { useState, useEffect, useRef, forwardRef, Ref, useCallback } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, MessageCircle, Heart, Share2 } from "lucide-react";
@@ -83,6 +83,10 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const location = useLocation();
 
   const isMobile = useIsMobile();
+
+  const handleAnimationComplete = useCallback(() => {
+    setHasAnimated(true);
+  }, []);
 
   useEffect(() => {
     if (ref) {
@@ -294,10 +298,10 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                   ) : (
                     <TypingText
                       text={confession.title}
-                      delay={50} // Typing starts 50ms after the card begins its fade-in animation
-                      speed={20} // Faster typing speed
+                      delay={50}
+                      speed={20}
                       className={cn("w-full", isContentOpen ? "whitespace-pre-wrap" : "truncate")}
-                      onComplete={() => setHasAnimated(true)}
+                      onComplete={handleAnimationComplete}
                     />
                   )}
                 </Link>
