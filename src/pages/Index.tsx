@@ -182,6 +182,9 @@ const Index: React.FC = () => {
       } else if (confessions.length > 0 && visibleConfessionCount === 0) {
         // Otherwise, start the animation chain for the first card
         setVisibleConfessionCount(1);
+      } else if (confessions.length > visibleConfessionCount) {
+        // If more confessions were loaded, continue the animation chain
+        handleTitleAnimationComplete();
       }
     }
   }, [loading, paramId, confessions.length, visibleConfessionCount]);
@@ -289,7 +292,6 @@ const Index: React.FC = () => {
         <div className="space-y-6">
           {confessions.slice(0, visibleConfessionCount).map((conf, index) => (
             <ConfessionCard
-              ref={!paramId && index === visibleConfessionCount - 1 && visibleConfessionCount === confessions.length ? lastConfessionElementRef : null}
               key={conf.id}
               confession={{ ...conf, timestamp: new Date(conf.created_at), comments: conf.comments.map(c => ({ ...c, timestamp: new Date(c.created_at) })) }}
               onAddComment={handleAddComment}
@@ -306,6 +308,10 @@ const Index: React.FC = () => {
         </div>
       )}
       {loadingMore && <div className="space-y-6 mt-8"><ConfessionCardSkeleton /><ConfessionCardSkeleton /></div>}
+      
+      {/* Invisible trigger for infinite scroll */}
+      {!loading && hasMore && !paramId && <div ref={lastConfessionElementRef} style={{ height: "1px" }} />}
+
       {!hasMore && confessions.length > 0 && <p className="text-center text-gray-500 dark:text-gray-400 mt-8">Това са всички изповеди.</p>}
       <ComposeButton isVisible={isComposeButtonVisible} onClick={handleComposeClick} />
     </div>
