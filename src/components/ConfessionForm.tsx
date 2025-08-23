@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { categories } from "./CategoryFilter";
 import { Switch } from "@/components/ui/switch";
-import { useIsMobile } from "@/hooks/use-mobile"; // Import useIsMobile
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ConfessionFormProps {
   onSubmit: (title: string, content: string, gender: "male" | "female" | "incognito", category: string, email?: string) => void;
@@ -41,13 +41,50 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
 
   const formRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
-  const isMobile = useIsMobile(); // Use the hook
+  const isMobile = useIsMobile();
 
   const generateCaptcha = () => {
     setCaptchaNum1(Math.floor(Math.random() * 10) + 1);
     setCaptchaNum2(Math.floor(Math.random() * 10) + 1);
     setCaptchaAnswer("");
   };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isSelectOpen) {
+        return;
+      }
+      if (formRef.current && !formRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    if (open) {
+      document.addEventListener("click", handleClickOutside);
+    } else {
+      document.removeEventListener("click", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [open, isSelectOpen]);
+
+  useEffect(() => {
+    if (forceExpand) {
+      setOpen(true);
+      setTimeout(() => {
+        titleInputRef.current?.focus();
+      }, 100);
+      onFormExpanded();
+    }
+  }, [forceExpand, onFormExpanded]);
+
+  useEffect(() => {
+    if (open) {
+      generateCaptcha();
+    }
+  }, [open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,43 +126,6 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
     }
   };
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (isSelectOpen) {
-        return;
-      }
-      if (formRef.current && !formRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
-
-    if (open) {
-      document.addEventListener("click", handleClickOutside);
-    } else {
-      document.removeEventListener("click", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("click", handleClickOutside);
-    };
-  }, [open, isSelectOpen]);
-
-  useEffect(() => {
-    if (forceExpand) {
-      setOpen(true);
-      setTimeout(() => {
-        titleInputRef.current?.focus();
-      }, 100);
-      onFormExpanded();
-    }
-  }, [forceExpand, onFormExpanded]);
-
-  useEffect(() => {
-    if (open) {
-      generateCaptcha();
-    }
-  }, [open]);
-
   const bubbleBackgroundColor =
     gender === "male"
       ? "bg-blue-100 dark:bg-blue-950"
@@ -152,7 +152,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
         <div
           className={cn(
             "absolute top-3 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent",
-            isMobile ? "left-2" : "-left-2", // Adjust arrow position for mobile
+            isMobile ? "left-2" : "-left-2",
             gender === "male"
               ? "border-r-blue-100 dark:border-r-blue-950"
               : gender === "female"
@@ -170,7 +170,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
           onFocus={handleTitleFocus}
           required
           maxLength={100}
-          className={cn("w-full bg-transparent text-sm md:text-base", generalTextColor, placeholderColor, borderColor)} {/* Smaller title on mobile */}
+          className={cn("w-full bg-transparent text-sm md:text-base", generalTextColor, placeholderColor, borderColor)}
         />
 
         <Collapsible open={open} className="mt-2">
@@ -187,7 +187,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
                   onChange={(e) => setContent(e.target.value)}
                   rows={5}
                   required
-                  className={cn("bg-transparent mt-1 text-base md:text-lg", generalTextColor, placeholderColor, borderColor)} {/* Content text size base on mobile, larger on desktop */}
+                  className={cn("bg-transparent mt-1 text-base md:text-lg", generalTextColor, placeholderColor, borderColor)}
                 />
               </div>
               <div>
