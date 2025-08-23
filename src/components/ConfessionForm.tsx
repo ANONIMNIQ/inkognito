@@ -170,7 +170,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
           onFocus={handleTitleFocus}
           required
           maxLength={100}
-          className={cn("w-full bg-transparent text-sm md:text-base", generalTextColor, placeholderColor, borderColor)}
+          className={cn("w-full bg-transparent text-base", generalTextColor, placeholderColor, borderColor)}
         />
 
         <Collapsible open={open} className="mt-2">

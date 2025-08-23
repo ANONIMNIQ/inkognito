@@ -127,37 +127,38 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit, hideAvatarOnMobile 
                 <span className={cn(
                   "text-sm",
                   gender === "female"
-                    ? cn(generalTextColor, "font-bold underline decoration-2")
-                    : cn("text-gray-500 dark:text-gray-400", "hover:underline", `hover:${generalTextColor}`)
-                )}>жена</span>
-              </Label>
-            </div>
-          </RadioGroup>
+                          ? cn(generalTextColor, "font-bold underline decoration-2")
+                          : cn("text-gray-500 dark:text-gray-400", "hover:underline", `hover:${generalTextColor}`)
+                      )}>жена</span>
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+              <div>
+                <Label htmlFor="comment-captcha" className={cn("text-xs", generalTextColor)}>
+                  Колко е {captchaNum1} + {captchaNum2}?
+                </Label>
+                <Input
+                  id="comment-captcha"
+                  type="number"
+                  value={captchaAnswer}
+                  onChange={(e) => setCaptchaAnswer(e.target.value)}
+                  required
+                  className={cn("mt-1 h-8 bg-transparent text-base", generalTextColor, placeholderColor, borderColor)}
+                />
+              </div>
+              <div className="flex justify-center pt-1">
+                <Button
+                  type="submit"
+                  size="sm"
+                  className="w-auto rounded-full bg-gray-900 px-6 text-white transition-colors hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-300"
+                >
+                  Публикувай Коментар
+                </Button>
+              </div>
+            </form>
+          </div>
         </div>
-        <div>
-          <Label htmlFor="comment-captcha" className={cn("text-xs", generalTextColor)}>
-            Колко е {captchaNum1} + {captchaNum2}?
-          </Label>
-          <Input
-            id="comment-captcha"
-            type="number"
-            value={captchaAnswer}
-            onChange={(e) => setCaptchaAnswer(e.target.value)}
-            required
-            className={cn("mt-1 h-8 bg-transparent", generalTextColor, placeholderColor, borderColor)}
-          />
-        </div>
-        <div className="flex justify-center pt-1">
-          <Button
-            type="submit"
-            size="sm"
-            className="w-auto rounded-full bg-gray-900 px-6 text-white transition-colors hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-300"
-          >
-            Публикувай Коментар
-          </Button>
-        </div>
-      </form>
-    </div>
   );
 };
 
