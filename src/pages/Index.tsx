@@ -59,8 +59,9 @@ const Index: React.FC = () => {
     { initialLoad = false, category = "Всички", currentPage = 0, targetId, targetSlug }:
     { initialLoad?: boolean; category?: string; currentPage?: number; targetId?: string; targetSlug?: string }
   ) => {
-    if (initialLoad) setLoading(true);
-    else setLoadingMore(true);
+    if (!initialLoad) { // Only set loadingMore if it's not the initial load (which is handled by useEffect)
+      setLoadingMore(true);
+    }
 
     try {
       let allConfessions: Confession[] = [];
@@ -99,8 +100,11 @@ const Index: React.FC = () => {
       toast.error("Error fetching confessions: " + error.message);
       setHasMore(false);
     } finally {
-      setLoading(false);
-      setLoadingMore(false);
+      if (initialLoad) {
+        setLoading(false); // For initial loads, set main loading to false
+      } else {
+        setLoadingMore(false); // For subsequent loads (pagination), set loadingMore to false
+      }
     }
   }, [navigate]);
 
@@ -118,6 +122,7 @@ const Index: React.FC = () => {
     const isContextChange = (paramId && !confessionIsLoaded) || (!paramId && selectedCategory !== categoryFromUrl) || confessions.length === 0;
 
     if (isContextChange) {
+      setLoading(true); // Set loading here immediately for initial context change
       setConfessions([]);
       setPage(0);
       setHasMore(true);
@@ -281,7 +286,7 @@ const Index: React.FC = () => {
               onToggleExpand={handleConfessionToggle}
               animationDelay={200 + (index * 100)}
               onSelectCategory={handleSelectCategory}
-              shouldOpenCommentsOnLoad={conf.id === expandedConfessionId && location.hash === '#comments'} // New prop
+              shouldOpenCommentsOnLoad={conf.id === expandedConfessionId && location.hash === '#comments'}
             />
           ))}
         </div>
