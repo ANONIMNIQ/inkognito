@@ -190,7 +190,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
           ></div>
           
           {/* Category label positioned absolutely */}
-          <span className="absolute top-2 right-2 text-xs font-medium text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700">
+          <span className="absolute top-2 right-2 text-xs font-medium text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-full bg-white dark:bg-gray-700 shadow-sm">
             {confession.category}
           </span>
 
