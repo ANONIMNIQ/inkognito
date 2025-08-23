@@ -110,8 +110,6 @@ const Index: React.FC = () => {
         setConfessions(confessionsWithCommentCount);
         setLoadingConfessions(false);
       } else {
-        // Removed setTimeout here. New items should be added immediately to the DOM.
-        // The animationDelay on ConfessionCard will handle the cascading appearance.
         setConfessions((prev) => [...prev, ...confessionsWithCommentCount]);
         setLoadingMore(false);
       }
@@ -133,6 +131,7 @@ const Index: React.FC = () => {
       setPage(0); // Reset page when category changes
       setConfessions([]); // Clear confessions when category changes
       setHasMore(true); // Explicitly reset hasMore for the new category
+      setExpandedConfessionId(null); // Reset expanded confession
       fetchConfessions(0, true, selectedCategory);
     }
   }, [authLoading, fetchConfessions, selectedCategory]); // Re-fetch when selectedCategory changes
@@ -146,25 +145,31 @@ const Index: React.FC = () => {
 
   const lastConfessionElementRef = useCallback(
     (node: HTMLDivElement) => {
-      if (loadingMore || loadingConfessions) {
-        console.log("[lastConfessionElementRef] Observer skipped: loadingMore or loadingConfessions is true.");
-        return;
+      console.log(`[lastConfessionElementRef] Called with node: ${node ? 'present' : 'null'}, loadingMore: ${loadingMore}, loadingConfessions: ${loadingConfessions}, hasMore: ${hasMore}, page: ${page}, confessions.length: ${confessions.length}`);
+
+      if (observer.current) {
+        observer.current.disconnect();
+        console.log("[lastConfessionElementRef] Disconnected previous observer.");
       }
-      if (observer.current) observer.current.disconnect();
-      observer.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && hasMore) {
-          console.log(`[lastConfessionElementRef] IntersectionObserver triggered. Current page: ${page}, hasMore: ${hasMore}. Setting page to ${page + 1}.`);
-          setPage((prevPage) => prevPage + 1);
-        } else {
-          console.log(`[lastConfessionElementRef] IntersectionObserver not triggered. isIntersecting: ${entries[0].isIntersecting}, hasMore: ${hasMore}.`);
-        }
-      });
-      if (node) {
+
+      if (node && hasMore && !loadingMore && !loadingConfessions) {
+        observer.current = new IntersectionObserver((entries) => {
+          if (entries[0].isIntersecting && hasMore) {
+            console.log(`[lastConfessionElementRef] IntersectionObserver triggered. Current page: ${page}, hasMore: ${hasMore}. Setting page to ${page + 1}.`);
+            setPage((prevPage) => prevPage + 1);
+          } else {
+            console.log(`[lastConfessionElementRef] IntersectionObserver not triggered. isIntersecting: ${entries[0].isIntersecting}, hasMore: ${hasMore}.`);
+          }
+        });
         observer.current.observe(node);
-        console.log("[lastConfessionElementRef] Observer attached to node:", node);
+        console.log("[lastConfessionElementRef] New observer attached to node.");
+      } else if (!hasMore) {
+        console.log("[lastConfessionElementRef] No more items to load, not attaching observer.");
+      } else if (loadingMore || loadingConfessions) {
+        console.log("[lastConfessionElementRef] Currently loading, not attaching observer.");
       }
     },
-    [loadingMore, loadingConfessions, hasMore, page] // Added page to dependencies for logging
+    [loadingMore, loadingConfessions, hasMore, page, confessions.length] // Added confessions.length
   );
 
   useEffect(() => {
