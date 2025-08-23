@@ -115,7 +115,10 @@ const Index: React.FC = () => {
       if (initialLoad) {
         setLoadingConfessions(false);
       } else {
-        setLoadingMore(false);
+        // Add a small delay to ensure skeletons are visible
+        setTimeout(() => {
+          setLoadingMore(false);
+        }, 500); // 500ms delay
       }
     }
   }, []);
