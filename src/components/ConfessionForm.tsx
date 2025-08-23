@@ -16,9 +16,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { categories } from "./CategoryFilter"; // Import categories
+import { Switch } from "@/components/ui/switch";
 
 interface ConfessionFormProps {
-  onSubmit: (title: string, content: string, gender: "male" | "female" | "incognito", category: string) => void;
+  onSubmit: (title: string, content: string, gender: "male" | "female" | "incognito", category: string, email?: string) => void;
   onFormFocus?: () => void;
   forceExpand: boolean;
   onFormExpanded: () => void;
@@ -29,11 +30,13 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [gender, setGender] = useState<"male" | "female" | "incognito">("incognito");
-  const [category, setCategory] = useState<string>("Други"); // New state for category, default to "Други"
+  const [category, setCategory] = useState<string>("Други");
   const [captchaNum1, setCaptchaNum1] = useState(0);
   const [captchaNum2, setCaptchaNum2] = useState(0);
   const [captchaAnswer, setCaptchaAnswer] = useState("");
-  const [isSelectOpen, setIsSelectOpen] = useState(false); // New state to track if Select is open
+  const [isSelectOpen, setIsSelectOpen] = useState(false);
+  const [subscribe, setSubscribe] = useState(false);
+  const [email, setEmail] = useState("");
 
   const formRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -55,11 +58,24 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
       generateCaptcha();
       return;
     }
-    onSubmit(title, content, gender, category); // Pass category to onSubmit
+    if (subscribe) {
+      if (!email.trim()) {
+        toast.error("Моля, въведете имейл адрес за абонамента.");
+        return;
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        toast.error("Моля, въведете валиден имейл адрес.");
+        return;
+      }
+    }
+    onSubmit(title, content, gender, category, subscribe ? email : undefined);
     setTitle("");
     setContent("");
     setGender("incognito");
-    setCategory("Други"); // Reset category
+    setCategory("Други");
+    setSubscribe(false);
+    setEmail("");
     setOpen(false);
     toast.success("Your confession has been posted!");
   };
@@ -73,12 +89,9 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // If the Select dropdown is open, do not close the form
       if (isSelectOpen) {
         return;
       }
-
-      // If the click is outside the form, close the form
       if (formRef.current && !formRef.current.contains(event.target as Node)) {
         setOpen(false);
       }
@@ -93,7 +106,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
     return () => {
       document.removeEventListener("click", handleClickOutside);
     };
-  }, [open, isSelectOpen]); // Add isSelectOpen to dependencies
+  }, [open, isSelectOpen]);
 
   useEffect(() => {
     if (forceExpand) {
@@ -146,7 +159,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
         <Input
           ref={titleInputRef}
           id="title"
-          placeholder="Кратко заглавие на твоята изповед..."
+          placeholder="Кратко заглавие на твоята изповед... *"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onFocus={handleTitleFocus}
@@ -159,7 +172,9 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
           <CollapsibleContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="content" className="sr-only">Confession</Label>
+                <Label htmlFor="content" className={cn("text-sm", generalTextColor)}>
+                  Твоята изповед <span className="text-red-500">*</span>
+                </Label>
                 <Textarea
                   id="content"
                   placeholder="Сподели ни тайната си..."
@@ -167,17 +182,19 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
                   onChange={(e) => setContent(e.target.value)}
                   rows={5}
                   required
-                  className={cn("bg-transparent", generalTextColor, placeholderColor, borderColor)}
+                  className={cn("bg-transparent mt-1", generalTextColor, placeholderColor, borderColor)}
                 />
               </div>
               <div>
-                <Label htmlFor="category" className={cn("text-sm text-right w-full", generalTextColor)}>Категория</Label>
-                <Select value={category} onValueChange={setCategory} onOpenChange={setIsSelectOpen}> {/* Added onOpenChange */}
+                <Label htmlFor="category" className={cn("text-sm w-full", generalTextColor)}>
+                  Категория <span className="text-red-500">*</span>
+                </Label>
+                <Select value={category} onValueChange={setCategory} onOpenChange={setIsSelectOpen}>
                   <SelectTrigger id="category" className={cn("mt-1 w-full bg-transparent", generalTextColor, borderColor)}>
                     <SelectValue placeholder="Избери категория" />
                   </SelectTrigger>
                   <SelectContent className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700">
-                    {categories.filter(c => c !== "Всички").map((cat) => ( // Filter out "Всички" for posting
+                    {categories.filter(c => c !== "Всички").map((cat) => (
                       <SelectItem key={cat} value={cat}>
                         {cat}
                       </SelectItem>
@@ -186,7 +203,9 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
                 </Select>
               </div>
               <div>
-                <Label className={cn("text-sm", generalTextColor)}>Твоят пол</Label>
+                <Label className={cn("text-sm", generalTextColor)}>
+                  Твоят пол <span className="text-red-500">*</span>
+                </Label>
                 <RadioGroup
                   defaultValue="incognito"
                   value={gender}
@@ -232,8 +251,35 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
                 </RadioGroup>
               </div>
               <div>
+                <Label className={cn("text-sm", generalTextColor)}>Известяване за коментари</Label>
+                <div className="flex items-center space-x-3 mt-2 bg-gray-200/50 dark:bg-gray-900/50 p-3 rounded-md">
+                  <Switch
+                    id="subscribe-switch"
+                    checked={subscribe}
+                    onCheckedChange={setSubscribe}
+                  />
+                  <Label htmlFor="subscribe-switch" className="text-sm text-gray-600 dark:text-gray-400 cursor-pointer">
+                    Абониране за известия при нов коментар
+                  </Label>
+                </div>
+                {subscribe && (
+                  <div className="mt-2 animate-slide-fade-in-top">
+                    <Label htmlFor="email" className={cn("text-sm", generalTextColor)}>Email адрес</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="email адрес"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required={subscribe}
+                      className={cn("mt-1 bg-transparent", generalTextColor, placeholderColor, borderColor)}
+                    />
+                  </div>
+                )}
+              </div>
+              <div>
                 <Label htmlFor="captcha" className={cn("text-sm", generalTextColor)}>
-                  Колко е {captchaNum1} + {captchaNum2}?
+                  Колко е {captchaNum1} + {captchaNum2}? <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="captcha"

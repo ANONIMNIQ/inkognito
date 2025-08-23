@@ -83,7 +83,7 @@ const Index: React.FC = () => {
 
       let query = supabase
         .from("confessions")
-        .select("*, comments(count)")
+        .select("id, title, content, gender, likes, created_at, category, comments(count)")
         .order("created_at", { ascending: false });
 
       if (categoryFilter !== "Всички") {
@@ -197,11 +197,24 @@ const Index: React.FC = () => {
     };
   }, [selectedCategory]);
 
-  const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string) => {
+  const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string, email?: string) => {
     lockScroll();
+    
+    const confessionData: {
+      title: string;
+      content: string;
+      gender: "male" | "female" | "incognito";
+      category: string;
+      author_email?: string;
+    } = { title, content, gender, category };
+
+    if (email) {
+      confessionData.author_email = email;
+    }
+
     const { data: newConfessionData, error: insertError } = await supabase
       .from("confessions")
-      .insert({ title, content, gender, category })
+      .insert(confessionData)
       .select()
       .single();
 
