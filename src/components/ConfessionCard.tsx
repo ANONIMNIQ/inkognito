@@ -20,7 +20,7 @@ interface Comment {
 
 interface ConfessionCardProps {
   confession: {
-    id: string;
+    id:string;
     title: string;
     content: string;
     gender: "male" | "female" | "incognito";
@@ -52,10 +52,12 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(COMMENTS_PER_PAGE);
   const [isLoadingMoreComments, setIsLoadingMoreComments] = useState(false);
   const [isFetchingComments, setIsFetchingComments] = useState(false);
+  const [isStickyHeaderVisible, setIsStickyHeaderVisible] = useState(false);
   
   const cardRootRef = useRef<HTMLDivElement>(null);
   const commentsSectionRef = useRef<HTMLDivElement>(null);
   const commentsListRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLButtonElement>(null);
   const prevVisibleCountRef = useRef(COMMENTS_PER_PAGE);
   const isInitialMount = useRef(true);
 
@@ -68,6 +70,37 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
       }
     }
   }, [ref]);
+
+  useEffect(() => {
+    const titleElement = titleRef.current;
+    const cardElement = cardRootRef.current;
+
+    if (!isCommentsOpen || !titleElement || !cardElement) {
+      setIsStickyHeaderVisible(false);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const titleEntry = entries.find((e) => e.target === titleElement);
+        const cardEntry = entries.find((e) => e.target === cardElement);
+
+        if (titleEntry && cardEntry) {
+          const isTitleScrolledPast = !titleEntry.isIntersecting && titleEntry.boundingClientRect.top < 0;
+          const isCardStillInView = cardEntry.isIntersecting;
+          const isCardScrolledCompletelyPast = cardEntry.boundingClientRect.bottom <= 0;
+
+          setIsStickyHeaderVisible(isTitleScrolledPast && isCardStillInView && !isCardScrolledCompletelyPast);
+        }
+      },
+      { threshold: [0, 1] }
+    );
+
+    observer.observe(titleElement);
+    observer.observe(cardElement);
+
+    return () => observer.disconnect();
+  }, [isCommentsOpen]);
 
   useEffect(() => {
     if (isInitialMount.current) {
@@ -168,6 +201,24 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                 : "border-r-gray-100 dark:border-r-gray-800"
             )}
           ></div>
+          
+          <div className={cn(
+            "sticky top-0 z-10 flex items-center justify-between p-2 -mx-4 -mt-4 mb-2 rounded-t-xl",
+            "bg-opacity-80 backdrop-blur-sm transition-all duration-300",
+            bubbleBackgroundColor,
+            isStickyHeaderVisible
+              ? "opacity-100 animate-slide-fade-in-top"
+              : "opacity-0 pointer-events-none"
+          )}>
+            <Button variant="link" className={cn("p-0 h-auto text-sm", linkColor)} onClick={handleToggleComments}>
+              Скрий коментарите
+              <ChevronUp className="ml-1 h-4 w-4" />
+            </Button>
+            <p className="font-serif text-sm font-semibold truncate ml-4 flex-1 text-right">
+              {confession.title}
+            </p>
+          </div>
+
           <div className="flex justify-between items-center mb-2">
             <Button
               variant="link"
@@ -191,6 +242,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
             <div className="flex items-center justify-between space-x-4 mb-2">
               <CollapsibleTrigger asChild>
                 <Button
+                  ref={titleRef}
                   variant="link"
                   className={cn(
                     "p-0 h-auto text-left text-2xl font-semibold hover:no-underline font-serif transition-colors justify-start min-w-0 flex-1",
