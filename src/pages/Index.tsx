@@ -70,11 +70,13 @@ const Index: React.FC = () => {
   };
 
   const fetchConfessions = useCallback(async (currentPage: number, initialLoad: boolean, categoryFilter: string) => {
-    console.log(`Fetching confessions: page=${currentPage}, initialLoad=${initialLoad}, category=${categoryFilter}`);
+    console.log(`[fetchConfessions] START: page=${currentPage}, initialLoad=${initialLoad}, category=${categoryFilter}`);
     if (initialLoad) {
       setLoadingConfessions(true);
+      lockScroll(); // Lock scroll for initial load animation
     } else {
       setLoadingMore(true);
+      lockScroll(); // Lock scroll for loading more animation
     }
 
     try {
@@ -102,23 +104,34 @@ const Index: React.FC = () => {
         comments: [],
       }));
 
-      if (confessionsData.length < CONFESSIONS_PER_PAGE) {
-        setHasMore(false);
-      } else {
-        setHasMore(true);
-      }
+      const newHasMore = confessionsData.length === CONFESSIONS_PER_PAGE;
+      setHasMore(newHasMore);
+      console.log(`[fetchConfessions] Fetched ${confessionsData.length} items. New hasMore: ${newHasMore}`);
 
       if (initialLoad) {
         setConfessions(confessionsWithCommentCount);
         setLoadingConfessions(false);
+        // Unlock after the longest possible animation for the initial batch
+        const maxAnimationDuration = 200 + ((Math.min(confessionsWithCommentCount.length, CONFESSIONS_PER_PAGE) - 1) * 150) + 500;
+        console.log(`[fetchConfessions] Initial load complete. Unlocking scroll in ${maxAnimationDuration}ms.`);
+        setTimeout(() => {
+          unlockScroll();
+        }, maxAnimationDuration);
       } else {
+        // Delay before new items appear and animate
         setTimeout(() => {
           setConfessions((prev) => [...prev, ...confessionsWithCommentCount]);
           setLoadingMore(false);
-        }, 500);
+          // Unlock after the longest possible animation for the new batch
+          const maxAnimationDuration = ((Math.min(confessionsWithCommentCount.length, CONFESSIONS_PER_PAGE) - 1) * 150) + 500;
+          console.log(`[fetchConfessions] Loading more complete. Unlocking scroll in ${maxAnimationDuration}ms.`);
+          setTimeout(() => {
+            unlockScroll();
+          }, maxAnimationDuration);
+        }, 500); // Delay before new items appear
       }
     } catch (error: any) {
-      console.error("Error fetching confessions:", error);
+      console.error("[fetchConfessions] Error fetching confessions:", error);
       toast.error("Error fetching confessions: " + error.message);
       setHasMore(false);
       if (initialLoad) {
@@ -126,12 +139,13 @@ const Index: React.FC = () => {
       } else {
         setLoadingMore(false);
       }
+      unlockScroll(); // Ensure unlock on error
     }
-  }, []);
+  }, [lockScroll, unlockScroll]); // Add lockScroll, unlockScroll to dependencies
 
   useEffect(() => {
     if (!authLoading) {
-      console.log(`Category changed to ${selectedCategory}. Resetting state.`);
+      console.log(`[useEffect] Category changed to ${selectedCategory}. Resetting state.`);
       setPage(0); // Reset page when category changes
       setConfessions([]); // Clear confessions when category changes
       setHasMore(true); // Explicitly reset hasMore for the new category
@@ -141,22 +155,29 @@ const Index: React.FC = () => {
 
   useEffect(() => {
     if (page > 0) {
+      console.log(`[useEffect] Page changed to ${page}. Fetching next batch.`);
       fetchConfessions(page, false, selectedCategory);
     }
   }, [page, fetchConfessions, selectedCategory]);
 
   const lastConfessionElementRef = useCallback(
     (node: HTMLDivElement) => {
-      if (loadingMore || loadingConfessions) return;
+      if (loadingMore || loadingConfessions) {
+        console.log("[lastConfessionElementRef] Observer skipped: loadingMore or loadingConfessions is true.");
+        return;
+      }
       if (observer.current) observer.current.disconnect();
       observer.current = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting && hasMore) {
+          console.log(`[lastConfessionElementRef] IntersectionObserver triggered. Current page: ${page}, hasMore: ${hasMore}. Setting page to ${page + 1}.`);
           setPage((prevPage) => prevPage + 1);
+        } else {
+          console.log(`[lastConfessionElementRef] IntersectionObserver not triggered. isIntersecting: ${entries[0].isIntersecting}, hasMore: ${hasMore}.`);
         }
       });
       if (node) observer.current.observe(node);
     },
-    [loadingMore, loadingConfessions, hasMore]
+    [loadingMore, loadingConfessions, hasMore, page] // Added page to dependencies for logging
   );
 
   useEffect(() => {
