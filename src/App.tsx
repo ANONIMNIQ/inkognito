@@ -61,8 +61,15 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            {/* Both the main feed and detail view now point to the same Index component */}
-            <Route path="/confessions/:id/:slug" element={<Index />} />
+            {/* Both routes now have the same structure to prevent re-mounting */}
+            <Route
+              path="/confessions/:id/:slug"
+              element={
+                <AdminRedirectWrapper>
+                  <Index />
+                </AdminRedirectWrapper>
+              }
+            />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
