@@ -10,7 +10,7 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
-export const categories = ["Всички", "Други", "Любов и Секс", "Образование", "Семейство", "Спорт и Здраве", "Тийн"];
+export const categories = ["Всички", "Любов и Секс", "Образование", "Семейство", "Спорт и Здраве", "Тийн", "Други"];
 
 interface CategoryFilterProps {
   selectedCategory: string;
@@ -40,14 +40,14 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onSel
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto mb-6 flex flex-wrap justify-center gap-2">
+    <div className="w-full max-w-2xl mx-auto mb-6 flex flex-wrap justify-center gap-1">
       {categories.map((category) => (
         <Button
           key={category}
           variant={selectedCategory === category ? "default" : "outline"}
           onClick={() => onSelectCategory(category)}
           className={cn(
-            "rounded-full px-4 py-2 text-sm transition-colors",
+            "rounded-full px-3 py-1.5 text-xs transition-colors h-auto", // Adjusted padding and text size
             selectedCategory === category
               ? "bg-gray-900 text-white hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-300"
               : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
