@@ -59,7 +59,7 @@ const Index: React.FC = () => {
     { initialLoad = false, category = "Всички", currentPage = 0, targetId, targetSlug }:
     { initialLoad?: boolean; category?: string; currentPage?: number; targetId?: string; targetSlug?: string }
   ) => {
-    if (!initialLoad) { // Only set loadingMore if it's not the initial load (which is handled by useEffect)
+    if (!initialLoad) {
       setLoadingMore(true);
     }
 
@@ -101,9 +101,9 @@ const Index: React.FC = () => {
       setHasMore(false);
     } finally {
       if (initialLoad) {
-        setLoading(false); // For initial loads, set main loading to false
+        setLoading(false);
       } else {
-        setLoadingMore(false); // For subsequent loads (pagination), set loadingMore to false
+        setLoadingMore(false);
       }
     }
   }, [navigate]);
@@ -149,7 +149,7 @@ const Index: React.FC = () => {
         setSearchParams(newSearchParams, { replace: true });
       }, 100);
     }
-  }, [authLoading, paramId, paramSlug, searchParams, fetchConfessions, selectedCategory, confessions.length]); // Added selectedCategory and confessions.length to dependencies
+  }, [authLoading, paramId, paramSlug, searchParams, fetchConfessions, selectedCategory, confessions.length]);
 
   // Effect for infinite scroll on index view
   const lastConfessionElementRef = useCallback(node => {
@@ -180,7 +180,7 @@ const Index: React.FC = () => {
         }, 300);
       }
     }
-  }, [loading, expandedConfessionId, location.hash]); // Added location.hash to dependencies
+  }, [loading, expandedConfessionId, location.hash]);
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string, slug: string, email?: string) => {
     const { data, error } = await supabase.from("confessions").insert({ title, content, gender, category, slug, author_email: email }).select().single();
@@ -253,6 +253,19 @@ const Index: React.FC = () => {
     setForceExpandForm(true);
   };
 
+  // Determine animation delay for each card
+  const getCardAnimationDelay = useCallback((cardIndex: number) => {
+    // If it's a direct link to a confession, no animation delay for that specific card
+    if (paramId) return 0; 
+    // If it's the initial load (page 0) and not loading more, apply staggered animation
+    if (page === 0 && !loadingMore) {
+      return 200 + (cardIndex * 100);
+    }
+    // For all other cases (paginated items), no animation delay
+    return 0;
+  }, [paramId, page, loadingMore]);
+
+
   return (
     <div className="container mx-auto p-4 max-w-3xl">
       <div className="flex justify-center mb-8 opacity-0 animate-fade-zoom-in">
@@ -284,7 +297,7 @@ const Index: React.FC = () => {
               isContentOpen={conf.id === expandedConfessionId}
               isDirectLinkTarget={conf.id === paramId}
               onToggleExpand={handleConfessionToggle}
-              animationDelay={200 + (index * 100)}
+              animationDelay={getCardAnimationDelay(index)}
               onSelectCategory={handleSelectCategory}
               shouldOpenCommentsOnLoad={conf.id === expandedConfessionId && location.hash === '#comments'}
             />
