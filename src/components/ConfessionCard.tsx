@@ -57,6 +57,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const [headerStyle, setHeaderStyle] = useState<React.CSSProperties>({});
   
   const cardRootRef = useRef<HTMLDivElement>(null);
+  const commentsContainerRef = useRef<HTMLDivElement>(null); // New ref for the comments section
   const commentsListRef = useRef<HTMLDivElement>(null);
   const commentsToggleRef = useRef<HTMLButtonElement>(null);
   const prevVisibleCountRef = useRef(COMMENTS_PER_PAGE);
@@ -75,8 +76,8 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   // Effect to dynamically position the sticky header
   useEffect(() => {
     const updateHeaderPosition = () => {
-      if (cardRootRef.current) {
-        const rect = cardRootRef.current.getBoundingClientRect();
+      if (commentsContainerRef.current) { // Use the new ref for precise positioning
+        const rect = commentsContainerRef.current.getBoundingClientRect();
         setHeaderStyle({
           left: `${rect.left}px`,
           width: `${rect.width}px`,
@@ -189,17 +190,13 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
           style={headerStyle}
           className={cn(
             "fixed top-0 z-20 px-4 border-b",
-            "flex items-center justify-between py-2",
-            "bg-background", // Solid background to prevent visual glitches
+            "flex items-center justify-end py-2", // Justify to the right
+            "bg-background",
             "transition-opacity duration-300",
             "opacity-100 animate-slide-fade-in-top"
           )}
         >
-          <Button variant="link" className={cn("p-0 h-auto text-sm", linkColor)} onClick={handleToggleComments}>
-            Скрий коментарите
-            <ChevronUp className="ml-1 h-4 w-4" />
-          </Button>
-          <p className="font-serif text-sm font-semibold truncate ml-4 flex-1 text-right">
+          <p className="font-serif text-sm font-semibold truncate">
             {confession.title}
           </p>
         </div>,
@@ -280,7 +277,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
       </div>
 
       {isContentOpen && (
-        <div className="ml-14 mt-4">
+        <div ref={commentsContainerRef} className="ml-14 mt-4">
           <Collapsible open={isCommentsOpen}>
             <CollapsibleTrigger asChild>
               <Button ref={commentsToggleRef} variant="link" className={cn("w-full justify-start p-0 h-auto", linkColor)} onClick={handleToggleComments}>
