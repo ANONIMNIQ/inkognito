@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { useSessionContext } from "@/components/SessionProvider";
 import { cn } from "@/lib/utils";
 
-const CONFESSIONS_PER_PAGE = 10;
+const CONFESSIONS_PER_PAGE = 10; // Number of confessions to load in each direction (before/after target)
 
 interface Comment {
   id: string;
@@ -38,28 +38,41 @@ const ConfessionDetail: React.FC = () => {
 
   const [confessions, setConfessions] = useState<Confession[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMoreBefore, setHasMoreBefore] = useState(false);
-  const [hasMoreAfter, setHasMoreAfter] = useState(false);
-  const [targetConfessionId, setTargetConfessionId] = useState<string | null>(null);
-  const [targetConfessionIndex, setTargetConfessionIndex] = useState<number>(-1);
-  const [currentPageOffset, setCurrentPageOffset] = useState(0); // The page offset for the current batch
+  const [loadingMoreBefore, setLoadingMoreBefore] = useState(false);
+  const [loadingMoreAfter, setLoadingMoreAfter] = useState(false);
+  const [expandedConfessionId, setExpandedConfessionId] = useState<string | null>(null);
+  const [oldestConfessionCreatedAt, setOldestConfessionCreatedAt] = useState<string | null>(null);
+  const [newestConfessionCreatedAt, setNewestConfessionCreatedAt] = useState<string | null>(null);
+  const [hasMoreBefore, setHasMoreBefore] = useState(true); // Assume true until proven otherwise
+  const [hasMoreAfter, setHasMoreAfter] = useState(true); // Assume true until proven otherwise
 
-  const observer = useRef<IntersectionObserver>();
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
+  const observer = useRef<IntersectionObserver>();
 
-  const fetchConfessionsBatch = useCallback(async (offset: number, limit: number, initialLoad: boolean, targetId: string | null = null) => {
-    if (initialLoad) setLoading(true);
-    else setLoadingMore(true);
+  // Function to fetch confessions based on a reference point (created_at)
+  const fetchConfessions = useCallback(async (
+    direction: 'initial' | 'before' | 'after',
+    referenceCreatedAt: string | null = null,
+    limit: number = CONFESSIONS_PER_PAGE
+  ) => {
+    if (direction === 'before') setLoadingMoreBefore(true);
+    if (direction === 'after') setLoadingMoreAfter(true);
 
     try {
       let query = supabase
         .from("confessions")
         .select("id, title, content, gender, likes, created_at, category, slug, comments(count)")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false }); // Always order by newest first
 
-      const { data: confessionsData, error: confessionsError } = await query.range(offset, offset + limit - 1);
+      if (direction === 'before' && referenceCreatedAt) {
+        query = query.lt("created_at", referenceCreatedAt); // Get older confessions
+      } else if (direction === 'after' && referenceCreatedAt) {
+        query = query.gt("created_at", referenceCreatedAt); // Get newer confessions
+        query = query.order("created_at", { ascending: true }); // For 'after', we want to fetch in reverse chronological order to append correctly
+      }
+
+      const { data: confessionsData, error: confessionsError } = await query.limit(limit);
 
       if (confessionsError) {
         throw confessionsError;
@@ -71,111 +84,143 @@ const ConfessionDetail: React.FC = () => {
         comments: [],
       }));
 
-      if (initialLoad) {
-        setConfessions(confessionsWithCommentCount);
-      } else {
-        setConfessions((prev) => {
-          const newConfessions = [...prev];
-          confessionsWithCommentCount.forEach(newConf => {
-            if (!newConfessions.some(existingConf => existingConf.id === newConf.id)) {
-              newConfessions.push(newConf);
-            }
-          });
-          // Sort to maintain chronological order if new items were inserted in between
-          return newConfessions.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        });
+      setConfessions(prev => {
+        let newConfessions = [...prev];
+        if (direction === 'before') {
+          newConfessions = [...confessionsWithCommentCount, ...prev];
+        } else if (direction === 'after') {
+          newConfessions = [...prev, ...confessionsWithCommentCount.reverse()]; // Reverse to maintain chronological order
+        } else { // initial load
+          newConfessions = confessionsWithCommentCount;
+        }
+
+        // Remove duplicates and sort by created_at descending
+        const uniqueConfessions = Array.from(new Map(newConfessions.map(c => [c.id, c])).values());
+        return uniqueConfessions.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      });
+
+      // Update oldest/newest timestamps
+      if (confessionsWithCommentCount.length > 0) {
+        const sortedFetched = [...confessionsWithCommentCount].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        if (direction === 'before' || direction === 'initial') {
+          setOldestConfessionCreatedAt(sortedFetched[0].created_at);
+        }
+        if (direction === 'after' || direction === 'initial') {
+          setNewestConfessionCreatedAt(sortedFetched[sortedFetched.length - 1].created_at);
+        }
       }
 
-      // Determine if there are more confessions before/after the current loaded set
-      const { count: totalCount, error: countError } = await supabase
-        .from("confessions")
-        .select("count", { count: "exact" });
-
-      if (countError) throw countError;
-
-      const currentLoadedIds = new Set(confessions.map(c => c.id));
-      confessionsWithCommentCount.forEach(c => currentLoadedIds.add(c.id));
-
-      setHasMoreBefore(offset > 0);
-      setHasMoreAfter((offset + limit) < (totalCount || 0));
+      // Update hasMore flags
+      if (direction === 'before') {
+        setHasMoreBefore(confessionsData.length === limit);
+      } else if (direction === 'after') {
+        setHasMoreAfter(confessionsData.length === limit);
+      }
 
     } catch (error: any) {
-      console.error("Error fetching confessions batch:", error);
+      console.error("Error fetching confessions:", error);
       toast.error("Error fetching confessions: " + error.message);
+      if (direction === 'before') setHasMoreBefore(false);
+      if (direction === 'after') setHasMoreAfter(false);
     } finally {
-      if (initialLoad) setLoading(false);
-      else setLoadingMore(false);
+      if (direction === 'before') setLoadingMoreBefore(false);
+      if (direction === 'after') setLoadingMoreAfter(false);
     }
-  }, [confessions]); // Include confessions in dependency array to ensure accurate `currentLoadedIds`
+  }, []);
 
-  const loadInitialBatch = useCallback(async () => {
-    if (!id) return;
-
-    setLoading(true);
-    try {
-      // 1. Fetch the target confession to get its created_at and verify slug
-      const { data: targetConfession, error: targetError } = await supabase
-        .from("confessions")
-        .select("id, title, content, gender, likes, created_at, category, slug, comments(count)")
-        .eq("id", id)
-        .single();
-
-      if (targetError || !targetConfession) {
-        console.error("Confession not found or error:", targetError);
-        toast.error("Confession not found.");
-        navigate("/", { replace: true });
-        return;
-      }
-
-      // Redirect if slug doesn't match
-      if (targetConfession.slug !== slug) {
-        navigate(`/confessions/${id}/${targetConfession.slug}`, { replace: true });
-        return;
-      }
-
-      // 2. Determine its position to calculate the batch offset
-      const { count: confessionsBeforeCount, error: countError } = await supabase
-        .from("confessions")
-        .select("count", { count: "exact" })
-        .lt("created_at", targetConfession.created_at); // Count confessions created AFTER (i.e., newer)
-
-      if (countError) throw countError;
-
-      const targetIndexInFullList = confessionsBeforeCount || 0;
-      const targetPage = Math.floor(targetIndexInFullList / CONFESSIONS_PER_PAGE);
-      const initialOffset = Math.max(0, targetPage * CONFESSIONS_PER_PAGE);
-
-      setCurrentPageOffset(initialOffset);
-      setTargetConfessionId(id);
-
-      // Load the batch containing the target confession
-      await fetchConfessionsBatch(initialOffset, CONFESSIONS_PER_PAGE, true, id);
-
-    } catch (error: any) {
-      console.error("Error loading initial batch for detail page:", error);
-      toast.error("Failed to load confession details: " + error.message);
-      navigate("/", { replace: true });
-    } finally {
-      setLoading(false);
-    }
-  }, [id, slug, navigate, fetchConfessionsBatch]);
-
+  // Initial load effect
   useEffect(() => {
     if (!authLoading && id) {
-      loadInitialBatch();
+      setLoading(true);
+      setExpandedConfessionId(id); // Always expand the target confession
+
+      const loadInitialData = async () => {
+        try {
+          // 1. Fetch the target confession to get its created_at and verify slug
+          const { data: targetConfession, error: targetError } = await supabase
+            .from("confessions")
+            .select("id, title, content, gender, likes, created_at, category, slug, comments(count)")
+            .eq("id", id)
+            .single();
+
+          if (targetError || !targetConfession) {
+            console.error("Confession not found or error:", targetError);
+            toast.error("Confession not found.");
+            navigate("/", { replace: true });
+            return;
+          }
+
+          // Redirect if slug doesn't match
+          if (targetConfession.slug !== slug) {
+            navigate(`/confessions/${id}/${targetConfession.slug}`, { replace: true });
+            return;
+          }
+
+          // Set initial oldest/newest based on target
+          setOldestConfessionCreatedAt(targetConfession.created_at);
+          setNewestConfessionCreatedAt(targetConfession.created_at);
+
+          // Fetch confessions around the target
+          const { data: beforeData, error: beforeError } = await supabase
+            .from("confessions")
+            .select("id, title, content, gender, likes, created_at, category, slug, comments(count)")
+            .lt("created_at", targetConfession.created_at)
+            .order("created_at", { ascending: false })
+            .limit(CONFESSIONS_PER_PAGE);
+
+          if (beforeError) throw beforeError;
+
+          const { data: afterData, error: afterError } = await supabase
+            .from("confessions")
+            .select("id, title, content, gender, likes, created_at, category, slug, comments(count)")
+            .gt("created_at", targetConfession.created_at)
+            .order("created_at", { ascending: true }) // Fetch in ascending order to easily append
+            .limit(CONFESSIONS_PER_PAGE);
+
+          if (afterError) throw afterError;
+
+          const initialConfessions = [
+            ...(beforeData || []).map((c: any) => ({ ...c, comment_count: c.comments[0]?.count || 0, comments: [] })),
+            { ...targetConfession, comment_count: targetConfession.comments[0]?.count || 0, comments: [] },
+            ...(afterData || []).reverse().map((c: any) => ({ ...c, comment_count: c.comments[0]?.count || 0, comments: [] })), // Reverse to maintain chronological order
+          ];
+
+          const uniqueConfessions = Array.from(new Map(initialConfessions.map(c => [c.id, c])).values());
+          const sortedConfessions = uniqueConfessions.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+          setConfessions(sortedConfessions);
+
+          if (sortedConfessions.length > 0) {
+            setOldestConfessionCreatedAt(sortedConfessions[sortedConfessions.length - 1].created_at);
+            setNewestConfessionCreatedAt(sortedConfessions[0].created_at);
+          }
+
+          setHasMoreBefore((beforeData || []).length === CONFESSIONS_PER_PAGE);
+          setHasMoreAfter((afterData || []).length === CONFESSIONS_PER_PAGE);
+
+        } catch (error: any) {
+          console.error("Error loading initial batch for detail page:", error);
+          toast.error("Failed to load confession details: " + error.message);
+          navigate("/", { replace: true });
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      loadInitialData();
     }
-  }, [authLoading, id, loadInitialBatch]);
+  }, [authLoading, id, slug, navigate, fetchConfessions]);
 
   // Scroll to target confession or comments section after loading
   useEffect(() => {
-    if (!loading && targetConfessionId && confessions.length > 0) {
-      const targetElement = document.getElementById(targetConfessionId);
+    if (!loading && expandedConfessionId && confessions.length > 0) {
+      const targetElement = document.getElementById(expandedConfessionId);
       if (targetElement) {
         setTimeout(() => {
           targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
           // If there's a #comments hash, scroll to comments section
           if (location.hash === '#comments') {
-            const commentsSection = document.getElementById(`comments-section-${targetConfessionId}`);
+            const commentsSection = document.getElementById(`comments-section-${expandedConfessionId}`);
             if (commentsSection) {
               setTimeout(() => {
                 commentsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -184,15 +229,12 @@ const ConfessionDetail: React.FC = () => {
           }
         }, 300); // Delay to allow rendering and animations
       }
-      // Find the index of the target confession in the current state
-      const index = confessions.findIndex(c => c.id === targetConfessionId);
-      setTargetConfessionIndex(index);
     }
-  }, [loading, targetConfessionId, confessions, location.hash]);
+  }, [loading, expandedConfessionId, confessions, location.hash]);
 
-  // Intersection Observer for infinite scrolling
+  // Intersection Observer for infinite scrolling (both directions)
   useEffect(() => {
-    if (loading || loadingMore || !id) return;
+    if (loading || loadingMoreBefore || loadingMoreAfter || !id) return;
 
     if (observer.current) {
       observer.current.disconnect();
@@ -201,18 +243,10 @@ const ConfessionDetail: React.FC = () => {
     observer.current = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
-          if (entry.target === topSentinelRef.current && hasMoreBefore) {
-            // Load previous batch
-            const newOffset = Math.max(0, currentPageOffset - CONFESSIONS_PER_PAGE);
-            if (newOffset !== currentPageOffset) {
-              setCurrentPageOffset(newOffset);
-              fetchConfessionsBatch(newOffset, CONFESSIONS_PER_PAGE, false);
-            }
-          } else if (entry.target === bottomSentinelRef.current && hasMoreAfter) {
-            // Load next batch
-            const newOffset = currentPageOffset + CONFESSIONS_PER_PAGE;
-            setCurrentPageOffset(newOffset);
-            fetchConfessionsBatch(newOffset, CONFESSIONS_PER_PAGE, false);
+          if (entry.target === topSentinelRef.current && hasMoreBefore && !loadingMoreBefore && oldestConfessionCreatedAt) {
+            fetchConfessions('before', oldestConfessionCreatedAt);
+          } else if (entry.target === bottomSentinelRef.current && hasMoreAfter && !loadingMoreAfter && newestConfessionCreatedAt) {
+            fetchConfessions('after', newestConfessionCreatedAt);
           }
         }
       });
@@ -228,7 +262,7 @@ const ConfessionDetail: React.FC = () => {
         observer.current.disconnect();
       }
     };
-  }, [loading, loadingMore, hasMoreBefore, hasMoreAfter, currentPageOffset, fetchConfessionsBatch, id]);
+  }, [loading, loadingMoreBefore, loadingMoreAfter, hasMoreBefore, hasMoreAfter, oldestConfessionCreatedAt, newestConfessionCreatedAt, fetchConfessions, id]);
 
   const handleAddComment = async (confessionId: string, content: string, gender: "male" | "female" | "incognito") => {
     const { data, error } = await supabase
@@ -300,8 +334,9 @@ const ConfessionDetail: React.FC = () => {
     }
   };
 
+  // On the detail page, this just toggles the local expanded state
   const handleConfessionToggle = useCallback((toggledConfessionId: string) => {
-    setTargetConfessionId(currentId =>
+    setExpandedConfessionId(currentId =>
       currentId === toggledConfessionId ? null : toggledConfessionId
     );
   }, []);
@@ -323,6 +358,15 @@ const ConfessionDetail: React.FC = () => {
   return (
     <div className="container mx-auto p-4 max-w-3xl">
       <div ref={topSentinelRef} className="h-1 w-full" /> {/* Top sentinel for infinite scroll */}
+      {loadingMoreBefore && (
+        <div className="space-y-6 mt-8">
+          <ConfessionCardSkeleton />
+          <ConfessionCardSkeleton />
+        </div>
+      )}
+      {!hasMoreBefore && (
+        <p className="text-center text-gray-500 dark:text-gray-400 mt-8">Няма по-нови изповеди.</p>
+      )}
       <div className="space-y-6">
         {confessions.map((conf, index) => (
           <ConfessionCard
@@ -338,16 +382,15 @@ const ConfessionDetail: React.FC = () => {
             onAddComment={handleAddComment}
             onLikeConfession={handleLikeConfession}
             onFetchComments={handleFetchComments}
-            isContentOpen={conf.id === targetConfessionId}
-            onToggleExpand={handleConfessionToggle}
+            isContentOpen={conf.id === expandedConfessionId} // Controlled by local state
+            onToggleExpand={handleConfessionToggle} // Local toggle
             animationDelay={200 + (index * 100)} // Stagger animation
             onSelectCategory={handleSelectCategory}
           />
         ))}
       </div>
-      {loadingMore && (
+      {loadingMoreAfter && (
         <div className="space-y-6 mt-8">
-          <ConfessionCardSkeleton />
           <ConfessionCardSkeleton />
           <ConfessionCardSkeleton />
         </div>

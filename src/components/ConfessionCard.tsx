@@ -12,7 +12,7 @@ import TypingText from "./TypingText";
 import CommentCardSkeleton from "./CommentCardSkeleton";
 import { useScrollLock } from "@/hooks/use-scroll-lock";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Link } from "react-router-dom"; // Import Link from react-router-dom
+import { Link, useNavigate } from "react-router-dom"; // Import Link and useNavigate
 import { toast } from "sonner"; // Import toast for copy feedback
 
 const COMMENTS_PER_PAGE = 5; // Define the constant here
@@ -43,8 +43,8 @@ interface ConfessionCardProps {
   onAddComment: (confessionId: string, content: string, gender: "male" | "female" | "incognito") => void;
   onLikeConfession: (confessionId: string) => void;
   onFetchComments: (confessionId: string) => Promise<void>;
-  isContentOpen: boolean;
-  onToggleExpand: (confessionId: string) => void;
+  isContentOpen: boolean; // This prop now dictates if content is open, controlled by parent
+  onToggleExpand: (confessionId: string, slug: string) => void; // Updated signature
   animationDelay?: number;
   onSelectCategory: (category: string) => void;
 }
@@ -54,8 +54,8 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   onAddComment,
   onLikeConfession,
   onFetchComments,
-  isContentOpen,
-  onToggleExpand,
+  isContentOpen, // Controlled by parent
+  onToggleExpand, // Now handles navigation or local toggle
   animationDelay = 0,
   onSelectCategory,
 }, ref: Ref<HTMLDivElement>) => {
@@ -68,11 +68,8 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const commentsListRef = useRef<HTMLDivElement>(null);
   const commentsToggleRef = useRef<HTMLButtonElement>(null);
   const prevVisibleCountRef = useRef(COMMENTS_PER_PAGE);
+  const navigate = useNavigate(); // Initialize useNavigate
 
-  // The useScrollLock hook is still available if needed elsewhere,
-  // but we're removing its direct usage for content/comment expansion here.
-  // The global scroll lock is not ideal for in-page content expansions.
-  // const { lockScroll, unlockScroll } = useScrollLock(); 
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -85,7 +82,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     }
   }, [ref]);
 
-  // Re-adding scrollIntoView for content expansion
+  // Scroll to top of the card when content is opened (controlled by parent)
   useEffect(() => {
     if (isContentOpen) {
       setTimeout(() => {
@@ -94,6 +91,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     }
   }, [isContentOpen]);
 
+  // Reset comments open state if content is closed by parent
   useEffect(() => {
     if (!isContentOpen) {
       setIsCommentsOpen(false);
@@ -115,21 +113,22 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     }
   }, [visibleCommentsCount, isLoadingMoreComments]);
 
-  const handleAddComment = (content: string, gender: "male" | "female" | "incognito") => {
+  const handleAddCommentLocal = (content: string, gender: "male" | "female" | "incognito") => {
     onAddComment(confession.id, content, gender);
     if (!isCommentsOpen) {
-      handleToggleComments();
+      handleToggleCommentsLocal(); // Ensure comments open if not already
     }
   };
 
-  const handleToggleComments = async () => {
+  const handleToggleCommentsLocal = async () => {
     const willBeOpen = !isCommentsOpen;
 
     setIsCommentsOpen(willBeOpen);
 
     if (willBeOpen) {
+      // If comments are opening, and content is not already open, expand content first
       if (!isContentOpen) {
-        onToggleExpand(confession.id);
+        onToggleExpand(confession.id, confession.slug); // This will trigger parent to open content
       }
 
       if (confession.comments.length === 0 && confession.comment_count > 0) {
@@ -211,7 +210,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
             <Button
               variant="link"
               className="flex items-center p-0 h-auto text-gray-400 hover:text-black dark:text-gray-500 dark:hover:text-white transition-colors hover:no-underline"
-              onClick={handleToggleComments}
+              onClick={handleToggleCommentsLocal} // Use local toggle for comments
             >
               <MessageCircle className="h-3.5 w-3.5" />
               <span className="text-xs font-medium ml-1">{confession.comment_count}</span>
@@ -235,7 +234,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
             </Button>
           </div>
 
-          <Collapsible open={isContentOpen} onOpenChange={() => onToggleExpand(confession.id)}>
+          <Collapsible open={isContentOpen} onOpenChange={() => onToggleExpand(confession.id, confession.slug)}>
             <div className="flex items-center justify-between space-x-4 mb-2">
               <CollapsibleTrigger asChild>
                 <Link
@@ -280,7 +279,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
           <Collapsible open={isCommentsOpen}>
             <div className="flex justify-between items-center min-w-0">
               <CollapsibleTrigger asChild>
-                <Button ref={commentsToggleRef} variant="link" className={cn("justify-start p-0 h-auto flex-shrink-0", linkColor)} onClick={handleToggleComments}>
+                <Button ref={commentsToggleRef} variant="link" className={cn("justify-start p-0 h-auto flex-shrink-0", linkColor)} onClick={handleToggleCommentsLocal}>
                   {isCommentsOpen ? "Скрий коментарите" : "Покажи коментарите"} ({confession.comment_count})
                   {isCommentsOpen ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
                 </Button>
@@ -305,7 +304,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
               ) : (
                 <>
                   <div className="opacity-0 animate-fade-zoom-in" style={{ animationDelay: '0ms' }}>
-                    <CommentForm onSubmit={handleAddComment} hideAvatarOnMobile={true} />
+                    <CommentForm onSubmit={handleAddCommentLocal} hideAvatarOnMobile={true} />
                   </div>
                   <div ref={commentsListRef} className="space-y-3">
                     {confession.comments.slice(0, visibleCommentsCount).map((comment, index) => (

@@ -6,9 +6,10 @@ import { toast } from "sonner";
 import { useSessionContext } from "@/components/SessionProvider";
 import ConfessionCardSkeleton from "@/components/ConfessionCardSkeleton";
 import ComposeButton from "@/components/ComposeButton";
-import { useScrollLock } from "@/hooks/use-scroll-lock"; // Import useScrollLock
-import CategoryFilter, { categories } from "@/components/CategoryFilter"; // Import CategoryFilter and categories
-import { cn } from "@/lib/utils"; // Import cn for utility classes
+import { useScrollLock } from "@/hooks/use-scroll-lock";
+import CategoryFilter, { categories } from "@/components/CategoryFilter";
+import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 
 interface Comment {
   id: string;
@@ -28,7 +29,7 @@ interface Confession {
   comments: Comment[];
   comment_count: number;
   category: string;
-  slug: string; // Added slug
+  slug: string;
 }
 
 const CONFESSIONS_PER_PAGE = 10;
@@ -39,15 +40,16 @@ const Index: React.FC = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const [expandedConfessionId, setExpandedConfessionId] = useState<string | null>(null);
+  // Removed expandedConfessionId from Index as expansion will now navigate to detail page
   const { loading: authLoading } = useSessionContext();
   const [isComposeButtonVisible, setIsComposeButtonVisible] = useState(false);
   const [forceExpand, setForceExpand] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>("Всички"); // New state for selected category
+  const [selectedCategory, setSelectedCategory] = useState<string>("Всички");
   const confessionFormContainerRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate(); // Initialize useNavigate
 
   const observer = useRef<IntersectionObserver>();
-  const { lockScroll, unlockScroll } = useScrollLock(); // Initialize scroll lock hook
+  const { lockScroll, unlockScroll } = useScrollLock();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -64,11 +66,10 @@ const Index: React.FC = () => {
   const handleComposeClick = () => {
     confessionFormContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setForceExpand(true);
-    lockScroll(); // Lock scroll
-    // Unlock after the form's collapsible animation (200ms) and scroll (e.g., 300ms)
+    lockScroll();
     setTimeout(() => {
       unlockScroll();
-    }, 500); // Total duration for scroll + animation
+    }, 500);
   };
 
   const fetchConfessions = useCallback(async (currentPage: number, initialLoad: boolean, categoryFilter: string) => {
@@ -85,7 +86,7 @@ const Index: React.FC = () => {
 
       let query = supabase
         .from("confessions")
-        .select("id, title, content, gender, likes, created_at, category, slug, comments(count)") // Added slug
+        .select("id, title, content, gender, likes, created_at, category, slug, comments(count)")
         .order("created_at", { ascending: false });
 
       if (categoryFilter !== "Всички") {
@@ -129,14 +130,13 @@ const Index: React.FC = () => {
   useEffect(() => {
     if (!authLoading) {
       console.log(`[useEffect] Category changed to ${selectedCategory}. Resetting state.`);
-      // Explicitly disconnect the observer before resetting state to prevent race conditions.
       if (observer.current) {
         observer.current.disconnect();
       }
       setPage(0);
       setConfessions([]);
       setHasMore(true);
-      setExpandedConfessionId(null);
+      // No expandedConfessionId to reset here
       fetchConfessions(0, true, selectedCategory);
     }
   }, [authLoading, selectedCategory, fetchConfessions]);
@@ -177,7 +177,7 @@ const Index: React.FC = () => {
         console.log(`[lastConfessionElementRef] Not attaching observer. Node: ${!!node}, hasMore: ${hasMore}`);
       }
     },
-    [loadingMore, loadingConfessions, hasMore, confessions.length] // Simplified dependencies
+    [loadingMore, loadingConfessions, hasMore, confessions.length]
   );
 
   useEffect(() => {
@@ -190,7 +190,7 @@ const Index: React.FC = () => {
             if (prev.some(c => c.id === newConfession.id)) return prev;
             return [{ ...newConfession, comments: [], comment_count: 0 }, ...prev];
           });
-          setExpandedConfessionId(newConfession.id);
+          // No in-page expansion, so no need to set expandedConfessionId here
         }
       })
       .subscribe();
@@ -207,7 +207,7 @@ const Index: React.FC = () => {
       content: string;
       gender: "male" | "female" | "incognito";
       category: string;
-      slug: string; // Added slug
+      slug: string;
       author_email?: string;
     } = { title, content, gender, category, slug };
 
@@ -232,7 +232,7 @@ const Index: React.FC = () => {
     const newConfessionForState = { ...newConfessionData, comments: [], comment_count: 0 };
     if (selectedCategory === "Всички" || newConfessionForState.category === selectedCategory) {
       setConfessions((prev) => [newConfessionForState, ...prev]);
-      setExpandedConfessionId(newConfessionData.id);
+      // No in-page expansion, so no need to set expandedConfessionId here
     }
 
     try {
@@ -274,6 +274,7 @@ const Index: React.FC = () => {
     }
   };
 
+  // This function is now only for the detail page, not used directly on Index for comments
   const handleFetchComments = async (confessionId: string) => {
     const confessionToUpdate = confessions.find(c => c.id === confessionId);
     if (!confessionToUpdate || confessionToUpdate.comments.length > 0) return;
@@ -302,6 +303,7 @@ const Index: React.FC = () => {
     }
   };
 
+  // This function is now only for the detail page, not used directly on Index for comments
   const handleAddComment = async (confessionId: string, content: string, gender: "male" | "female" | "incognito") => {
     lockScroll();
     const { data, error } = await supabase
@@ -321,10 +323,9 @@ const Index: React.FC = () => {
             : conf
         )
       );
-      setExpandedConfessionId(confessionId);
+      // No in-page expansion, so no need to set expandedConfessionId here
       toast.success("Comment posted!");
 
-      // Trigger the notification function without waiting for it
       supabase.functions.invoke('send-comment-notification', {
         body: { confession_id: confessionId, comment_content: content },
       }).catch(err => console.error("Error invoking notification function:", err));
@@ -350,14 +351,13 @@ const Index: React.FC = () => {
     }
   };
 
-  const handleConfessionToggle = useCallback((toggledConfessionId: string) => {
-    setExpandedConfessionId(currentId =>
-      currentId === toggledConfessionId ? null : toggledConfessionId
-    );
-  }, []);
+  // This function now navigates to the detail page
+  const handleConfessionToggle = useCallback((confessionId: string, slug: string) => {
+    navigate(`/confessions/${confessionId}/${slug}`);
+  }, [navigate]);
 
   const handleFormFocus = () => {
-    setExpandedConfessionId(null);
+    // No expandedConfessionId to reset here
   };
 
   return (
@@ -448,11 +448,11 @@ Q 458.1 16.85 459.6 18.4 461.05 19.9 461.95 21.95 462.85 24.05 462.85 26.35 462.
                   timestamp: new Date(comment.created_at)
                 }))
               }}
-              onAddComment={handleAddComment}
+              onAddComment={handleAddComment} // This will still work if a user adds a comment from the Index page (though not ideal UX)
               onLikeConfession={handleLikeConfession}
-              onFetchComments={handleFetchComments}
-              isContentOpen={expandedConfessionId === confession.id}
-              onToggleExpand={handleConfessionToggle}
+              onFetchComments={handleFetchComments} // This will still work if a user fetches comments from the Index page (though not ideal UX)
+              isContentOpen={false} // Always false on Index page, as expansion navigates
+              onToggleExpand={handleConfessionToggle} // Now navigates
               animationDelay={200 + ((index % CONFESSIONS_PER_PAGE) * 150)}
               onSelectCategory={setSelectedCategory}
             />
