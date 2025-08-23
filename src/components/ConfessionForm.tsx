@@ -15,8 +15,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { categories } from "./CategoryFilter"; // Import categories
+import { categories } from "./CategoryFilter";
 import { Switch } from "@/components/ui/switch";
+import { useIsMobile } from "@/hooks/use-mobile"; // Import useIsMobile
 
 interface ConfessionFormProps {
   onSubmit: (title: string, content: string, gender: "male" | "female" | "incognito", category: string, email?: string) => void;
@@ -40,6 +41,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
 
   const formRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const isMobile = useIsMobile(); // Use the hook
 
   const generateCaptcha = () => {
     setCaptchaNum1(Math.floor(Math.random() * 10) + 1);
@@ -136,18 +138,21 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
   const borderColor = "border-gray-300 dark:border-gray-700";
 
   return (
-    <div className="w-full max-w-2xl mx-auto mb-6 flex items-start space-x-3" ref={formRef}>
-      <GenderAvatar
-        gender={gender}
-        className={cn(
-          "h-10 w-10 flex-shrink-0 transition-all duration-300 mt-1.5",
-          !open && "self-center"
-        )}
-      />
-      <div className={cn("flex-1 rounded-xl shadow-md relative transition-all duration-300 ease-in-out", bubbleBackgroundColor, open ? "p-4" : "p-1.5 flex items-center")}>
+    <div className={cn("w-full max-w-2xl mx-auto mb-6 flex items-start", isMobile ? "space-x-0" : "space-x-3")} ref={formRef}>
+      {!isMobile && (
+        <GenderAvatar
+          gender={gender}
+          className={cn(
+            "h-10 w-10 flex-shrink-0 transition-all duration-300 mt-1.5",
+            !open && "self-center"
+          )}
+        />
+      )}
+      <div className={cn("flex-1 rounded-xl shadow-md relative transition-all duration-300 ease-in-out", bubbleBackgroundColor, open ? "p-4" : "p-1.5 flex items-center", isMobile ? "ml-0" : "")}>
         <div
           className={cn(
-            "absolute top-3 -left-2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent",
+            "absolute top-3 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent",
+            isMobile ? "left-2" : "-left-2", // Adjust arrow position for mobile
             gender === "male"
               ? "border-r-blue-100 dark:border-r-blue-950"
               : gender === "female"
@@ -165,7 +170,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
           onFocus={handleTitleFocus}
           required
           maxLength={100}
-          className={cn("w-full bg-transparent", generalTextColor, placeholderColor, borderColor)}
+          className={cn("w-full bg-transparent text-sm md:text-base", generalTextColor, placeholderColor, borderColor)} {/* Smaller title on mobile */}
         />
 
         <Collapsible open={open} className="mt-2">
@@ -182,7 +187,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
                   onChange={(e) => setContent(e.target.value)}
                   rows={5}
                   required
-                  className={cn("bg-transparent mt-1", generalTextColor, placeholderColor, borderColor)}
+                  className={cn("bg-transparent mt-1 text-base", generalTextColor, placeholderColor, borderColor)} {/* Content text size remains base */}
                 />
               </div>
               <div>

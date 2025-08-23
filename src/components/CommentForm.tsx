@@ -7,17 +7,22 @@ import { toast } from "sonner";
 import GenderAvatar from "./GenderAvatar";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { useIsMobile } from "@/hooks/use-mobile"; // Import useIsMobile
 
 interface CommentFormProps {
   onSubmit: (content: string, gender: "male" | "female" | "incognito") => void;
+  hideAvatarOnMobile?: boolean; // New prop
 }
 
-const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
+const CommentForm: React.FC<CommentFormProps> = ({ onSubmit, hideAvatarOnMobile = false }) => {
   const [content, setContent] = useState("");
   const [gender, setGender] = useState<"male" | "female" | "incognito">("incognito");
   const [captchaNum1, setCaptchaNum1] = useState(0);
   const [captchaNum2, setCaptchaNum2] = useState(0);
   const [captchaAnswer, setCaptchaAnswer] = useState("");
+
+  const isMobile = useIsMobile(); // Use the hook
+  const showAvatar = !isMobile || !hideAvatarOnMobile;
 
   const generateCaptcha = () => {
     setCaptchaNum1(Math.floor(Math.random() * 10) + 1);
@@ -59,12 +64,13 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
   const borderColor = "border-gray-300 dark:border-gray-700";
 
   return (
-    <div className="flex items-start space-x-2 mb-2">
-      <GenderAvatar gender={gender} className="h-7 w-7 flex-shrink-0 mt-1" />
-      <form onSubmit={handleSubmit} className={cn("flex-1 p-3 rounded-xl shadow-sm space-y-2 relative", bubbleBackgroundColor)}>
+    <div className={cn("flex items-start mb-2", showAvatar ? "space-x-2" : "space-x-0")}>
+      {showAvatar && <GenderAvatar gender={gender} className="h-7 w-7 flex-shrink-0 mt-1" />}
+      <form onSubmit={handleSubmit} className={cn("flex-1 p-3 rounded-xl shadow-sm space-y-2 relative", bubbleBackgroundColor, showAvatar ? "" : "ml-0")}>
         <div
           className={cn(
-            "absolute top-3 -left-2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent",
+            "absolute top-3 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent",
+            showAvatar ? "-left-2" : "left-2", // Adjust arrow position for mobile
             gender === "male"
               ? "border-r-blue-50 dark:border-r-blue-900"
               : gender === "female"
@@ -79,7 +85,7 @@ const CommentForm: React.FC<CommentFormProps> = ({ onSubmit }) => {
             onChange={(e) => setContent(e.target.value)}
             rows={2}
             required
-            className={cn("resize-none", generalTextColor, placeholderColor, borderColor)}
+            className={cn("resize-none text-base", generalTextColor, placeholderColor, borderColor)}
           />
         </div>
         <div>

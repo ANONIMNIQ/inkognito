@@ -10,7 +10,8 @@ import { bg } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import TypingText from "./TypingText";
 import CommentCardSkeleton from "./CommentCardSkeleton";
-import { useScrollLock } from "@/hooks/use-scroll-lock"; // Import useScrollLock
+import { useScrollLock } from "@/hooks/use-scroll-lock";
+import { useIsMobile } from "@/hooks/use-mobile"; // Import useIsMobile
 
 interface Comment {
   id: string;
@@ -28,7 +29,7 @@ interface Confession {
   comments: Comment[];
   likes: number;
   comment_count: number;
-  category: string; // Added category
+  category: string;
 }
 
 interface ConfessionCardProps {
@@ -39,7 +40,7 @@ interface ConfessionCardProps {
   isContentOpen: boolean;
   onToggleExpand: (confessionId: string) => void;
   animationDelay?: number;
-  onSelectCategory: (category: string) => void; // New prop for category selection
+  onSelectCategory: (category: string) => void;
 }
 
 const COMMENTS_PER_PAGE = 10;
@@ -52,7 +53,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   isContentOpen,
   onToggleExpand,
   animationDelay = 0,
-  onSelectCategory, // Destructure new prop
+  onSelectCategory,
 }, ref) => {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(COMMENTS_PER_PAGE);
@@ -65,7 +66,8 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const prevVisibleCountRef = useRef(COMMENTS_PER_PAGE);
   const prevIsContentOpen = useRef(isContentOpen);
 
-  const { lockScroll, unlockScroll } = useScrollLock(); // Initialize scroll lock hook
+  const { lockScroll, unlockScroll } = useScrollLock();
+  const isMobile = useIsMobile(); // Use the hook
 
   useEffect(() => {
     if (ref) {
@@ -78,22 +80,18 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   }, [ref]);
 
   useEffect(() => {
-    // If the card is being opened (was closed, now is open), scroll it into view.
     if (isContentOpen && !prevIsContentOpen.current) {
-      lockScroll(); // Lock scroll for collapsible open animation
-      // A small delay to allow the collapsible content to start animating open
-      // and to ensure the scroll feels connected to the expansion.
+      lockScroll();
       setTimeout(() => {
         cardRootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        unlockScroll(); // Unlock after animation and scroll
-      }, 300); // 200ms animation + 100ms buffer for scroll
+        unlockScroll();
+      }, 300);
     } else if (!isContentOpen && prevIsContentOpen.current) {
-      lockScroll(); // Lock scroll for collapsible close animation
+      lockScroll();
       setTimeout(() => {
-        unlockScroll(); // Unlock after animation
-      }, 250); // 200ms animation + 50ms buffer
+        unlockScroll();
+      }, 250);
     }
-    // Update the ref for the next render.
     prevIsContentOpen.current = isContentOpen;
   }, [isContentOpen, lockScroll, unlockScroll]);
 
@@ -129,16 +127,16 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     const willBeOpen = !isCommentsOpen;
 
     if (!willBeOpen) {
-      lockScroll(); // Lock scroll for collapsible close animation
+      lockScroll();
       setIsCommentsOpen(false);
       setTimeout(() => {
         cardRootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        unlockScroll(); // Unlock after animation and scroll
+        unlockScroll();
       }, 250);
       return;
     }
 
-    lockScroll(); // Lock scroll for collapsible open animation
+    lockScroll();
     setIsCommentsOpen(true);
 
     if (!isContentOpen) {
@@ -153,26 +151,21 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
 
     setTimeout(() => {
       commentsToggleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      // Unlock after comments are fetched/rendered and scrolled into view.
-      // The comments themselves have fade-zoom-in animation (500ms).
-      // If comments were fetched, there's a skeleton phase.
-      // Let's assume a reasonable time for comments to appear and animate.
       unlockScroll();
-    }, 600); // 100ms scroll + 500ms comment animation
+    }, 600);
   };
 
   const handleLoadMoreComments = () => {
     prevVisibleCountRef.current = visibleCommentsCount;
     setIsLoadingMoreComments(true);
-    lockScroll(); // Lock scroll
+    lockScroll();
     setTimeout(() => {
       setVisibleCommentsCount(prev => prev + COMMENTS_PER_PAGE);
       setIsLoadingMoreComments(false);
-      // Unlock after new comments are rendered and animated
       setTimeout(() => {
         unlockScroll();
-      }, 500); // Fade-zoom-in animation duration
-    }, 500); // Delay before new comments appear
+      }, 500);
+    }, 500);
   };
 
   const bubbleBackgroundColor =
@@ -187,12 +180,13 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
 
   return (
     <div ref={cardRootRef} className="w-full max-w-2xl mx-auto mb-6 opacity-0 animate-fade-zoom-in" style={{ animationDelay: `${animationDelay}ms` }}>
-      <div className="flex items-start space-x-3">
-        <GenderAvatar gender={confession.gender} className="h-10 w-10 flex-shrink-0 mt-2" />
-        <div className={cn("flex-1 p-4 rounded-xl shadow-md relative min-w-0", bubbleBackgroundColor)}>
+      <div className={cn("flex items-start", isMobile ? "space-x-0" : "space-x-3")}>
+        {!isMobile && <GenderAvatar gender={confession.gender} className="h-10 w-10 flex-shrink-0 mt-2" />}
+        <div className={cn("flex-1 p-4 rounded-xl shadow-md relative min-w-0", bubbleBackgroundColor, isMobile ? "ml-0" : "")}>
           <div
             className={cn(
-              "absolute top-3 -left-2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent",
+              "absolute top-3 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent",
+              isMobile ? "left-2" : "-left-2", // Adjust arrow position for mobile
               confession.gender === "male"
                 ? "border-r-blue-100 dark:border-r-blue-950"
                 : confession.gender === "female"
@@ -201,7 +195,6 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
             )}
           ></div>
           
-          {/* Category label positioned absolutely and made clickable */}
           <Button
             variant="ghost"
             size="sm"
@@ -211,7 +204,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
             {confession.category}
           </Button>
 
-          <div className="flex items-center space-x-4 mb-2"> {/* This div now only contains icons */}
+          <div className="flex items-center space-x-4 mb-2">
             <Button
               variant="link"
               className="flex items-center p-0 h-auto text-gray-400 hover:text-black dark:text-gray-500 dark:hover:text-white transition-colors hover:no-underline"
@@ -236,7 +229,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                 <Button
                   variant="link"
                   className={cn(
-                    "p-0 h-auto text-left text-2xl font-semibold hover:no-underline font-serif transition-colors justify-start min-w-0 flex-1",
+                    "p-0 h-auto text-left text-xl md:text-2xl font-semibold hover:no-underline font-serif transition-colors justify-start min-w-0 flex-1", // Smaller title on mobile
                     isContentOpen
                       ? textColor
                       : [linkColor, "hover:text-gray-800 dark:hover:text-gray-200"]
@@ -261,7 +254,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
               </CollapsibleTrigger>
             </div>
             <CollapsibleContent className="space-y-4 pt-2">
-              <p className={cn("whitespace-pre-wrap font-serif", textColor)}>{confession.content}</p>
+              <p className={cn("whitespace-pre-wrap font-serif text-base", textColor)}>{confession.content}</p> {/* Content text size remains base */}
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
                 Публикувано на {format(confession.timestamp, "dd MMMM yyyy 'г.'", { locale: bg })}
               </p>
@@ -271,7 +264,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
       </div>
 
       {isContentOpen && (
-        <div className="ml-14 mt-4">
+        <div className={cn("mt-4", isMobile ? "ml-0" : "ml-14")}> {/* Adjust margin for mobile */}
           <Collapsible open={isCommentsOpen}>
             <div className="flex justify-between items-center min-w-0">
               <CollapsibleTrigger asChild>
@@ -298,11 +291,11 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
               ) : (
                 <>
                   <div className="opacity-0 animate-fade-zoom-in" style={{ animationDelay: '0ms' }}>
-                    <CommentForm onSubmit={handleAddComment} />
+                    <CommentForm onSubmit={handleAddComment} hideAvatarOnMobile={true} /> {/* Pass prop to hide avatar */}
                   </div>
                   <div ref={commentsListRef} className="space-y-3">
                     {confession.comments.slice(0, visibleCommentsCount).map((comment, index) => (
-                      <CommentCard key={comment.id} comment={comment} animationDelay={(index + 1) * 100} />
+                      <CommentCard key={comment.id} comment={comment} animationDelay={(index + 1) * 100} hideAvatarOnMobile={true} /> {/* Pass prop to hide avatar */}
                     ))}
                   </div>
                   {isLoadingMoreComments && (

@@ -19,6 +19,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useIsMobile } from "@/hooks/use-mobile"; // Import useIsMobile
 
 interface Comment {
   id: string;
@@ -62,6 +63,8 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editedCommentContent, setEditedCommentContent] = useState("");
 
+  const isMobile = useIsMobile(); // Use the hook
+
   const bubbleBackgroundColor =
     confession.gender === "male"
       ? "bg-blue-100 dark:bg-blue-950"
@@ -103,9 +106,9 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
 
   return (
     <div className="w-full max-w-2xl mx-auto mb-6">
-      <div className="flex items-start space-x-3">
-        <GenderAvatar gender={confession.gender} className="h-10 w-10 flex-shrink-0 mt-2" />
-        <div className={cn("flex-1 p-4 rounded-xl shadow-md", bubbleBackgroundColor)}>
+      <div className={cn("flex items-start", isMobile ? "space-x-0" : "space-x-3")}>
+        {!isMobile && <GenderAvatar gender={confession.gender} className="h-10 w-10 flex-shrink-0 mt-2" />}
+        <div className={cn("flex-1 p-4 rounded-xl shadow-md", bubbleBackgroundColor, isMobile ? "ml-0" : "")}>
           <div className="flex justify-between items-center mb-2">
             <div className="flex items-center space-x-4">
               <div className={cn("flex items-center space-x-1 p-0 h-auto", linkColor)}>
@@ -169,10 +172,10 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
                   <Input
                     value={editedConfessionTitle}
                     onChange={(e) => setEditedConfessionTitle(e.target.value)}
-                    className={cn("text-lg font-semibold font-serif w-full", textColor, placeholderColor, borderColor)}
+                    className={cn("text-base md:text-lg font-semibold font-serif w-full", textColor, placeholderColor, borderColor)} // Smaller title on mobile
                   />
                 ) : (
-                  <Button variant="link" className={cn("p-0 h-auto text-left text-lg font-semibold hover:no-underline font-serif whitespace-normal justify-start", textColor)}>
+                  <Button variant="link" className={cn("p-0 h-auto text-left text-base md:text-lg font-semibold hover:no-underline font-serif whitespace-normal justify-start", textColor)}> {/* Smaller title on mobile */}
                     {confession.title}
                   </Button>
                 )}
@@ -190,11 +193,11 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
                 <Textarea
                   value={editedConfessionContent}
                   onChange={(e) => setEditedConfessionContent(e.target.value)}
-                  className={cn("whitespace-pre-wrap font-serif", textColor, placeholderColor, borderColor)}
+                  className={cn("whitespace-pre-wrap font-serif text-base", textColor, placeholderColor, borderColor)}
                   rows={5}
                 />
               ) : (
-                <p className={cn("whitespace-pre-wrap font-serif", textColor)}>{confession.content}</p>
+                <p className={cn("whitespace-pre-wrap font-serif text-base", textColor)}>{confession.content}</p>
               )}
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Posted {formatDistanceToNow(new Date(confession.created_at), { addSuffix: true })}
@@ -204,7 +207,7 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
         </div>
       </div>
 
-      <div className="ml-14 mt-4">
+      <div className={cn("mt-4", isMobile ? "ml-0" : "ml-14")}> {/* Adjust margin for mobile */}
         <Collapsible open={isCommentsOpen} onOpenChange={setIsCommentsOpen}>
           <CollapsibleTrigger asChild>
             <Button variant="link" className={cn("w-full justify-start p-0 h-auto", linkColor)}>
@@ -223,6 +226,7 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
                     isEditing={editingCommentId === comment.id}
                     editedContent={editedCommentContent}
                     onContentChange={setEditedCommentContent}
+                    hideAvatarOnMobile={true} // Pass prop to hide avatar
                   />
                   <div className="flex space-x-1 mt-1">
                     {editingCommentId === comment.id ? (
