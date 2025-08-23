@@ -43,8 +43,6 @@ interface ConfessionCardProps {
   onSelectCategory: (category: string) => void;
 }
 
-const COMMENTS_PER_PAGE = 10;
-
 const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   confession,
   onAddComment,
@@ -254,7 +252,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
               </CollapsibleTrigger>
             </div>
             <CollapsibleContent className="space-y-4 pt-2">
-              <p className={cn("whitespace-pre-wrap font-serif text-base md:text-lg", textColor)}>{confession.content}</p> {/* Base text on mobile, larger on desktop */}
+              <p className={cn("whitespace-pre-wrap font-serif text-lg md:text-xl", textColor)}>{confession.content}</p> {/* Base text on mobile, larger on desktop */}
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
                 Публикувано на {format(confession.timestamp, "dd MMMM yyyy 'г.'", { locale: bg })}
               </p>
