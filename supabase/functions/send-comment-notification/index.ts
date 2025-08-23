@@ -29,7 +29,7 @@ serve(async (req) => {
 
     const { data: confession, error: confessionError } = await supabaseAdmin
       .from('confessions')
-      .select('title, author_email')
+      .select('title, author_email, slug, id, unsubscribe_token')
       .eq('id', confession_id)
       .single()
 
@@ -55,16 +55,25 @@ serve(async (req) => {
     }
     console.log("RESEND_API_KEY is present.");
 
+    const confessionUrl = `https://inkognito.online/confessions/${confession.id}/${confession.slug}#comments`;
+    const unsubscribeUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/unsubscribe?id=${confession.id}&token=${confession.unsubscribe_token}`;
+
     const emailHtml = `
       <html>
-        <body>
+        <body style="font-family: sans-serif; color: #333;">
           <h2>Здравейте,</h2>
           <p>Получихте нов коментар на вашата изповед: <strong>"${confession.title}"</strong></p>
           <blockquote style="border-left: 2px solid #ccc; padding-left: 1em; margin-left: 1em; font-style: italic;">
             ${comment_content}
           </blockquote>
-          <p>Можете да видите всички коментари, като посетите сайта.</p>
+          <p>
+            <a href="${confessionUrl}" style="color: #007bff; text-decoration: none;">Натиснете тук, за да видите всички коментари.</a>
+          </p>
           <p>Поздрави,<br/>Екипът на Инкогнито Online</p>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+          <p style="font-size: 12px; color: #888;">
+            Ако не желаете повече да получавате известия за тази изповед, можете да се отпишете <a href="${unsubscribeUrl}" style="color: #888;">оттук</a>.
+          </p>
         </body>
       </html>
     `;
