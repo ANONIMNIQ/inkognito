@@ -10,6 +10,7 @@ import { bg } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import TypingText from "./TypingText";
 import CommentCardSkeleton from "./CommentCardSkeleton";
+import { useScrollLock } from "@/hooks/use-scroll-lock"; // Import useScrollLock
 
 interface Comment {
   id: string;
@@ -59,6 +60,8 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const prevVisibleCountRef = useRef(COMMENTS_PER_PAGE);
   const prevIsContentOpen = useRef(isContentOpen);
 
+  const { lockScroll, unlockScroll } = useScrollLock(); // Initialize scroll lock hook
+
   useEffect(() => {
     if (ref) {
       if (typeof ref === 'function') {
@@ -72,15 +75,18 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   useEffect(() => {
     // If the card is being opened (was closed, now is open), scroll it into view.
     if (isContentOpen && !prevIsContentOpen.current) {
+      lockScroll(300); // Lock scroll for collapsible open animation
       // A small delay to allow the collapsible content to start animating open
       // and to ensure the scroll feels connected to the expansion.
       setTimeout(() => {
         cardRootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
+    } else if (!isContentOpen && prevIsContentOpen.current) {
+      lockScroll(300); // Lock scroll for collapsible close animation
     }
     // Update the ref for the next render.
     prevIsContentOpen.current = isContentOpen;
-  }, [isContentOpen]);
+  }, [isContentOpen, lockScroll]);
 
   useEffect(() => {
     if (!isContentOpen) {
@@ -115,11 +121,16 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
 
     if (!willBeOpen) {
       setIsCommentsOpen(false);
-      cardRootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      lockScroll(300); // Lock scroll for collapsible close animation
+      // Add a delay to allow the collapsible animation to complete before scrolling
+      setTimeout(() => {
+        cardRootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 250); // Slightly longer than accordion-up (0.2s)
       return;
     }
 
     setIsCommentsOpen(true);
+    lockScroll(300); // Lock scroll for collapsible open animation
 
     if (!isContentOpen) {
       onToggleExpand(confession.id);
@@ -127,8 +138,10 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
 
     if (confession.comments.length === 0 && confession.comment_count > 0) {
       setIsFetchingComments(true);
+      lockScroll(500); // Lock scroll for fetching comments skeleton
       await onFetchComments(confession.id);
       setIsFetchingComments(false);
+      // The unlock is handled by the lockScroll timeout
     }
 
     setTimeout(() => {
@@ -139,9 +152,11 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const handleLoadMoreComments = () => {
     prevVisibleCountRef.current = visibleCommentsCount;
     setIsLoadingMoreComments(true);
+    lockScroll(700); // Lock scroll for loading more comments and their fade-in
     setTimeout(() => {
       setVisibleCommentsCount(prev => prev + COMMENTS_PER_PAGE);
       setIsLoadingMoreComments(false);
+      // The unlock is handled by the lockScroll timeout
     }, 500);
   };
 

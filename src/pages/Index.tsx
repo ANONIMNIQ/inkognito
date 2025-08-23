@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useSessionContext } from "@/components/SessionProvider";
 import ConfessionCardSkeleton from "@/components/ConfessionCardSkeleton";
 import ComposeButton from "@/components/ComposeButton";
+import { useScrollLock } from "@/hooks/use-scroll-lock"; // Import useScrollLock
 
 interface Comment {
   id: string;
@@ -41,6 +42,7 @@ const Index: React.FC = () => {
   const confessionFormContainerRef = useRef<HTMLDivElement>(null);
 
   const observer = useRef<IntersectionObserver>();
+  const { lockScroll, unlockScroll } = useScrollLock(); // Initialize scroll lock hook
 
   useEffect(() => {
     const handleScroll = () => {
@@ -57,6 +59,7 @@ const Index: React.FC = () => {
   const handleComposeClick = () => {
     confessionFormContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setForceExpandForm(true);
+    lockScroll(500); // Lock scroll for form expansion and scroll
   };
 
   const fetchConfessions = useCallback(async (currentPage: number, initialLoad: boolean) => {
@@ -153,6 +156,7 @@ const Index: React.FC = () => {
   }, []);
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito") => {
+    lockScroll(1500); // Lock scroll for confession post, AI comment, and fade-in
     const { data: newConfessionData, error: insertError } = await supabase
       .from("confessions")
       .insert({ title, content, gender })
@@ -161,6 +165,7 @@ const Index: React.FC = () => {
 
     if (insertError) {
       toast.error("Error posting confession: " + insertError.message);
+      unlockScroll(); // Unlock if there's an error
       return;
     }
 
@@ -205,6 +210,7 @@ const Index: React.FC = () => {
       console.error("Error invoking AI comment function:", error);
       toast.error("Could not generate an AI comment: " + error.message);
     }
+    // Unlock is handled by the lockScroll timeout
   };
 
   const handleFetchComments = async (confessionId: string) => {
@@ -238,6 +244,7 @@ const Index: React.FC = () => {
   };
 
   const handleAddComment = async (confessionId: string, content: string, gender: "male" | "female" | "incognito") => {
+    lockScroll(500); // Lock scroll for comment post and fade-in
     const { data, error } = await supabase
       .from("comments")
       .insert({ confession_id: confessionId, content, gender })
@@ -246,6 +253,7 @@ const Index: React.FC = () => {
 
     if (error) {
       toast.error("Error posting comment: " + error.message);
+      unlockScroll(); // Unlock if there's an error
     } else {
       setConfessions((prev) =>
         prev.map((conf) =>
@@ -257,6 +265,7 @@ const Index: React.FC = () => {
       setExpandedConfessionId(confessionId);
       toast.success("Comment posted!");
     }
+    // Unlock is handled by the lockScroll timeout
   };
 
   const handleLikeConfession = async (confessionId: string) => {
