@@ -110,11 +110,10 @@ const Index: React.FC = () => {
         setConfessions(confessionsWithCommentCount);
         setLoadingConfessions(false);
       } else {
-        // Delay before new items appear and animate
-        setTimeout(() => {
-          setConfessions((prev) => [...prev, ...confessionsWithCommentCount]);
-          setLoadingMore(false);
-        }, 500); // Delay before new items appear
+        // Removed setTimeout here. New items should be added immediately to the DOM.
+        // The animationDelay on ConfessionCard will handle the cascading appearance.
+        setConfessions((prev) => [...prev, ...confessionsWithCommentCount]);
+        setLoadingMore(false);
       }
     } catch (error: any) {
       console.error("[fetchConfessions] Error fetching confessions:", error);
@@ -160,7 +159,10 @@ const Index: React.FC = () => {
           console.log(`[lastConfessionElementRef] IntersectionObserver not triggered. isIntersecting: ${entries[0].isIntersecting}, hasMore: ${hasMore}.`);
         }
       });
-      if (node) observer.current.observe(node);
+      if (node) {
+        observer.current.observe(node);
+        console.log("[lastConfessionElementRef] Observer attached to node:", node);
+      }
     },
     [loadingMore, loadingConfessions, hasMore, page] // Added page to dependencies for logging
   );
