@@ -7,11 +7,10 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
-import ConfessionDetail from "./pages/ConfessionDetail"; // Import the new ConfessionDetail page
 import { SessionProvider, useSessionContext } from "@/components/SessionProvider";
 import { isAdmin } from "@/integrations/supabase/auth";
 import React from "react";
-import AdminRedirectWrapper from "@/components/AdminRedirectWrapper"; // Import the new wrapper
+import AdminRedirectWrapper from "@/components/AdminRedirectWrapper";
 
 const queryClient = new QueryClient();
 
@@ -48,7 +47,7 @@ const App = () => (
             <Route
               path="/"
               element={
-                <AdminRedirectWrapper> {/* Wrap Index with AdminRedirectWrapper */}
+                <AdminRedirectWrapper>
                   <Index />
                 </AdminRedirectWrapper>
               }
@@ -62,7 +61,8 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            <Route path="/confessions/:id/:slug" element={<ConfessionDetail />} /> {/* New route for individual confessions */}
+            {/* Both the main feed and detail view now point to the same Index component */}
+            <Route path="/confessions/:id/:slug" element={<Index />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
