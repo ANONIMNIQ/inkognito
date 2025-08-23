@@ -359,7 +359,7 @@ const Index: React.FC = () => {
               onFetchComments={handleFetchComments}
               isContentOpen={expandedConfessionId === confession.id}
               onToggleExpand={handleConfessionToggle}
-              animationDelay={200 + (index * 150)}
+              animationDelay={page === 0 ? (200 + (index * 150)) : 0} {/* Apply delay only for initial load */}
               onSelectCategory={setSelectedCategory} // Pass the setSelectedCategory function
             />
           ))}
