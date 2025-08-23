@@ -72,7 +72,13 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (formRef.current && !formRef.current.contains(event.target as Node)) {
-        setOpen(false);
+        // Check if the click target is inside a Radix UI Select content (which is portal-rendered)
+        const targetElement = event.target as HTMLElement;
+        const isClickInsideSelectContent = targetElement.closest('[role="listbox"]') || targetElement.closest('[data-radix-popper-content-wrapper]');
+
+        if (!isClickInsideSelectContent) {
+          setOpen(false);
+        }
       }
     };
 
@@ -163,7 +169,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
                 />
               </div>
               <div>
-                <Label htmlFor="category" className={cn("text-sm", generalTextColor)}>Категория</Label>
+                <Label htmlFor="category" className={cn("text-sm text-right w-full", generalTextColor)}>Категория</Label>
                 <Select value={category} onValueChange={setCategory}>
                   <SelectTrigger id="category" className={cn("mt-1 w-full bg-transparent", generalTextColor, borderColor)}>
                     <SelectValue placeholder="Избери категория" />
