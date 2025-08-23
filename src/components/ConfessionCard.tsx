@@ -80,18 +80,22 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   useEffect(() => {
     // If the card is being opened (was closed, now is open), scroll it into view.
     if (isContentOpen && !prevIsContentOpen.current) {
-      lockScroll(300); // Lock scroll for collapsible open animation
+      lockScroll(); // Lock scroll for collapsible open animation
       // A small delay to allow the collapsible content to start animating open
       // and to ensure the scroll feels connected to the expansion.
       setTimeout(() => {
         cardRootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
+        unlockScroll(); // Unlock after animation and scroll
+      }, 300); // 200ms animation + 100ms buffer for scroll
     } else if (!isContentOpen && prevIsContentOpen.current) {
-      lockScroll(300); // Lock scroll for collapsible close animation
+      lockScroll(); // Lock scroll for collapsible close animation
+      setTimeout(() => {
+        unlockScroll(); // Unlock after animation
+      }, 250); // 200ms animation + 50ms buffer
     }
     // Update the ref for the next render.
     prevIsContentOpen.current = isContentOpen;
-  }, [isContentOpen, lockScroll]);
+  }, [isContentOpen, lockScroll, unlockScroll]);
 
   useEffect(() => {
     if (!isContentOpen) {
@@ -125,17 +129,17 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     const willBeOpen = !isCommentsOpen;
 
     if (!willBeOpen) {
+      lockScroll(); // Lock scroll for collapsible close animation
       setIsCommentsOpen(false);
-      lockScroll(300); // Lock scroll for collapsible close animation
-      // Add a delay to allow the collapsible animation to complete before scrolling
       setTimeout(() => {
         cardRootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 250); // Slightly longer than accordion-up (0.2s)
+        unlockScroll(); // Unlock after animation and scroll
+      }, 250);
       return;
     }
 
+    lockScroll(); // Lock scroll for collapsible open animation
     setIsCommentsOpen(true);
-    lockScroll(300); // Lock scroll for collapsible open animation
 
     if (!isContentOpen) {
       onToggleExpand(confession.id);
@@ -143,26 +147,32 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
 
     if (confession.comments.length === 0 && confession.comment_count > 0) {
       setIsFetchingComments(true);
-      lockScroll(500); // Lock scroll for fetching comments skeleton
       await onFetchComments(confession.id);
       setIsFetchingComments(false);
-      // The unlock is handled by the lockScroll timeout
     }
 
     setTimeout(() => {
       commentsToggleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
+      // Unlock after comments are fetched/rendered and scrolled into view.
+      // The comments themselves have fade-zoom-in animation (500ms).
+      // If comments were fetched, there's a skeleton phase.
+      // Let's assume a reasonable time for comments to appear and animate.
+      unlockScroll();
+    }, 600); // 100ms scroll + 500ms comment animation
   };
 
   const handleLoadMoreComments = () => {
     prevVisibleCountRef.current = visibleCommentsCount;
     setIsLoadingMoreComments(true);
-    lockScroll(700); // Lock scroll for loading more comments and their fade-in
+    lockScroll(); // Lock scroll
     setTimeout(() => {
       setVisibleCommentsCount(prev => prev + COMMENTS_PER_PAGE);
       setIsLoadingMoreComments(false);
-      // The unlock is handled by the lockScroll timeout
-    }, 500);
+      // Unlock after new comments are rendered and animated
+      setTimeout(() => {
+        unlockScroll();
+      }, 500); // Fade-zoom-in animation duration
+    }, 500); // Delay before new comments appear
   };
 
   const bubbleBackgroundColor =

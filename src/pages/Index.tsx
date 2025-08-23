@@ -62,10 +62,15 @@ const Index: React.FC = () => {
   const handleComposeClick = () => {
     confessionFormContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setForceExpand(true);
-    lockScroll(500); // Lock scroll for form expansion and scroll
+    lockScroll(); // Lock scroll
+    // Unlock after the form's collapsible animation (200ms) and scroll (e.g., 300ms)
+    setTimeout(() => {
+      unlockScroll();
+    }, 500); // Total duration for scroll + animation
   };
 
   const fetchConfessions = useCallback(async (currentPage: number, initialLoad: boolean, categoryFilter: string) => {
+    console.log(`Fetching confessions: page=${currentPage}, initialLoad=${initialLoad}, category=${categoryFilter}`);
     if (initialLoad) {
       setLoadingConfessions(true);
     } else {
@@ -126,6 +131,7 @@ const Index: React.FC = () => {
 
   useEffect(() => {
     if (!authLoading) {
+      console.log(`Category changed to ${selectedCategory}. Resetting state.`);
       setPage(0); // Reset page when category changes
       setConfessions([]); // Clear confessions when category changes
       setHasMore(true); // Explicitly reset hasMore for the new category
@@ -176,7 +182,7 @@ const Index: React.FC = () => {
   }, [selectedCategory]); // Re-subscribe when selectedCategory changes
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string) => {
-    lockScroll(1500); // Lock scroll for confession post, AI comment, and fade-in
+    lockScroll(); // Lock scroll
     const { data: newConfessionData, error: insertError } = await supabase
       .from("confessions")
       .insert({ title, content, gender, category }) // Include category
@@ -233,8 +239,12 @@ const Index: React.FC = () => {
     } catch (error: any) {
       console.error("Error invoking AI comment function:", error);
       toast.error("Could not generate an AI comment: " + error.message);
+    } finally {
+      // Unlock scroll after the new card has animated in (animationDelay + animationDuration)
+      setTimeout(() => {
+        unlockScroll();
+      }, 200 + 500); // 200ms initial delay + 500ms fade-zoom-in duration
     }
-    // Unlock is handled by the lockScroll timeout
   };
 
   const handleFetchComments = async (confessionId: string) => {
@@ -268,7 +278,7 @@ const Index: React.FC = () => {
   };
 
   const handleAddComment = async (confessionId: string, content: string, gender: "male" | "female" | "incognito") => {
-    lockScroll(500); // Lock scroll for comment post and fade-in
+    lockScroll(); // Lock scroll
     const { data, error } = await supabase
       .from("comments")
       .insert({ confession_id: confessionId, content, gender })
@@ -289,7 +299,10 @@ const Index: React.FC = () => {
       setExpandedConfessionId(confessionId);
       toast.success("Comment posted!");
     }
-    // Unlock is handled by the lockScroll timeout
+    // Unlock scroll after the new comment has animated in
+    setTimeout(() => {
+      unlockScroll();
+    }, 600); // 100ms delay + 500ms fade-zoom-in duration
   };
 
   const handleLikeConfession = async (confessionId: string) => {
