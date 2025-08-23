@@ -156,16 +156,16 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
           </div>
 
           <Collapsible open={isContentOpen} onOpenChange={setIsContentOpen}>
-            <div className="flex items-center justify-between space-x-4 mb-2">
+            <div className="grid grid-cols-[1fr_auto] items-center gap-x-4 mb-2">
               <CollapsibleTrigger asChild>
                 {isEditingConfession ? (
                   <Input
                     value={editedConfessionTitle}
                     onChange={(e) => setEditedConfessionTitle(e.target.value)}
-                    className={cn("text-lg font-semibold font-serif", textColor, placeholderColor, borderColor)}
+                    className={cn("text-lg font-semibold font-serif w-full", textColor, placeholderColor, borderColor)}
                   />
                 ) : (
-                  <Button variant="link" className={cn("p-0 h-auto text-left text-lg font-semibold hover:no-underline font-serif", textColor)}>
+                  <Button variant="link" className={cn("p-0 h-auto text-left text-lg font-semibold hover:no-underline font-serif whitespace-normal justify-start", textColor)}>
                     {confession.title}
                   </Button>
                 )}
