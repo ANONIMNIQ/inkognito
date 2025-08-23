@@ -97,22 +97,24 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     };
   }, [isStickyHeaderVisible]);
 
-  // Effect to hide the header permanently on the first scroll after it becomes visible
+  // Effect to hide the header permanently on the first scroll or click after it becomes visible
   useEffect(() => {
     if (!isStickyHeaderVisible) {
       return;
     }
 
-    const handleFirstScroll = () => {
+    const dismissHeader = () => {
       setIsStickyHeaderVisible(false);
     };
 
-    // Add a one-time listener that removes itself after firing
-    window.addEventListener('scroll', handleFirstScroll, { once: true, passive: true });
+    // Add one-time listeners that remove themselves after firing
+    window.addEventListener('scroll', dismissHeader, { once: true, passive: true });
+    window.addEventListener('click', dismissHeader, { once: true, capture: true });
 
-    // Cleanup in case the component unmounts before a scroll happens
+    // Cleanup in case the component unmounts before an event happens
     return () => {
-      window.removeEventListener('scroll', handleFirstScroll);
+      window.removeEventListener('scroll', dismissHeader);
+      window.removeEventListener('click', dismissHeader, { capture: true });
     };
   }, [isStickyHeaderVisible]);
 
@@ -154,6 +156,8 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
       if (autoScrollTimeout.current) {
         clearTimeout(autoScrollTimeout.current);
       }
+      // Scroll back to the top of the card when closing comments
+      cardRootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
 
@@ -210,10 +214,11 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
           className={cn(
             "fixed top-0 z-20 px-4",
             "flex items-center justify-end py-1",
+            "pointer-events-none", // Make the container non-interactive so clicks pass through
             "transition-all duration-300 ease-out",
             isStickyHeaderVisible
               ? "opacity-100 translate-y-0"
-              : "opacity-0 -translate-y-2 pointer-events-none"
+              : "opacity-0 -translate-y-2"
           )}
         >
           <div className="w-2/3 text-right min-w-0">
