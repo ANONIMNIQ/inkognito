@@ -173,7 +173,7 @@ const Index: React.FC = () => {
     }
   }, [loading, expandedConfessionId, location.hash]);
 
-  // New effect to manage the animation chain
+  // Effect to manage the animation chain
   useEffect(() => {
     if (!loading) {
       if (paramId) {
@@ -182,9 +182,6 @@ const Index: React.FC = () => {
       } else if (confessions.length > 0 && visibleConfessionCount === 0) {
         // Otherwise, start the animation chain for the first card
         setVisibleConfessionCount(1);
-      } else if (confessions.length > visibleConfessionCount) {
-        // If more confessions were loaded, continue the animation chain
-        handleTitleAnimationComplete();
       }
     }
   }, [loading, paramId, confessions.length, visibleConfessionCount]);
