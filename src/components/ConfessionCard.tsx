@@ -57,7 +57,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const cardRootRef = useRef<HTMLDivElement>(null);
   const commentsSectionRef = useRef<HTMLDivElement>(null);
   const commentsListRef = useRef<HTMLDivElement>(null);
-  const titleRef = useRef<HTMLButtonElement>(null);
+  const commentsToggleRef = useRef<HTMLButtonElement>(null);
   const prevVisibleCountRef = useRef(COMMENTS_PER_PAGE);
   const isInitialMount = useRef(true);
 
@@ -72,31 +72,31 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   }, [ref]);
 
   useEffect(() => {
-    const titleElement = titleRef.current;
+    const commentsToggleElement = commentsToggleRef.current;
     const cardElement = cardRootRef.current;
 
-    if (!isCommentsOpen || !titleElement || !cardElement) {
+    if (!isCommentsOpen || !commentsToggleElement || !cardElement) {
       setIsStickyHeaderVisible(false);
       return;
     }
 
     const observer = new IntersectionObserver(
       (entries) => {
-        const titleEntry = entries.find((e) => e.target === titleElement);
+        const toggleEntry = entries.find((e) => e.target === commentsToggleElement);
         const cardEntry = entries.find((e) => e.target === cardElement);
 
-        if (titleEntry && cardEntry) {
-          const isTitleScrolledPast = !titleEntry.isIntersecting && titleEntry.boundingClientRect.top < 0;
+        if (toggleEntry && cardEntry) {
+          const isToggleScrolledPast = !toggleEntry.isIntersecting && toggleEntry.boundingClientRect.top < 0;
           const isCardStillInView = cardEntry.isIntersecting;
           const isCardScrolledCompletelyPast = cardEntry.boundingClientRect.bottom <= 0;
 
-          setIsStickyHeaderVisible(isTitleScrolledPast && isCardStillInView && !isCardScrolledCompletelyPast);
+          setIsStickyHeaderVisible(isToggleScrolledPast && isCardStillInView && !isCardScrolledCompletelyPast);
         }
       },
       { threshold: [0, 1] }
     );
 
-    observer.observe(titleElement);
+    observer.observe(commentsToggleElement);
     observer.observe(cardElement);
 
     return () => observer.disconnect();
@@ -219,7 +219,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
             </p>
           </div>
 
-          <div className="flex justify-between items-center mb-2">
+          <div className="flex items-center space-x-4 mb-2">
             <Button
               variant="link"
               className="flex items-center p-0 h-auto text-gray-400 hover:text-black dark:text-gray-500 dark:hover:text-white transition-colors hover:no-underline"
@@ -242,7 +242,6 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
             <div className="flex items-center justify-between space-x-4 mb-2">
               <CollapsibleTrigger asChild>
                 <Button
-                  ref={titleRef}
                   variant="link"
                   className={cn(
                     "p-0 h-auto text-left text-2xl font-semibold hover:no-underline font-serif transition-colors justify-start min-w-0 flex-1",
@@ -283,7 +282,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
         <div className="ml-14 mt-4" ref={commentsSectionRef}>
           <Collapsible open={isCommentsOpen}>
             <CollapsibleTrigger asChild>
-              <Button variant="link" className={cn("w-full justify-start p-0 h-auto", linkColor)} onClick={handleToggleComments}>
+              <Button ref={commentsToggleRef} variant="link" className={cn("w-full justify-start p-0 h-auto", linkColor)} onClick={handleToggleComments}>
                 {isCommentsOpen ? "Скрий коментарите" : "Покажи коментарите"} ({confession.comment_count})
                 {isCommentsOpen ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
               </Button>
