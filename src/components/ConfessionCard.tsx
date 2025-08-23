@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, forwardRef } from "react";
-import { createPortal } from "react-dom";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, MessageCircle, Heart } from "lucide-react";
@@ -53,15 +52,11 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(COMMENTS_PER_PAGE);
   const [isLoadingMoreComments, setIsLoadingMoreComments] = useState(false);
   const [isFetchingComments, setIsFetchingComments] = useState(false);
-  const [isStickyHeaderVisible, setIsStickyHeaderVisible] = useState(false);
-  const [headerStyle, setHeaderStyle] = useState<React.CSSProperties>({});
   
   const cardRootRef = useRef<HTMLDivElement>(null);
-  const commentsContainerRef = useRef<HTMLDivElement>(null);
   const commentsListRef = useRef<HTMLDivElement>(null);
   const commentsToggleRef = useRef<HTMLButtonElement>(null);
   const prevVisibleCountRef = useRef(COMMENTS_PER_PAGE);
-  const autoScrollTimeout = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (ref) {
@@ -73,53 +68,9 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     }
   }, [ref]);
 
-  // Effect to dynamically position the sticky header
-  useEffect(() => {
-    const updateHeaderPosition = () => {
-      if (commentsContainerRef.current) {
-        const rect = commentsContainerRef.current.getBoundingClientRect();
-        setHeaderStyle({
-          left: `${rect.left}px`,
-          width: `${rect.width}px`,
-        });
-      }
-    };
-
-    if (isStickyHeaderVisible) {
-      updateHeaderPosition();
-      window.addEventListener('resize', updateHeaderPosition);
-      window.addEventListener('scroll', updateHeaderPosition, { passive: true });
-    }
-
-    return () => {
-      window.removeEventListener('resize', updateHeaderPosition);
-      window.removeEventListener('scroll', updateHeaderPosition);
-    };
-  }, [isStickyHeaderVisible]);
-
-  // Effect to hide the header permanently on the first scroll after it becomes visible
-  useEffect(() => {
-    if (!isStickyHeaderVisible) {
-      return;
-    }
-
-    const dismissOnScroll = () => {
-      setIsStickyHeaderVisible(false);
-    };
-
-    // Add a one-time listener that removes itself after firing
-    window.addEventListener('scroll', dismissOnScroll, { once: true, passive: true });
-
-    // Cleanup in case the component unmounts before a scroll happens
-    return () => {
-      window.removeEventListener('scroll', dismissOnScroll);
-    };
-  }, [isStickyHeaderVisible]);
-
   useEffect(() => {
     if (!isContentOpen) {
       setIsCommentsOpen(false);
-      setIsStickyHeaderVisible(false);
     }
   }, [isContentOpen]);
 
@@ -150,11 +101,6 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
 
     if (!willBeOpen) {
       setIsCommentsOpen(false);
-      setIsStickyHeaderVisible(false);
-      if (autoScrollTimeout.current) {
-        clearTimeout(autoScrollTimeout.current);
-      }
-      // Scroll back to the top of the card when closing comments
       cardRootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
@@ -172,16 +118,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     }
 
     setTimeout(() => {
-      if (autoScrollTimeout.current) {
-        clearTimeout(autoScrollTimeout.current);
-      }
-
       commentsToggleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      
-      const scrollAnimationDuration = 800;
-      autoScrollTimeout.current = setTimeout(() => {
-        setIsStickyHeaderVisible(true);
-      }, scrollAnimationDuration);
     }, 100);
   };
 
@@ -206,28 +143,6 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
 
   return (
     <div ref={cardRootRef} className="w-full max-w-2xl mx-auto mb-6 opacity-0 animate-fade-zoom-in" style={{ animationDelay: `${animationDelay}ms` }}>
-      {createPortal(
-        <div
-          style={headerStyle}
-          className={cn(
-            "fixed top-0 z-20 px-4",
-            "flex items-center py-1",
-            "pointer-events-none",
-            "transition-all duration-300 ease-out",
-            isStickyHeaderVisible
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 -translate-y-2"
-          )}
-        >
-          <div className="ml-auto text-right min-w-0 max-w-[75%] sm:max-w-[66%]">
-            <p className="font-serif text-sm font-semibold truncate text-foreground">
-              {confession.title}
-            </p>
-          </div>
-        </div>,
-        document.body
-      )}
-
       <div className="flex items-start space-x-3">
         <GenderAvatar gender={confession.gender} className="h-10 w-10 flex-shrink-0 mt-2" />
         <div className={cn("flex-1 p-4 rounded-xl shadow-md relative min-w-0", bubbleBackgroundColor)}>
@@ -302,14 +217,21 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
       </div>
 
       {isContentOpen && (
-        <div ref={commentsContainerRef} className="ml-14 mt-4">
+        <div className="ml-14 mt-4">
           <Collapsible open={isCommentsOpen}>
-            <CollapsibleTrigger asChild>
-              <Button ref={commentsToggleRef} variant="link" className={cn("w-full justify-start p-0 h-auto", linkColor)} onClick={handleToggleComments}>
-                {isCommentsOpen ? "Скрий коментарите" : "Покажи коментарите"} ({confession.comment_count})
-                {isCommentsOpen ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
-              </Button>
-            </CollapsibleTrigger>
+            <div className="flex justify-between items-center min-w-0">
+              <CollapsibleTrigger asChild>
+                <Button ref={commentsToggleRef} variant="link" className={cn("justify-start p-0 h-auto flex-shrink-0", linkColor)} onClick={handleToggleComments}>
+                  {isCommentsOpen ? "Скрий коментарите" : "Покажи коментарите"} ({confession.comment_count})
+                  {isCommentsOpen ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
+                </Button>
+              </CollapsibleTrigger>
+              {isCommentsOpen && (
+                <p className="text-sm font-semibold font-serif text-right truncate ml-4 flex-1 text-gray-600 dark:text-gray-400">
+                  {confession.title}
+                </p>
+              )}
+            </div>
             <CollapsibleContent className="space-y-3 pt-2">
               {isFetchingComments ? (
                 <>
