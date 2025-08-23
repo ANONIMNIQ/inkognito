@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import TypingText from "./TypingText";
 import CommentCardSkeleton from "./CommentCardSkeleton";
 import { useScrollLock } from "@/hooks/use-scroll-lock";
+import { useInView } from "@/hooks/use-in-view";
 
 interface Comment {
   id: string;
@@ -40,6 +41,7 @@ interface ConfessionCardProps {
   onToggleExpand: (confessionId: string) => void;
   animationDelay?: number;
   onSelectCategory: (category: string) => void;
+  animateOnLoad: boolean;
 }
 
 const COMMENTS_PER_PAGE = 10;
@@ -53,6 +55,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   onToggleExpand,
   animationDelay = 0,
   onSelectCategory,
+  animateOnLoad,
 }, ref) => {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(COMMENTS_PER_PAGE);
@@ -60,6 +63,8 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const [isFetchingComments, setIsFetchingComments] = useState(false);
   
   const cardRootRef = useRef<HTMLDivElement>(null);
+  const isInView = useInView(cardRootRef, { threshold: 0.1 });
+  const shouldAnimate = animateOnLoad || isInView;
   const commentsListRef = useRef<HTMLDivElement>(null);
   const commentsToggleRef = useRef<HTMLButtonElement>(null);
   const prevVisibleCountRef = useRef(COMMENTS_PER_PAGE);
@@ -171,8 +176,11 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   return (
     <div
       ref={cardRootRef}
-      className="w-full max-w-2xl mx-auto mb-6 opacity-0 animate-fade-zoom-in"
-      style={{ animationDelay: `${animationDelay}ms` }}
+      className={cn(
+        "w-full max-w-2xl mx-auto mb-6",
+        shouldAnimate ? "animate-fade-zoom-in" : "opacity-0"
+      )}
+      style={{ animationDelay: animateOnLoad ? `${animationDelay}ms` : '0ms' }}
     >
       <div className="flex items-start space-x-3">
         <GenderAvatar gender={confession.gender} className="h-10 w-10 flex-shrink-0 mt-2" />
@@ -236,6 +244,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                       "w-full",
                       isContentOpen ? "whitespace-pre-wrap" : "truncate"
                     )}
+                    startCondition={shouldAnimate}
                   />
                 </Button>
               </CollapsibleTrigger>

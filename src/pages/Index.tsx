@@ -354,8 +354,9 @@ const Index: React.FC = () => {
                 onFetchComments={handleFetchComments}
                 isContentOpen={expandedConfessionId === confession.id}
                 onToggleExpand={handleConfessionToggle}
-                animationDelay={page === 0 ? (200 + (index * 150)) : 0}
+                animationDelay={index < CONFESSIONS_PER_PAGE ? (200 + (index * 150)) : 0}
                 onSelectCategory={setSelectedCategory}
+                animateOnLoad={index < CONFESSIONS_PER_PAGE}
               />
             ))}
           </div>
