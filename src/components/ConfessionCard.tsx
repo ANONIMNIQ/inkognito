@@ -64,9 +64,10 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const commentsListRef = useRef<HTMLDivElement>(null);
   const commentsToggleRef = useRef<HTMLButtonElement>(null);
   const prevVisibleCountRef = useRef(COMMENTS_PER_PAGE);
-  const prevIsContentOpen = useRef(isContentOpen);
 
-  const { lockScroll, unlockScroll } = useScrollLock();
+  // The useScrollLock hook is still available if needed elsewhere,
+  // but we're removing its direct usage for content/comment expansion here.
+  const { lockScroll, unlockScroll } = useScrollLock(); 
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -79,22 +80,8 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     }
   }, [ref]);
 
-  useEffect(() => {
-    if (isContentOpen && !prevIsContentOpen.current) {
-      lockScroll();
-      setTimeout(() => {
-        cardRootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        unlockScroll();
-      }, 300);
-    } else if (!isContentOpen && prevIsContentOpen.current) {
-      lockScroll();
-      setTimeout(() => {
-        unlockScroll();
-      }, 250);
-    }
-    prevIsContentOpen.current = isContentOpen;
-  }, [isContentOpen, lockScroll, unlockScroll]);
-
+  // Removed the useEffect block that was locking/unlocking scroll based on isContentOpen
+  // as it was causing the mobile scroll issues.
   useEffect(() => {
     if (!isContentOpen) {
       setIsCommentsOpen(false);
@@ -126,45 +113,38 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const handleToggleComments = async () => {
     const willBeOpen = !isCommentsOpen;
 
-    if (!willBeOpen) {
-      lockScroll();
-      setIsCommentsOpen(false);
+    // Removed lockScroll/unlockScroll from here
+    setIsCommentsOpen(willBeOpen);
+
+    if (willBeOpen) {
+      if (!isContentOpen) {
+        onToggleExpand(confession.id);
+      }
+
+      if (confession.comments.length === 0 && confession.comment_count > 0) {
+        setIsFetchingComments(true);
+        await onFetchComments(confession.id);
+        setIsFetchingComments(false);
+      }
+
+      setTimeout(() => {
+        commentsToggleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 600);
+    } else {
       setTimeout(() => {
         cardRootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        unlockScroll();
       }, 250);
-      return;
     }
-
-    lockScroll();
-    setIsCommentsOpen(true);
-
-    if (!isContentOpen) {
-      onToggleExpand(confession.id);
-    }
-
-    if (confession.comments.length === 0 && confession.comment_count > 0) {
-      setIsFetchingComments(true);
-      await onFetchComments(confession.id);
-      setIsFetchingComments(false);
-    }
-
-    setTimeout(() => {
-      commentsToggleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      unlockScroll();
-    }, 600);
   };
 
   const handleLoadMoreComments = () => {
     prevVisibleCountRef.current = visibleCommentsCount;
     setIsLoadingMoreComments(true);
-    lockScroll();
+    // Removed lockScroll from here
     setTimeout(() => {
       setVisibleCommentsCount(prev => prev + COMMENTS_PER_PAGE);
       setIsLoadingMoreComments(false);
-      setTimeout(() => {
-        unlockScroll();
-      }, 500);
+      // Removed unlockScroll from here
     }, 500);
   };
 
