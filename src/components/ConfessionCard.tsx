@@ -59,7 +59,6 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const commentsListRef = useRef<HTMLDivElement>(null);
   const commentsToggleRef = useRef<HTMLButtonElement>(null);
   const prevVisibleCountRef = useRef(COMMENTS_PER_PAGE);
-  const isAutoScrolling = useRef(false);
   const autoScrollTimeout = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -93,24 +92,6 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     return () => {
       window.removeEventListener('resize', updateHeaderPosition);
       window.removeEventListener('scroll', updateHeaderPosition);
-    };
-  }, [isStickyHeaderVisible]);
-
-  // Effect for hiding the header on MANUAL user scroll
-  useEffect(() => {
-    const handleManualScroll = () => {
-      if (isAutoScrolling.current) {
-        return; // Ignore scroll events during auto-scroll
-      }
-      setIsStickyHeaderVisible(false); // Hide on first manual scroll
-    };
-
-    if (isStickyHeaderVisible) {
-      window.addEventListener('scroll', handleManualScroll, { once: true });
-    }
-
-    return () => {
-      window.removeEventListener('scroll', handleManualScroll);
     };
   }, [isStickyHeaderVisible]);
 
@@ -170,14 +151,12 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
         clearTimeout(autoScrollTimeout.current);
       }
 
-      isAutoScrolling.current = true;
       commentsToggleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       
-      // After the scroll animation, show the header and allow manual scroll to hide it
+      // After the scroll animation, show the header
       const scrollAnimationDuration = 800; // A safe duration for smooth scroll
       autoScrollTimeout.current = setTimeout(() => {
         setIsStickyHeaderVisible(true);
-        isAutoScrolling.current = false;
       }, scrollAnimationDuration);
     }, 100);
   };
