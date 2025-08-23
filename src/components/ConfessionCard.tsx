@@ -211,15 +211,15 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
           style={headerStyle}
           className={cn(
             "fixed top-0 z-20 px-4",
-            "flex items-center justify-end py-1",
-            "pointer-events-none", // Make the container non-interactive so clicks pass through
+            "flex items-center py-1",
+            "pointer-events-none",
             "transition-all duration-300 ease-out",
             isStickyHeaderVisible
               ? "opacity-100 translate-y-0"
               : "opacity-0 -translate-y-2"
           )}
         >
-          <div className="w-2/3 text-right min-w-0">
+          <div className="ml-auto text-right min-w-0 max-w-[75%] sm:max-w-[66%]">
             <p className="font-serif text-sm font-semibold truncate text-foreground">
               {confession.title}
             </p>
