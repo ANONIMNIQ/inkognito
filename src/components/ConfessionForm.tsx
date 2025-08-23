@@ -35,6 +35,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
   const [captchaAnswer, setCaptchaAnswer] = useState("");
   const formRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const selectContentRef = useRef<HTMLDivElement>(null); // New ref for SelectContent
 
   const generateCaptcha = () => {
     setCaptchaNum1(Math.floor(Math.random() * 10) + 1);
@@ -71,14 +72,9 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (formRef.current && !formRef.current.contains(event.target as Node)) {
-        // Check if the click target is inside a Radix UI Select content (which is portal-rendered)
-        const targetElement = event.target as HTMLElement;
-        const isClickInsideSelectContent = targetElement.closest('[role="listbox"]') || targetElement.closest('[data-radix-popper-content-wrapper]');
-
-        if (!isClickInsideSelectContent) {
-          setOpen(false);
-        }
+      if (formRef.current && !formRef.current.contains(event.target as Node) &&
+          selectContentRef.current && !selectContentRef.current.contains(event.target as Node)) {
+        setOpen(false);
       }
     };
 
@@ -157,24 +153,12 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
           <CollapsibleContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="content" className="sr-only">Confession</Label>
-                <Textarea
-                  id="content"
-                  placeholder="Сподели ни тайната си..."
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  rows={5}
-                  required
-                  className={cn("bg-transparent", generalTextColor, placeholderColor, borderColor)}
-                />
-              </div>
-              <div>
                 <Label htmlFor="category" className={cn("text-sm text-right w-full", generalTextColor)}>Категория</Label>
                 <Select value={category} onValueChange={setCategory}>
                   <SelectTrigger id="category" className={cn("mt-1 w-full bg-transparent", generalTextColor, borderColor)}>
                     <SelectValue placeholder="Избери категория" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700">
+                  <SelectContent ref={selectContentRef} className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700">
                     {categories.filter(c => c !== "Всички").map((cat) => ( // Filter out "Всички" for posting
                       <SelectItem key={cat} value={cat}>
                         {cat}
@@ -228,6 +212,18 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
                     </Label>
                   </div>
                 </RadioGroup>
+              </div>
+              <div>
+                <Label htmlFor="content" className="sr-only">Confession</Label>
+                <Textarea
+                  id="content"
+                  placeholder="Сподели ни тайната си..."
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  rows={5}
+                  required
+                  className={cn("bg-transparent", generalTextColor, placeholderColor, borderColor)}
+                />
               </div>
               <div>
                 <Label htmlFor="captcha" className={cn("text-sm", generalTextColor)}>

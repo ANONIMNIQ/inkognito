@@ -189,7 +189,12 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
             )}
           ></div>
           
-          <div className="flex items-center space-x-4 mb-2">
+          {/* Category label positioned absolutely */}
+          <span className="absolute top-2 right-2 text-xs font-medium text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700">
+            {confession.category}
+          </span>
+
+          <div className="flex items-center space-x-4 mb-2"> {/* This div now only contains icons */}
             <Button
               variant="link"
               className="flex items-center p-0 h-auto text-gray-400 hover:text-black dark:text-gray-500 dark:hover:text-white transition-colors hover:no-underline"
@@ -206,9 +211,6 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
               <Heart className="h-3.5 w-3.5" />
               <span className="text-xs font-medium ml-1">{confession.likes}</span>
             </Button>
-            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 ml-auto px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700">
-              {confession.category}
-            </span>
           </div>
 
           <Collapsible open={isContentOpen} onOpenChange={() => onToggleExpand(confession.id)}>
