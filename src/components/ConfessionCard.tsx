@@ -85,12 +85,10 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     if (isStickyHeaderVisible) {
       updateHeaderPosition();
       window.addEventListener('resize', updateHeaderPosition);
-      window.addEventListener('scroll', updateHeaderPosition, { passive: true });
     }
 
     return () => {
       window.removeEventListener('resize', updateHeaderPosition);
-      window.removeEventListener('scroll', updateHeaderPosition);
     };
   }, [isStickyHeaderVisible]);
 
@@ -102,14 +100,34 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
       }
     };
 
-    if (isCommentsOpen && isStickyHeaderVisible) {
+    if (isStickyHeaderVisible) {
       window.addEventListener('scroll', handleScrollToHide, { once: true });
     }
 
     return () => {
       window.removeEventListener('scroll', handleScrollToHide);
     };
-  }, [isCommentsOpen, isStickyHeaderVisible]);
+  }, [isStickyHeaderVisible]);
+
+  // Effect to handle scrolling and header visibility when comments are opened
+  useEffect(() => {
+    if (isCommentsOpen) {
+      // Use a timeout to ensure the DOM has updated before scrolling
+      const domUpdateTimeout = setTimeout(() => {
+        commentsToggleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        // After the scroll animation, show the sticky header
+        const scrollAnimationDuration = 600; // Estimated duration
+        const showHeaderTimeout = setTimeout(() => {
+          setIsStickyHeaderVisible(true);
+        }, scrollAnimationDuration);
+        
+        return () => clearTimeout(showHeaderTimeout);
+      }, 100); // Short delay for DOM update
+
+      return () => clearTimeout(domUpdateTimeout);
+    }
+  }, [isCommentsOpen]);
 
   useEffect(() => {
     if (!isContentOpen) {
@@ -142,12 +160,6 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const handleToggleComments = async () => {
     const willBeOpen = !isCommentsOpen;
 
-    if (willBeOpen) {
-      setIsStickyHeaderVisible(true);
-    } else {
-      setIsStickyHeaderVisible(false);
-    }
-
     if (willBeOpen && !isContentOpen) {
       onToggleExpand(confession.id);
     }
@@ -159,6 +171,10 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     }
 
     setIsCommentsOpen(willBeOpen);
+
+    if (!willBeOpen) {
+      setIsStickyHeaderVisible(false);
+    }
   };
 
   const handleLoadMoreComments = () => {
@@ -185,9 +201,9 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
       <div
         style={headerStyle}
         className={cn(
-          "fixed top-0 z-20 px-4",
+          "fixed top-0 z-20 px-4 border-b",
           "flex items-center justify-between py-2",
-          "bg-background/80 backdrop-blur-sm transition-all duration-300",
+          "bg-background transition-all duration-300",
           isStickyHeaderVisible
             ? "opacity-100 animate-slide-fade-in-top"
             : "opacity-0 pointer-events-none"
