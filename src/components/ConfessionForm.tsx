@@ -187,7 +187,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
                   onChange={(e) => setContent(e.target.value)}
                   rows={5}
                   required
-                  className={cn("bg-transparent mt-1 text-base", generalTextColor, placeholderColor, borderColor)} {/* Content text size remains base */}
+                  className={cn("bg-transparent mt-1 text-base md:text-lg", generalTextColor, placeholderColor, borderColor)} {/* Content text size base on mobile, larger on desktop */}
                 />
               </div>
               <div>
