@@ -10,8 +10,7 @@ import { bg } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import TypingText from "./TypingText";
 import CommentCardSkeleton from "./CommentCardSkeleton";
-import { useScrollLock } from "@/hooks/use-scroll-lock";
-import { useInView } from "@/hooks/use-in-view";
+import { useScrollLock } from "@/hooks/use-scroll-lock"; // Import useScrollLock
 
 interface Comment {
   id: string;
@@ -29,7 +28,7 @@ interface Confession {
   comments: Comment[];
   likes: number;
   comment_count: number;
-  category: string;
+  category: string; // Added category
 }
 
 interface ConfessionCardProps {
@@ -40,8 +39,7 @@ interface ConfessionCardProps {
   isContentOpen: boolean;
   onToggleExpand: (confessionId: string) => void;
   animationDelay?: number;
-  onSelectCategory: (category: string) => void;
-  animateOnLoad: boolean;
+  onSelectCategory: (category: string) => void; // New prop for category selection
 }
 
 const COMMENTS_PER_PAGE = 10;
@@ -54,8 +52,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   isContentOpen,
   onToggleExpand,
   animationDelay = 0,
-  onSelectCategory,
-  animateOnLoad,
+  onSelectCategory, // Destructure new prop
 }, ref) => {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(COMMENTS_PER_PAGE);
@@ -63,14 +60,12 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const [isFetchingComments, setIsFetchingComments] = useState(false);
   
   const cardRootRef = useRef<HTMLDivElement>(null);
-  const isInView = useInView(cardRootRef, { threshold: 0.1 });
-  const shouldAnimate = animateOnLoad || isInView;
   const commentsListRef = useRef<HTMLDivElement>(null);
   const commentsToggleRef = useRef<HTMLButtonElement>(null);
   const prevVisibleCountRef = useRef(COMMENTS_PER_PAGE);
   const prevIsContentOpen = useRef(isContentOpen);
 
-  const { lockScroll } = useScrollLock();
+  const { lockScroll, unlockScroll } = useScrollLock(); // Initialize scroll lock hook
 
   useEffect(() => {
     if (ref) {
@@ -83,14 +78,18 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   }, [ref]);
 
   useEffect(() => {
+    // If the card is being opened (was closed, now is open), scroll it into view.
     if (isContentOpen && !prevIsContentOpen.current) {
-      lockScroll(300);
+      lockScroll(300); // Lock scroll for collapsible open animation
+      // A small delay to allow the collapsible content to start animating open
+      // and to ensure the scroll feels connected to the expansion.
       setTimeout(() => {
         cardRootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
     } else if (!isContentOpen && prevIsContentOpen.current) {
-      lockScroll(300);
+      lockScroll(300); // Lock scroll for collapsible close animation
     }
+    // Update the ref for the next render.
     prevIsContentOpen.current = isContentOpen;
   }, [isContentOpen, lockScroll]);
 
@@ -127,15 +126,16 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
 
     if (!willBeOpen) {
       setIsCommentsOpen(false);
-      lockScroll(300);
+      lockScroll(300); // Lock scroll for collapsible close animation
+      // Add a delay to allow the collapsible animation to complete before scrolling
       setTimeout(() => {
         cardRootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 250);
+      }, 250); // Slightly longer than accordion-up (0.2s)
       return;
     }
 
     setIsCommentsOpen(true);
-    lockScroll(300);
+    lockScroll(300); // Lock scroll for collapsible open animation
 
     if (!isContentOpen) {
       onToggleExpand(confession.id);
@@ -143,9 +143,10 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
 
     if (confession.comments.length === 0 && confession.comment_count > 0) {
       setIsFetchingComments(true);
-      lockScroll(500);
+      lockScroll(500); // Lock scroll for fetching comments skeleton
       await onFetchComments(confession.id);
       setIsFetchingComments(false);
+      // The unlock is handled by the lockScroll timeout
     }
 
     setTimeout(() => {
@@ -156,10 +157,11 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const handleLoadMoreComments = () => {
     prevVisibleCountRef.current = visibleCommentsCount;
     setIsLoadingMoreComments(true);
-    lockScroll(700);
+    lockScroll(700); // Lock scroll for loading more comments and their fade-in
     setTimeout(() => {
       setVisibleCommentsCount(prev => prev + COMMENTS_PER_PAGE);
       setIsLoadingMoreComments(false);
+      // The unlock is handled by the lockScroll timeout
     }, 500);
   };
 
@@ -174,14 +176,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const linkColor = "text-gray-500 dark:text-gray-400";
 
   return (
-    <div
-      ref={cardRootRef}
-      className={cn(
-        "w-full max-w-2xl mx-auto mb-6",
-        shouldAnimate ? "animate-fade-zoom-in" : "opacity-0"
-      )}
-      style={{ animationDelay: animateOnLoad ? `${animationDelay}ms` : '0ms' }}
-    >
+    <div ref={cardRootRef} className="w-full max-w-2xl mx-auto mb-6 opacity-0 animate-fade-zoom-in" style={{ animationDelay: `${animationDelay}ms` }}>
       <div className="flex items-start space-x-3">
         <GenderAvatar gender={confession.gender} className="h-10 w-10 flex-shrink-0 mt-2" />
         <div className={cn("flex-1 p-4 rounded-xl shadow-md relative min-w-0", bubbleBackgroundColor)}>
@@ -196,6 +191,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
             )}
           ></div>
           
+          {/* Category label positioned absolutely and made clickable */}
           <Button
             variant="ghost"
             size="sm"
@@ -205,7 +201,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
             {confession.category}
           </Button>
 
-          <div className="flex items-center space-x-4 mb-2">
+          <div className="flex items-center space-x-4 mb-2"> {/* This div now only contains icons */}
             <Button
               variant="link"
               className="flex items-center p-0 h-auto text-gray-400 hover:text-black dark:text-gray-500 dark:hover:text-white transition-colors hover:no-underline"
@@ -244,7 +240,6 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                       "w-full",
                       isContentOpen ? "whitespace-pre-wrap" : "truncate"
                     )}
-                    startCondition={shouldAnimate}
                   />
                 </Button>
               </CollapsibleTrigger>

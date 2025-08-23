@@ -6,8 +6,8 @@ import { toast } from "sonner";
 import { useSessionContext } from "@/components/SessionProvider";
 import ConfessionCardSkeleton from "@/components/ConfessionCardSkeleton";
 import ComposeButton from "@/components/ComposeButton";
-import { useScrollLock } from "@/hooks/use-scroll-lock";
-import CategoryFilter from "@/components/CategoryFilter";
+import { useScrollLock } from "@/hooks/use-scroll-lock"; // Import useScrollLock
+import CategoryFilter, { categories } from "@/components/CategoryFilter"; // Import CategoryFilter and categories
 
 interface Comment {
   id: string;
@@ -26,7 +26,7 @@ interface Confession {
   created_at: string;
   comments: Comment[];
   comment_count: number;
-  category: string;
+  category: string; // Added category
 }
 
 const CONFESSIONS_PER_PAGE = 10;
@@ -41,11 +41,11 @@ const Index: React.FC = () => {
   const { loading: authLoading } = useSessionContext();
   const [isComposeButtonVisible, setIsComposeButtonVisible] = useState(false);
   const [forceExpand, setForceExpand] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>("Всички");
+  const [selectedCategory, setSelectedCategory] = useState<string>("Всички"); // New state for selected category
   const confessionFormContainerRef = useRef<HTMLDivElement>(null);
 
   const observer = useRef<IntersectionObserver>();
-  const { lockScroll, unlockScroll } = useScrollLock();
+  const { lockScroll, unlockScroll } = useScrollLock(); // Initialize scroll lock hook
 
   useEffect(() => {
     const handleScroll = () => {
@@ -62,7 +62,7 @@ const Index: React.FC = () => {
   const handleComposeClick = () => {
     confessionFormContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setForceExpand(true);
-    lockScroll(500);
+    lockScroll(500); // Lock scroll for form expansion and scroll
   };
 
   const fetchConfessions = useCallback(async (currentPage: number, initialLoad: boolean, categoryFilter: string) => {
@@ -96,7 +96,7 @@ const Index: React.FC = () => {
       if (confessionsData.length < CONFESSIONS_PER_PAGE) {
         setHasMore(false);
       } else {
-        setHasMore(true);
+        setHasMore(true); // Reset hasMore if we get a full page
       }
 
       const confessionsWithCommentCount = confessionsData.map((c: any) => ({
@@ -115,20 +115,21 @@ const Index: React.FC = () => {
       if (initialLoad) {
         setLoadingConfessions(false);
       } else {
+        // Add a small delay to ensure skeletons are visible
         setTimeout(() => {
           setLoadingMore(false);
-        }, 500);
+        }, 500); // 500ms delay
       }
     }
   }, []);
 
   useEffect(() => {
     if (!authLoading) {
-      setPage(0);
-      setConfessions([]);
+      setPage(0); // Reset page when category changes
+      setConfessions([]); // Clear confessions when category changes
       fetchConfessions(0, true, selectedCategory);
     }
-  }, [authLoading, fetchConfessions, selectedCategory]);
+  }, [authLoading, fetchConfessions, selectedCategory]); // Re-fetch when selectedCategory changes
 
   useEffect(() => {
     if (page > 0) {
@@ -155,6 +156,7 @@ const Index: React.FC = () => {
       .channel('public:confessions')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'confessions' }, (payload) => {
         const newConfession = payload.new as Omit<Confession, 'comments' | 'comment_count'>;
+        // Only add new confession if it matches the current filter
         if (selectedCategory === "Всички" || newConfession.category === selectedCategory) {
           setConfessions((prev) => {
             if (prev.some(c => c.id === newConfession.id)) {
@@ -169,29 +171,31 @@ const Index: React.FC = () => {
     return () => {
       supabase.removeChannel(confessionsSubscription);
     };
-  }, [selectedCategory]);
+  }, [selectedCategory]); // Re-subscribe when selectedCategory changes
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string) => {
-    lockScroll(1500);
+    lockScroll(1500); // Lock scroll for confession post, AI comment, and fade-in
     const { data: newConfessionData, error: insertError } = await supabase
       .from("confessions")
-      .insert({ title, content, gender, category })
+      .insert({ title, content, gender, category }) // Include category
       .select()
       .single();
 
     if (insertError) {
       toast.error("Error posting confession: " + insertError.message);
-      unlockScroll();
+      unlockScroll(); // Unlock if there's an error
       return;
     }
 
     toast.success("Confession posted successfully!");
 
     const newConfessionForState = { ...newConfessionData, comments: [], comment_count: 0 };
+    // Only add to state if it matches the current filter
     if (selectedCategory === "Всички" || newConfessionForState.category === selectedCategory) {
       setConfessions((prev) => [newConfessionForState, ...prev]);
       setExpandedConfessionId(newConfessionData.id);
     }
+
 
     try {
       toast.info("Generating an AI comment...");
@@ -228,6 +232,7 @@ const Index: React.FC = () => {
       console.error("Error invoking AI comment function:", error);
       toast.error("Could not generate an AI comment: " + error.message);
     }
+    // Unlock is handled by the lockScroll timeout
   };
 
   const handleFetchComments = async (confessionId: string) => {
@@ -261,7 +266,7 @@ const Index: React.FC = () => {
   };
 
   const handleAddComment = async (confessionId: string, content: string, gender: "male" | "female" | "incognito") => {
-    lockScroll(500);
+    lockScroll(500); // Lock scroll for comment post and fade-in
     const { data, error } = await supabase
       .from("comments")
       .insert({ confession_id: confessionId, content, gender })
@@ -270,7 +275,7 @@ const Index: React.FC = () => {
 
     if (error) {
       toast.error("Error posting comment: " + error.message);
-      unlockScroll();
+      unlockScroll(); // Unlock if there's an error
     } else {
       setConfessions((prev) =>
         prev.map((conf) =>
@@ -282,6 +287,7 @@ const Index: React.FC = () => {
       setExpandedConfessionId(confessionId);
       toast.success("Comment posted!");
     }
+    // Unlock is handled by the lockScroll timeout
   };
 
   const handleLikeConfession = async (confessionId: string) => {
@@ -312,68 +318,65 @@ const Index: React.FC = () => {
   };
 
   return (
-    <>
-      <div className="container mx-auto p-4 max-w-3xl">
-        <h1 className="text-3xl font-bold text-center mb-8 opacity-0 animate-fade-zoom-in">Анонимни изповеди</h1>
-        <CategoryFilter selectedCategory={selectedCategory} onSelectCategory={setSelectedCategory} />
-        <div
-          ref={confessionFormContainerRef}
-          className="opacity-0 animate-fade-zoom-in"
-          style={{ animationDelay: '200ms' }}
-        >
-          <ConfessionForm
-            onSubmit={handleAddConfession}
-            onFormFocus={handleFormFocus}
-            forceExpand={forceExpand}
-            onFormExpanded={() => setForceExpand(false)}
-          />
-        </div>
-
-        {loadingConfessions && confessions.length === 0 ? (
-          <div className="space-y-6 mt-8">
-            <ConfessionCardSkeleton />
-            <ConfessionCardSkeleton />
-            <ConfessionCardSkeleton />
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {confessions.map((confession, index) => (
-              <ConfessionCard
-                ref={confessions.length === index + 1 ? lastConfessionElementRef : null}
-                key={confession.id}
-                confession={{
-                  ...confession,
-                  timestamp: new Date(confession.created_at),
-                  comments: confession.comments.map(comment => ({
-                    ...comment,
-                    timestamp: new Date(comment.created_at)
-                  }))
-                }}
-                onAddComment={handleAddComment}
-                onLikeConfession={handleLikeConfession}
-                onFetchComments={handleFetchComments}
-                isContentOpen={expandedConfessionId === confession.id}
-                onToggleExpand={handleConfessionToggle}
-                animationDelay={index < CONFESSIONS_PER_PAGE ? (200 + (index * 150)) : 0}
-                onSelectCategory={setSelectedCategory}
-                animateOnLoad={index < CONFESSIONS_PER_PAGE}
-              />
-            ))}
-          </div>
-        )}
-        {loadingMore && (
-          <div className="space-y-6 mt-8">
-            <ConfessionCardSkeleton />
-            <ConfessionCardSkeleton />
-            <ConfessionCardSkeleton />
-          </div>
-        )}
-        {!hasMore && confessions.length > 0 && (
-          <p className="text-center text-gray-500 dark:text-gray-400 mt-8">Това са всички изповеди.</p>
-        )}
-        <ComposeButton isVisible={isComposeButtonVisible} onClick={handleComposeClick} />
+    <div className="container mx-auto p-4 max-w-3xl">
+      <h1 className="text-3xl font-bold text-center mb-8 opacity-0 animate-fade-zoom-in">Анонимни изповеди</h1>
+      <CategoryFilter selectedCategory={selectedCategory} onSelectCategory={setSelectedCategory} /> {/* Add CategoryFilter */}
+      <div
+        ref={confessionFormContainerRef}
+        className="opacity-0 animate-fade-zoom-in"
+        style={{ animationDelay: '200ms' }}
+      >
+        <ConfessionForm
+          onSubmit={handleAddConfession}
+          onFormFocus={handleFormFocus}
+          forceExpand={forceExpand}
+          onFormExpanded={() => setForceExpand(false)}
+        />
       </div>
-    </>
+
+      {loadingConfessions && confessions.length === 0 ? (
+        <div className="space-y-6 mt-8">
+          <ConfessionCardSkeleton />
+          <ConfessionCardSkeleton />
+          <ConfessionCardSkeleton />
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {confessions.map((confession, index) => (
+            <ConfessionCard
+              ref={confessions.length === index + 1 ? lastConfessionElementRef : null}
+              key={confession.id}
+              confession={{
+                ...confession,
+                timestamp: new Date(confession.created_at),
+                comments: confession.comments.map(comment => ({
+                  ...comment,
+                  timestamp: new Date(comment.created_at)
+                }))
+              }}
+              onAddComment={handleAddComment}
+              onLikeConfession={handleLikeConfession}
+              onFetchComments={handleFetchComments}
+              isContentOpen={expandedConfessionId === confession.id}
+              onToggleExpand={handleConfessionToggle}
+              animationDelay={200 + (index * 150)}
+              onSelectCategory={setSelectedCategory} // Pass the setSelectedCategory function
+            />
+          ))}
+        </div>
+      )}
+      {loadingMore && (
+        <div className="space-y-6 mt-8">
+          <ConfessionCardSkeleton />
+          <ConfessionCardSkeleton />
+          <ConfessionCardSkeleton />
+        </div>
+      )}
+      {!hasMore && confessions.length > 0 && (
+        <p className="text-center text-gray-500 dark:text-gray-400 mt-8">Това са всички изповеди.</p>
+      )}
+      <ComposeButton isVisible={isComposeButtonVisible} onClick={handleComposeClick} />
+    </div>
   );
 };
 
