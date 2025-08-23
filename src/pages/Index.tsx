@@ -289,7 +289,7 @@ const Index: React.FC = () => {
         <div className="space-y-6">
           {confessions.slice(0, visibleConfessionCount).map((conf, index) => (
             <ConfessionCard
-              ref={!paramId && confessions.length === index + 1 ? lastConfessionElementRef : null}
+              ref={!paramId && index === visibleConfessionCount - 1 && visibleConfessionCount === confessions.length ? lastConfessionElementRef : null}
               key={conf.id}
               confession={{ ...conf, timestamp: new Date(conf.created_at), comments: conf.comments.map(c => ({ ...c, timestamp: new Date(c.created_at) })) }}
               onAddComment={handleAddComment}
