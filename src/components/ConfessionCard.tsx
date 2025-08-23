@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, forwardRef, Ref } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, MessageCircle, Heart } from "lucide-react";
+import { ChevronDown, ChevronUp, MessageCircle, Heart, Share2 } from "lucide-react"; // Added Share2 icon
 import GenderAvatar from "./GenderAvatar";
 import CommentCard from "./CommentCard";
 import CommentForm from "./CommentForm";
@@ -12,11 +12,14 @@ import TypingText from "./TypingText";
 import CommentCardSkeleton from "./CommentCardSkeleton";
 import { useScrollLock } from "@/hooks/use-scroll-lock";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Link } from "react-router-dom"; // Import Link from react-router-dom
+import { toast } from "sonner"; // Import toast for copy feedback
 
 const COMMENTS_PER_PAGE = 5; // Define the constant here
 
 interface Comment {
   id: string;
+  confession_id: string;
   content: string;
   gender: "male" | "female" | "incognito";
   timestamp: Date;
@@ -32,6 +35,7 @@ interface Confession {
   likes: number;
   comment_count: number;
   category: string;
+  slug: string; // Added slug
 }
 
 interface ConfessionCardProps {
@@ -153,6 +157,20 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     }, 500);
   };
 
+  const handleShareConfession = () => {
+    const confessionLink = `${window.location.origin}/confessions/${confession.id}/${confession.slug}`;
+    navigator.clipboard.writeText(confessionLink)
+      .then(() => toast.success("Link copied to clipboard!"))
+      .catch(() => toast.error("Failed to copy link."));
+  };
+
+  const handleShareComments = () => {
+    const commentsLink = `${window.location.origin}/confessions/${confession.id}/${confession.slug}#comments`;
+    navigator.clipboard.writeText(commentsLink)
+      .then(() => toast.success("Comments link copied to clipboard!"))
+      .catch(() => toast.error("Failed to copy link."));
+  };
+
   const bubbleBackgroundColor =
     confession.gender === "male"
       ? "bg-blue-100 dark:bg-blue-950"
@@ -164,7 +182,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const linkColor = "text-gray-500 dark:text-gray-400";
 
   return (
-    <div ref={cardRootRef} className="w-full max-w-2xl mx-auto mb-6 opacity-0 animate-fade-zoom-in" style={{ animationDelay: `${animationDelay}ms` }}>
+    <div id={confession.id} ref={cardRootRef} className="w-full max-w-2xl mx-auto mb-6 opacity-0 animate-fade-zoom-in" style={{ animationDelay: `${animationDelay}ms` }}>
       <div className={cn("flex items-start", isMobile ? "space-x-0" : "space-x-3")}>
         {!isMobile && <GenderAvatar gender={confession.gender} className="h-10 w-10 flex-shrink-0 mt-2" />}
         <div className={cn("flex-1 p-4 rounded-xl shadow-md relative min-w-0", bubbleBackgroundColor, isMobile ? "ml-0" : "")}>
@@ -206,13 +224,22 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
               <Heart className="h-3.5 w-3.5" />
               <span className="text-xs font-medium ml-1">{confession.likes}</span>
             </Button>
+            <Button
+              variant="link"
+              className="flex items-center p-0 h-auto text-gray-400 hover:text-black dark:text-gray-500 dark:hover:text-white transition-colors hover:no-underline"
+              onClick={handleShareConfession}
+              aria-label="Share confession"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+              <span className="text-xs font-medium ml-1">Share</span>
+            </Button>
           </div>
 
           <Collapsible open={isContentOpen} onOpenChange={() => onToggleExpand(confession.id)}>
             <div className="flex items-center justify-between space-x-4 mb-2">
               <CollapsibleTrigger asChild>
-                <Button
-                  variant="link"
+                <Link
+                  to={`/confessions/${confession.id}/${confession.slug}`}
                   className={cn(
                     "p-0 h-auto text-left text-lg md:text-2xl font-semibold hover:no-underline font-serif transition-colors justify-start min-w-0 flex-1", // Smaller title on mobile, larger on desktop
                     isContentOpen
@@ -229,7 +256,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                       isContentOpen ? "whitespace-pre-wrap" : "truncate"
                     )}
                   />
-                </Button>
+                </Link>
               </CollapsibleTrigger>
               <CollapsibleTrigger asChild>
                 <Button variant="ghost" size="sm" className="w-9 p-0 text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white hover:bg-transparent dark:hover:bg-transparent">
@@ -249,7 +276,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
       </div>
 
       {isContentOpen && (
-        <div className={cn("mt-4", isMobile ? "ml-0" : "ml-14")}>
+        <div id={`comments-section-${confession.id}`} className={cn("mt-4", isMobile ? "ml-0" : "ml-14")}>
           <Collapsible open={isCommentsOpen}>
             <div className="flex justify-between items-center min-w-0">
               <CollapsibleTrigger asChild>
@@ -258,13 +285,15 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                   {isCommentsOpen ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
                 </Button>
               </CollapsibleTrigger>
-              <p className={cn(
-                "text-sm font-semibold font-serif text-right truncate text-gray-600 dark:text-gray-400",
-                "transition-all duration-300 ease-in-out",
-                isCommentsOpen ? "opacity-100 flex-1 ml-4" : "opacity-0 flex-none w-0 ml-0"
-              )}>
-                {confession.title}
-              </p>
+              <Button
+                variant="link"
+                className="flex items-center p-0 h-auto text-gray-400 hover:text-black dark:text-gray-500 dark:hover:text-white transition-colors hover:no-underline ml-2"
+                onClick={handleShareComments}
+                aria-label="Share comments section"
+              >
+                <Share2 className="h-3.5 w-3.5" />
+                <span className="text-xs font-medium ml-1">Share Comments</span>
+              </Button>
             </div>
             <CollapsibleContent className="space-y-3 pt-2">
               {isFetchingComments ? (
