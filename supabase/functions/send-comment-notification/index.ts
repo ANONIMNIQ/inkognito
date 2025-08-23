@@ -70,7 +70,7 @@ serve(async (req) => {
     `;
 
     const emailPayload = {
-      from: 'noreply@yourverifieddomain.com', // IMPORTANT: Replace with your verified domain on Resend
+      from: 'noreply@yourdomain.com', // IMPORTANT: Replace 'yourdomain.com' with your actual verified domain on Resend
       to: confession.author_email,
       subject: `Нов коментар на вашата изповед: "${confession.title}"`,
       html: emailHtml,
