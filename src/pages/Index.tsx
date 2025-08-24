@@ -58,61 +58,34 @@ const Index: React.FC = () => {
   const { lockScroll, unlockScroll } = useScrollLock();
 
   useEffect(() => {
-    const channelId = `public-comments-${Date.now()}`;
-    console.log(`[Realtime Comments] Setting up Supabase channel: ${channelId}`);
     const commentsChannel = supabase
-      .channel(channelId)
+      .channel('public-comments')
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'comments' },
         (payload) => {
-          console.log("[Realtime Comments] Received new comment payload:", payload);
           const newComment = payload.new as Comment;
           setConfessions((currentConfessions) => {
-            console.log("[Realtime Comments] Updating confessions state for new comment:", newComment.id);
-            let confessionFound = false;
-            const newConfessions = currentConfessions.map((confession) => {
+            return currentConfessions.map((confession) => {
               if (confession.id === newComment.confession_id) {
-                confessionFound = true;
+                // Avoid adding duplicate comments if the event fires multiple times
                 if (confession.comments.some(c => c.id === newComment.id)) {
-                  console.log(`[Realtime Comments] Comment ${newComment.id} already exists. Skipping.`);
                   return confession;
                 }
-                const updatedConfession = {
+                return {
                   ...confession,
                   comment_count: confession.comment_count + 1,
                   comments: [newComment, ...confession.comments],
                 };
-                console.log(`[Realtime Comments] New comment count for confession ${confession.id}: ${updatedConfession.comments.length}`);
-                return updatedConfession;
               }
               return confession;
             });
-            if (!confessionFound) {
-              console.log("[Realtime Comments] No matching confession found in current state.");
-            }
-            console.log("[Realtime Comments] State update complete. Array reference changed:", newConfessions !== currentConfessions);
-            return newConfessions;
           });
         }
       )
-      .subscribe((status, err) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('[Realtime Comments] Successfully subscribed to comments channel!');
-        }
-        if (status === 'CHANNEL_ERROR') {
-          console.error('[Realtime Comments] Channel error:', err);
-        }
-        if (status === 'TIMED_OUT') {
-          console.error('[Realtime Comments] Subscription timed out.');
-        }
-        if (status === 'CLOSED') {
-          console.log('[Realtime Comments] Subscription closed.');
-        }
-      });
+      .subscribe();
 
     return () => {
-      console.log(`[Realtime Comments] Unsubscribing from Supabase channel: ${channelId}`);
       supabase.removeChannel(commentsChannel);
     };
   }, []);
@@ -302,7 +275,6 @@ const Index: React.FC = () => {
   };
 
   const handleAddComment = async (confessionId: string, content: string, gender: "male" | "female" | "incognito") => {
-    console.log("[Realtime Comments] Inserting new comment into database. This should trigger a real-time event.");
     const { error } = await supabase.from("comments").insert({ confession_id: confessionId, content, gender });
     if (error) {
       toast.error("Error posting comment: " + error.message);
