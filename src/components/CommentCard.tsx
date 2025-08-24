@@ -18,9 +18,10 @@ interface CommentCardProps {
   onContentChange?: (content: string) => void;
   animationDelay?: number;
   hideAvatarOnMobile?: boolean; // New prop
+  commentNumber?: number; // New prop for comment number
 }
 
-const CommentCard: React.FC<CommentCardProps> = ({ comment, isEditing = false, editedContent, onContentChange, animationDelay = 0, hideAvatarOnMobile = false }) => {
+const CommentCard: React.FC<CommentCardProps> = ({ comment, isEditing = false, editedContent, onContentChange, animationDelay = 0, hideAvatarOnMobile = false, commentNumber }) => {
   const isMobile = useIsMobile(); // Use the hook
 
   const bubbleBackgroundColor =
@@ -59,9 +60,16 @@ const CommentCard: React.FC<CommentCardProps> = ({ comment, isEditing = false, e
         ) : (
           <p className={cn("font-serif text-sm md:text-sm pl-1", textColor)}>{comment.content}</p>
         )}
-        <p className={cn("text-xs text-gray-500 dark:text-gray-400 mt-1 pl-1")}>
-          {formatDistanceToNow(comment.timestamp, { addSuffix: true, locale: bg })}
-        </p>
+        <div className="flex justify-between items-center mt-1 pl-1">
+          <p className={cn("text-xs text-gray-500 dark:text-gray-400")}>
+            {formatDistanceToNow(comment.timestamp, { addSuffix: true, locale: bg })}
+          </p>
+          {commentNumber && (
+            <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+              #{commentNumber}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

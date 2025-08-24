@@ -219,7 +219,7 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
             {confession.comments.length === 0 ? (
               <p className="text-sm text-center text-gray-500 dark:text-gray-400 py-4">No comments yet.</p>
             ) : (
-              confession.comments.map((comment) => (
+              confession.comments.map((comment, index) => (
                 <div key={comment.id} className="flex items-start space-x-2">
                   <CommentCard
                     comment={{ ...comment, timestamp: new Date(comment.created_at) }}
@@ -227,6 +227,7 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
                     editedContent={editedCommentContent}
                     onContentChange={setEditedCommentContent}
                     hideAvatarOnMobile={true} // Pass prop to hide avatar
+                    commentNumber={index + 1} // Pass comment number
                   />
                   <div className="flex space-x-1 mt-1">
                     {editingCommentId === comment.id ? (
