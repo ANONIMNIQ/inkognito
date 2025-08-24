@@ -126,7 +126,7 @@ const Index: React.FC = () => {
       if (paramId) {
         fetchConfessions({ initialLoad: true, targetId: paramId, targetSlug: paramSlug });
       } else {
-        fetchConfessions({ initialLoad: true, category: categoryFromUrl, currentPage: 0 });
+Confessions({ initialLoad: true, category: categoryFromUrl, currentPage: 0 });
       }
     }
     
@@ -198,7 +198,7 @@ const Index: React.FC = () => {
   }, [confessions.length]);
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string, slug: string, email?: string) => {
-    const { data, error } = await supabase.from("confessions").insert({ title, content, gender, category, slug, author_email: email }).select().single();
+    const { data, error } = await supabase.from("confessions").insert({ title, content, gender, category, slug, author_email: email }).select('id, slug').single();
     if (error) {
       toast.error("Error posting confession: " + error.message);
     } else {
