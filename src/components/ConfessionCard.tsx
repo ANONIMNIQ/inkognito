@@ -291,7 +291,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                 <Link
                   to={`/confessions/${confession.id}/${confession.slug}`}
                   className={cn(
-                    "p-0 h-auto text-left text-lg md:text-2xl font-semibold hover:no-underline font-serif transition-colors justify-start min-w-0 flex-1",
+                    "p-0 h-auto text-left text-lg md:text-xl font-semibold hover:no-underline font-serif transition-colors justify-start min-w-0 flex-1",
                     isContentOpen
                       ? textColor
                       : [linkColor, "hover:text-gray-800 dark:hover:text-gray-200"]
@@ -310,7 +310,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
               </CollapsibleTrigger>
             </div>
             <CollapsibleContent className="space-y-4 pt-2">
-              <p className={cn("whitespace-pre-wrap font-serif text-lg md:text-xl", textColor)}>{confession.content}</p>
+              <p className={cn("whitespace-pre-wrap font-serif text-lg", textColor)}>{confession.content}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
                 Публикувано на {format(confession.timestamp, "dd MMMM yyyy 'г.'", { locale: bg })}
               </p>
