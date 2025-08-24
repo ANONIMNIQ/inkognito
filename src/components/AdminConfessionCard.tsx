@@ -193,11 +193,11 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
                 <Textarea
                   value={editedConfessionContent}
                   onChange={(e) => setEditedConfessionContent(e.target.value)}
-                  className={cn("whitespace-pre-wrap font-serif text-base md:text-sm", textColor, placeholderColor, borderColor)}
+                  className={cn("whitespace-pre-wrap font-serif text-base md:text-base", textColor, placeholderColor, borderColor)}
                   rows={5}
                 />
               ) : (
-                <p className={cn("whitespace-pre-wrap font-serif text-base md:text-sm", textColor)}>{confession.content}</p>
+                <p className={cn("whitespace-pre-wrap font-serif text-base md:text-base", textColor)}>{confession.content}</p>
               )}
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Posted {formatDistanceToNow(new Date(confession.created_at), { addSuffix: true })}
