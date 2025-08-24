@@ -69,12 +69,11 @@ const Index: React.FC = () => {
           console.log("[Realtime Comments] Received new comment payload:", payload);
           const newComment = payload.new as Comment;
           setConfessions((currentConfessions) => {
-            console.log("[Realtime Comments] Updating state. Current confession count:", currentConfessions.length);
+            console.log("[Realtime Comments] Updating confessions state for new comment:", newComment.id);
             let confessionFound = false;
             const newConfessions = currentConfessions.map((confession) => {
               if (confession.id === newComment.confession_id) {
                 confessionFound = true;
-                console.log(`[Realtime Comments] Found matching confession: ${confession.id}. Current comment count: ${confession.comments.length}`);
                 if (confession.comments.some(c => c.id === newComment.id)) {
                   console.log(`[Realtime Comments] Comment ${newComment.id} already exists. Skipping.`);
                   return confession;
@@ -89,7 +88,6 @@ const Index: React.FC = () => {
               }
               return confession;
             });
-
             if (!confessionFound) {
               console.log("[Realtime Comments] No matching confession found in current state.");
             }
@@ -98,7 +96,20 @@ const Index: React.FC = () => {
           });
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('[Realtime Comments] Successfully subscribed to comments channel!');
+        }
+        if (status === 'CHANNEL_ERROR') {
+          console.error('[Realtime Comments] Channel error:', err);
+        }
+        if (status === 'TIMED_OUT') {
+          console.error('[Realtime Comments] Subscription timed out.');
+        }
+        if (status === 'CLOSED') {
+          console.log('[Realtime Comments] Subscription closed.');
+        }
+      });
 
     return () => {
       console.log(`[Realtime Comments] Unsubscribing from Supabase channel: ${channelId}`);
@@ -291,6 +302,7 @@ const Index: React.FC = () => {
   };
 
   const handleAddComment = async (confessionId: string, content: string, gender: "male" | "female" | "incognito") => {
+    console.log("[Realtime Comments] Inserting new comment into database. This should trigger a real-time event.");
     const { error } = await supabase.from("comments").insert({ confession_id: confessionId, content, gender });
     if (error) {
       toast.error("Error posting comment: " + error.message);
