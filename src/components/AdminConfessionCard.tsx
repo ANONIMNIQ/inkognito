@@ -227,7 +227,7 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
                     editedContent={editedCommentContent}
                     onContentChange={setEditedCommentContent}
                     hideAvatarOnMobile={true} // Pass prop to hide avatar
-                    commentNumber={index + 1} // Pass comment number
+                    commentNumber={confession.comments.length - index} // Calculate comment number backwards
                   />
                   <div className="flex space-x-1 mt-1">
                     {editingCommentId === comment.id ? (

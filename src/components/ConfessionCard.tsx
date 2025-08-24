@@ -352,7 +352,13 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                   </div>
                   <div ref={commentsListRef} className="space-y-3">
                     {confession.comments.slice(0, visibleCommentsCount).map((comment, index) => (
-                      <CommentCard key={comment.id} comment={comment} animationDelay={(index + 1) * 100} hideAvatarOnMobile={true} commentNumber={index + 1} />
+                      <CommentCard 
+                        key={comment.id} 
+                        comment={comment} 
+                        animationDelay={(index + 1) * 100} 
+                        hideAvatarOnMobile={true} 
+                        commentNumber={confession.comments.length - index} // Calculate comment number backwards
+                      />
                     ))}
                   </div>
                   {isLoadingMoreComments && (
