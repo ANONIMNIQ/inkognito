@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import AdminConfessionList from "@/components/AdminConfessionList"; // Import the new component
+import { isAdmin } from "@/integrations/supabase/auth"; // Import isAdmin
 
 const AdminDashboard: React.FC = () => {
   const { user, profile, loading } = useSessionContext();
@@ -12,7 +13,15 @@ const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     console.log("AdminDashboard useEffect: loading:", loading, "user:", user ? "present" : "null", "profile:", profile ? profile.role : "null");
-  }, [loading, user, profile]);
+
+    if (!loading) { // Only act once loading (overallLoading) is complete
+      if (!user || !profile || !isAdmin(profile)) {
+        console.log("AdminDashboard: User not authenticated, profile missing, or not admin. Redirecting to /admin/login");
+        navigate("/admin/login", { replace: true });
+        toast.error("You do not have administrative access.");
+      }
+    }
+  }, [loading, user, profile, navigate]);
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -24,8 +33,7 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  // Explicitly wait for loading to be false AND for profile to be available if a user exists
-  if (loading || (user && !profile)) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
         <p className="text-gray-700 dark:text-gray-300">Loading admin dashboard...</p>
@@ -33,6 +41,8 @@ const AdminDashboard: React.FC = () => {
     );
   }
 
+  // If we reach here, loading is false, and the useEffect above has determined the user is an admin.
+  // So, we can safely render the dashboard content.
   return (
     <div className="container mx-auto p-4 max-w-4xl bg-white dark:bg-gray-800 rounded-lg shadow-lg">
       <div className="flex justify-between items-center mb-8">

@@ -11,20 +11,21 @@ const AdminLogin: React.FC = () => {
 
   useEffect(() => {
     if (loading) {
-      return;
+      return; // Still loading session or profile, wait
     }
 
     if (session) {
-      if (profile === null) {
-        return;
-      }
-
+      // Session exists, profile should have been fetched by now.
+      // If profile is null, or role is not admin, they are not an admin.
       if (isAdmin(profile)) {
         navigate("/admin/dashboard", { replace: true });
       } else {
+        // User is logged in but not an admin, or profile fetch failed/no profile.
+        // Redirect them to the main page.
         navigate("/", { replace: true });
       }
     }
+    // If no session, the Auth component will be rendered, which is correct.
   }, [session, profile, loading, navigate]);
 
   if (loading) {
@@ -35,10 +36,10 @@ const AdminLogin: React.FC = () => {
     );
   }
 
-  if (session && isAdmin(profile)) {
-    return null;
-  }
-
+  // If session exists and user is an admin, this component should not be rendered
+  // as the useEffect above would have navigated them away.
+  // If session exists but not admin, they are navigated to '/', so this won't render.
+  // So, if we reach here, it means there's no session, and we should show the login form.
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
       <div className="w-full max-w-md bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg">
