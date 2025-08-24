@@ -70,16 +70,15 @@ const Index: React.FC = () => {
           setConfessions((currentConfessions) =>
             currentConfessions.map((confession) => {
               if (confession.id === newComment.confession_id) {
-                // Check if comments for this card are already loaded in the state
                 const areCommentsLoaded = confession.comments.length > 0;
-                
                 return {
                   ...confession,
                   comment_count: confession.comment_count + 1,
-                  // Only add the new comment to the array if comments are already loaded.
-                  // This prevents adding a single comment to an otherwise empty (unfetched) list,
-                  // ensuring the full list is fetched on first open.
-                  comments: areCommentsLoaded ? [newComment, ...confession.comments] : [],
+                  // Only add the new comment if the comments are already loaded and visible.
+                  // Otherwise, just update the count and let the fetch function get it on open.
+                  comments: areCommentsLoaded
+                    ? [newComment, ...confession.comments]
+                    : confession.comments,
                 };
               }
               return confession;
