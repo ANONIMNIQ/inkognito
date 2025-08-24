@@ -66,19 +66,18 @@ const Index: React.FC = () => {
         { event: 'INSERT', schema: 'public', table: 'comments' },
         (payload) => {
           const newComment = payload.new as Comment;
-
           setConfessions((currentConfessions) =>
             currentConfessions.map((confession) => {
               if (confession.id === newComment.confession_id) {
+                // If comments are already loaded and visible, prepend the new one for a real-time feel.
+                // Otherwise, just update the count and let the manual fetch get the new comment.
                 const areCommentsLoaded = confession.comments.length > 0;
                 return {
                   ...confession,
                   comment_count: confession.comment_count + 1,
-                  // Only add the new comment if the comments are already loaded and visible.
-                  // Otherwise, just update the count and let the fetch function get it on open.
                   comments: areCommentsLoaded
                     ? [newComment, ...confession.comments]
-                    : confession.comments,
+                    : [], // Reset to empty to force a full fetch on next open
                 };
               }
               return confession;
@@ -278,6 +277,8 @@ const Index: React.FC = () => {
     if (error) {
       toast.error("Error fetching comments: " + error.message);
     } else {
+      // Replace the local comments array with the full, definitive list from the database.
+      // This acts as a "resync" and ensures consistency.
       setConfessions(prev => prev.map(c => c.id === confessionId ? { ...c, comments: data || [] } : c));
     }
   };
