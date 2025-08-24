@@ -72,8 +72,7 @@ const Index: React.FC = () => {
                 if (confession.comments.some(c => c.id === newComment.id)) {
                   return confession;
                 }
-                // Only prepend the comment if the comments section for this confession is already loaded.
-                // This is true for the expanded confession on a detail page.
+                // On the detail page, comments are always considered "loaded"
                 const areCommentsLoaded = confession.id === expandedConfessionId;
                 return {
                   ...confession,
@@ -93,17 +92,20 @@ const Index: React.FC = () => {
     return () => {
       supabase.removeChannel(commentsChannel);
     };
-  }, [expandedConfessionId]); // Add expandedConfessionId as a dependency
+  }, [expandedConfessionId]);
 
   const fetchConfessions = useCallback(async (
     { initialLoad = false, category = "Всички", currentPage = 0, targetId, targetSlug }:
     { initialLoad?: boolean; category?: string; currentPage?: number; targetId?: string; targetSlug?: string }
   ) => {
+    if (initialLoad) setLoading(true);
+    else setLoadingMore(true);
+
     try {
       let allConfessions: Confession[] = [];
       let newHasMore = true;
 
-      if (targetId) { // Detail View Logic
+      if (targetId) { // Detail View Logic - SIMPLIFIED
         const { data: target, error: targetError } = await supabase.from("confessions").select("*, comments(count)").eq("id", targetId).single();
         if (targetError || !target) throw new Error("Confession not found.");
         if (target.slug !== targetSlug) {
@@ -118,19 +120,14 @@ const Index: React.FC = () => {
           .eq("confession_id", targetId)
           .order("created_at", { ascending: false });
 
-        const { data: before } = await supabase.from("confessions").select("*, comments(count)").lt("created_at", target.created_at).order("created_at", { ascending: false }).limit(CONFESSIONS_PER_PAGE);
-        const { data: after } = await supabase.from("confessions").select("*, comments(count)").gt("created_at", target.created_at).order("created_at", { ascending: true }).limit(CONFESSIONS_PER_PAGE);
+        const formattedConfession = {
+          ...target,
+          comment_count: (target.comments[0] as any)?.count || 0,
+          comments: commentsData || []
+        };
         
-        const format = (c: any, comments: any[] = []) => ({ ...c, comment_count: c.comments[0]?.count || 0, comments });
-        
-        const targetWithComments = format(target, commentsData || []);
-        
-        allConfessions = [
-          ...(after || []).reverse().map(c => format(c)), 
-          targetWithComments, 
-          ...(before || []).map(c => format(c))
-        ];
-        newHasMore = (before || []).length === CONFESSIONS_PER_PAGE;
+        allConfessions = [formattedConfession];
+        newHasMore = false; // No infinite scroll on detail page
 
       } else { // Index View Logic
         const from = currentPage * CONFESSIONS_PER_PAGE;
@@ -389,7 +386,7 @@ const Index: React.FC = () => {
       {/* Invisible trigger for infinite scroll */}
       {!loading && hasMore && !paramId && <div ref={lastConfessionElementRef} style={{ height: "1px" }} />}
 
-      {!hasMore && confessions.length > 0 && <p className="text-center text-gray-500 dark:text-gray-400 mt-8">Това са всички изповеди.</p>}
+      {!hasMore && confessions.length > 0 && !paramId && <p className="text-center text-gray-500 dark:text-gray-400 mt-8">Това са всички изповеди.</p>}
       <ComposeButton isVisible={isComposeButtonVisible} onClick={handleComposeClick} />
     </div>
   );
