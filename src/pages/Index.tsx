@@ -198,12 +198,18 @@ const Index: React.FC = () => {
   }, [confessions.length]);
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string, slug: string, email?: string) => {
-    const { data, error } = await supabase.from("confessions").insert({ title, content, gender, category, slug, author_email: email }).select('id, slug').single();
+    const { data, error } = await supabase.from("confessions").insert({ title, content, gender, category, slug, author_email: email }).select('id, slug');
     if (error) {
       toast.error("Error posting confession: " + error.message);
     } else {
-      toast.success("Confession posted!");
-      navigate(`/confessions/${data.id}/${data.slug}`);
+      // Assuming data is an array, take the first element
+      const newConfession = data?.[0];
+      if (newConfession) {
+        toast.success("Confession posted!");
+        navigate(`/confessions/${newConfession.id}/${newConfession.slug}`);
+      } else {
+        toast.error("Error: No confession data returned after posting.");
+      }
     }
   };
 
