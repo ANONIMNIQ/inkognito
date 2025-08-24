@@ -102,7 +102,7 @@ const Index: React.FC = () => {
       let newHasMore = true;
 
       if (targetId) { // Detail View Logic
-        const { data: target, error: targetError } = await supabase.from("confessions").select("*, comments(count)").eq("id", targetId).single();
+        const { data: target, error: targetError } = await supabase.from("confessions").select("*, comments!fk_confession_id(count)").eq("id", targetId).single();
         if (targetError || !target) throw new Error("Confession not found.");
         if (target.slug !== targetSlug) {
           navigate(`/confessions/${target.id}/${target.slug}`, { replace: true });
@@ -116,8 +116,8 @@ const Index: React.FC = () => {
           .eq("confession_id", targetId)
           .order("created_at", { ascending: false });
 
-        const { data: before } = await supabase.from("confessions").select("*, comments(count)").lt("created_at", target.created_at).order("created_at", { ascending: false }).limit(CONFESSIONS_PER_PAGE);
-        const { data: after } = await supabase.from("confessions").select("*, comments(count)").gt("created_at", target.created_at).order("created_at", { ascending: true }).limit(CONFESSIONS_PER_PAGE);
+        const { data: before } = await supabase.from("confessions").select("*, comments!fk_confession_id(count)").lt("created_at", target.created_at).order("created_at", { ascending: false }).limit(CONFESSIONS_PER_PAGE);
+        const { data: after } = await supabase.from("confessions").select("*, comments!fk_confession_id(count)").gt("created_at", target.created_at).order("created_at", { ascending: true }).limit(CONFESSIONS_PER_PAGE);
         
         const format = (c: any, comments: any[] = []) => ({ ...c, comment_count: c.comments[0]?.count || 0, comments });
         
@@ -133,7 +133,7 @@ const Index: React.FC = () => {
       } else { // Index View Logic
         const from = currentPage * CONFESSIONS_PER_PAGE;
         const to = from + CONFESSIONS_PER_PAGE - 1;
-        let query = supabase.from("confessions").select("*, comments(count)").order("created_at", { ascending: false });
+        let query = supabase.from("confessions").select("*, comments!fk_confession_id(count)").order("created_at", { ascending: false });
         if (category !== "Всички") query = query.eq("category", category);
         const { data, error } = await query.range(from, to);
         if (error) throw error;
