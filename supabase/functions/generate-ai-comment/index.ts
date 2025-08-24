@@ -7,6 +7,10 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  console.log("Edge Function 'generate-ai-comment' invoked.");
+  console.log("Request method:", req.method);
+  console.log("Request URL:", req.url);
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -34,6 +38,7 @@ serve(async (req) => {
   }
 
   if (!confessionContent) {
+    console.error("Validation Error: Confession content is required.");
     return new Response(JSON.stringify({ error: 'Confession content is required' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
@@ -41,8 +46,10 @@ serve(async (req) => {
   }
 
   const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY');
+  console.log("GOOGLE_API_KEY status:", GOOGLE_API_KEY ? "present" : "missing");
 
   if (!GOOGLE_API_KEY) {
+    console.error("Configuration Error: GOOGLE_API_KEY not set in Supabase secrets.");
     return new Response(JSON.stringify({ error: 'GOOGLE_API_KEY not set in Supabase secrets.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
@@ -50,6 +57,7 @@ serve(async (req) => {
   }
 
   // Call Google Gemini API
+  console.log("Calling Google Gemini API...");
   const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GOOGLE_API_KEY}`, {
     method: "POST",
     headers: {
@@ -99,6 +107,7 @@ serve(async (req) => {
   }
   
   const aiResponseContent = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "AI comment generation failed.";
+  console.log("AI generated content:", aiResponseContent);
 
   return new Response(JSON.stringify({
     id: crypto.randomUUID(), // Generate a UUID for the comment

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, forwardRef, Ref, useCallback } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, MessageCircle, Heart, Share2 } from "lucide-react";
+import { ChevronDown, ChevronUp, MessageCircle, Heart, Share2, Bot } from "lucide-react"; // Added Bot icon
 import GenderAvatar from "./GenderAvatar";
 import CommentCard from "./CommentCard";
 import CommentForm from "./CommentForm";
@@ -20,6 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { supabase } from "@/integrations/supabase/client"; // Import supabase client
 
 const COMMENTS_PER_PAGE = 5;
 
@@ -73,6 +74,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(COMMENTS_PER_PAGE);
   const [isLoadingMoreComments, setIsLoadingMoreComments] = useState(false);
   const [isFetchingComments, setIsFetchingComments] = useState(false);
+  const [isGeneratingAIComment, setIsGeneratingAIComment] = useState(false); // New state for AI comment generation
   
   const cardRootRef = useRef<HTMLDivElement>(null);
   const commentsListRef = useRef<HTMLDivElement>(null);
@@ -197,6 +199,38 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     navigator.clipboard.writeText(commentsLink)
       .then(() => toast.success("Comments link copied to clipboard!"))
       .catch(() => toast.error("Failed to copy link."));
+  };
+
+  const handleGenerateAIComment = async () => {
+    setIsGeneratingAIComment(true);
+    toast.loading("Generating AI comment...", { id: "ai-comment-loading" });
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-ai-comment', {
+        body: { confessionContent: confession.content },
+      });
+
+      if (error) {
+        console.error("Error invoking AI function:", error);
+        toast.error("Failed to generate AI comment: " + error.message, { id: "ai-comment-loading" });
+        return;
+      }
+
+      if (data && data.content) {
+        // The AI function returns the comment data, now we need to add it to our DB via onAddComment
+        onAddComment(confession.id, data.content, data.gender || "incognito");
+        toast.success("AI comment generated successfully!", { id: "ai-comment-loading" });
+        if (!isCommentsOpen) {
+          handleToggleCommentsLocal(); // Open comments if not already open
+        }
+      } else {
+        toast.error("AI comment generation failed: No content received.", { id: "ai-comment-loading" });
+      }
+    } catch (e: any) {
+      console.error("Unexpected error generating AI comment:", e);
+      toast.error("An unexpected error occurred: " + e.message, { id: "ai-comment-loading" });
+    } finally {
+      setIsGeneratingAIComment(false);
+    }
   };
 
   const bubbleBackgroundColor =
@@ -349,6 +383,18 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                 <>
                   <div className="opacity-0 animate-fade-zoom-in" style={{ animationDelay: '0ms' }}>
                     <CommentForm onSubmit={handleAddCommentLocal} hideAvatarOnMobile={true} />
+                  </div>
+                  <div className="flex justify-center py-2">
+                    <Button
+                      onClick={handleGenerateAIComment}
+                      disabled={isGeneratingAIComment}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center space-x-2 rounded-full px-4 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    >
+                      <Bot className="h-4 w-4" />
+                      <span>{isGeneratingAIComment ? "Генериране..." : "Генерирай AI коментар"}</span>
+                    </Button>
                   </div>
                   <div ref={commentsListRef} className="space-y-3">
                     {confession.comments.slice(0, visibleCommentsCount).map((comment, index) => (
