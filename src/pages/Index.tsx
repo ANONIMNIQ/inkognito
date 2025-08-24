@@ -57,7 +57,6 @@ const Index: React.FC = () => {
   const observer = useRef<IntersectionObserver>();
   const { lockScroll, unlockScroll } = useScrollLock();
 
-  // Real-time subscription for new comments
   useEffect(() => {
     const commentsChannel = supabase
       .channel('public-comments')
@@ -69,15 +68,19 @@ const Index: React.FC = () => {
           setConfessions((currentConfessions) =>
             currentConfessions.map((confession) => {
               if (confession.id === newComment.confession_id) {
-                // If comments are already loaded and visible, prepend the new one for a real-time feel.
-                // Otherwise, just update the count and let the manual fetch get the new comment.
-                const areCommentsLoaded = confession.comments.length > 0;
+                // Prevent adding duplicate comments if the subscription fires multiple times
+                if (confession.comments.some(c => c.id === newComment.id)) {
+                  return confession;
+                }
+                // Only prepend the comment if the comments section for this confession is already loaded.
+                // This is true for the expanded confession on a detail page.
+                const areCommentsLoaded = confession.id === expandedConfessionId;
                 return {
                   ...confession,
                   comment_count: confession.comment_count + 1,
                   comments: areCommentsLoaded
                     ? [newComment, ...confession.comments]
-                    : [], // Reset to empty to force a full fetch on next open
+                    : confession.comments,
                 };
               }
               return confession;
@@ -90,7 +93,7 @@ const Index: React.FC = () => {
     return () => {
       supabase.removeChannel(commentsChannel);
     };
-  }, []);
+  }, [expandedConfessionId]); // Add expandedConfessionId as a dependency
 
   const fetchConfessions = useCallback(async (
     { initialLoad = false, category = "Всички", currentPage = 0, targetId, targetSlug }:
@@ -108,12 +111,27 @@ const Index: React.FC = () => {
           return;
         }
 
+        // Fetch comments for the target confession immediately
+        const { data: commentsData } = await supabase
+          .from("comments")
+          .select("*")
+          .eq("confession_id", targetId)
+          .order("created_at", { ascending: false });
+
         const { data: before } = await supabase.from("confessions").select("*, comments(count)").lt("created_at", target.created_at).order("created_at", { ascending: false }).limit(CONFESSIONS_PER_PAGE);
         const { data: after } = await supabase.from("confessions").select("*, comments(count)").gt("created_at", target.created_at).order("created_at", { ascending: true }).limit(CONFESSIONS_PER_PAGE);
         
-        const format = (c: any) => ({ ...c, comment_count: c.comments[0]?.count || 0, comments: [] });
-        allConfessions = [...(after || []).reverse().map(format), format(target), ...(before || []).map(format)];
+        const format = (c: any, comments: any[] = []) => ({ ...c, comment_count: c.comments[0]?.count || 0, comments });
+        
+        const targetWithComments = format(target, commentsData || []);
+        
+        allConfessions = [
+          ...(after || []).reverse().map(c => format(c)), 
+          targetWithComments, 
+          ...(before || []).map(c => format(c))
+        ];
         newHasMore = (before || []).length === CONFESSIONS_PER_PAGE;
+
       } else { // Index View Logic
         const from = currentPage * CONFESSIONS_PER_PAGE;
         const to = from + CONFESSIONS_PER_PAGE - 1;
@@ -133,11 +151,8 @@ const Index: React.FC = () => {
       toast.error("Error fetching confessions: " + error.message);
       setHasMore(false);
     } finally {
-      if (initialLoad) {
-        setLoading(false);
-      } else {
-        setLoadingMore(false);
-      }
+      if (initialLoad) setLoading(false);
+      else setLoadingMore(false);
     }
   }, [navigate]);
 
@@ -277,8 +292,6 @@ const Index: React.FC = () => {
     if (error) {
       toast.error("Error fetching comments: " + error.message);
     } else {
-      // Replace the local comments array with the full, definitive list from the database.
-      // This acts as a "resync" and ensures consistency.
       setConfessions(prev => prev.map(c => c.id === confessionId ? { ...c, comments: data || [] } : c));
     }
   };
