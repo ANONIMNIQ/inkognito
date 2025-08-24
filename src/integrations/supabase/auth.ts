@@ -15,17 +15,17 @@ export type Profile = {
 export const useSession = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [isLoadingSession, setIsLoadingSession] = useState(true); // Tracks initial session and profile load
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true); // Initial state is true
-  const [isProfileFetching, setIsProfileFetching] = useState(false); // New state for profile fetching
+  const [isFetchingProfile, setIsFetchingProfile] = useState(false); // Tracks ongoing profile fetches
 
   const fetchUserProfile = useCallback(async (userId: string) => {
     console.log("fetchUserProfile: Attempting to fetch profile for userId:", userId);
-    setIsProfileFetching(true); // Set fetching to true
+    setIsFetchingProfile(true); // Set fetching to true
     if (!userId) {
       setProfile(null);
       console.log("fetchUserProfile: No userId provided, setting profile to null.");
-      setIsProfileFetching(false); // Reset fetching
+      setIsFetchingProfile(false); // Reset fetching
       return null;
     }
     try {
@@ -55,7 +55,7 @@ export const useSession = () => {
       setProfile(null);
       return null;
     } finally {
-      setIsProfileFetching(false); // Reset fetching in finally
+      setIsFetchingProfile(false); // Reset fetching in finally
     }
   }, []);
 
@@ -65,7 +65,7 @@ export const useSession = () => {
 
     const initializeSession = async () => {
       console.log("useSession: initializeSession started.");
-      setLoading(true); // Ensure loading is true at the start of initialization
+      setIsLoadingSession(true); // Ensure loading is true at the start of initialization
       try {
         const { data: { session: initialSession }, error: initialSessionError } = await supabase.auth.getSession();
         if (!isMounted) {
@@ -77,15 +77,16 @@ export const useSession = () => {
           console.error("useSession: Error getting initial session:", initialSessionError);
           setSession(null);
           setUser(null);
-          setProfile(null);
+          setProfile(null); // Ensure profile is cleared on session error
         } else {
           setSession(initialSession);
           setUser(initialSession?.user || null);
           console.log("useSession: Initial session set:", initialSession ? "present" : "null");
           if (initialSession?.user) {
-            await fetchUserProfile(initialSession.user.id); // Await profile fetch
+            // Await profile fetch for initial load to ensure profile is ready before initialLoading becomes false
+            await fetchUserProfile(initialSession.user.id);
           } else {
-            setProfile(null);
+            setProfile(null); // Clear profile if no user
           }
         }
       } catch (e) {
@@ -95,8 +96,8 @@ export const useSession = () => {
         }
       } finally {
         if (isMounted) {
-          setLoading(false); // Set loading to false only after initial session and profile (if any) are fetched
-          console.log("useSession: Initial load complete, setLoading(false). Current loading:", false);
+          setIsLoadingSession(false); // Set initialLoading to false only after initial session and profile (if any) are fetched
+          console.log("useSession: Initial load complete, setIsLoadingSession(false). Current isLoadingSession:", false);
         }
       }
     };
@@ -115,12 +116,12 @@ export const useSession = () => {
         setSession(currentSession);
         setUser(currentSession?.user || null);
         if (currentSession?.user) {
-          await fetchUserProfile(currentSession.user.id);
+          // Do NOT await here. Let profile fetch run in background.
+          // The main app should not be blocked by subsequent profile updates.
+          fetchUserProfile(currentSession.user.id);
         } else {
-          setProfile(null);
+          setProfile(null); // Clear profile if user logs out or session becomes null
         }
-        // Do NOT set loading to false here, it's managed by initializeSession for initial load
-        // and by isProfileFetching for subsequent profile fetches.
       }
     );
 
@@ -131,11 +132,10 @@ export const useSession = () => {
     };
   }, [fetchUserProfile]); // fetchUserProfile is a dependency
 
-  // The overall loading state should consider both initial loading and profile fetching
-  const overallLoading = loading || isProfileFetching;
-
-  console.log("useSession: Render. Overall Loading:", overallLoading, "Session:", session ? "present" : "null", "Profile:", profile ? "present" : "null");
-  return { session, user, profile, loading: overallLoading };
+  // The 'loading' returned to consumers should only reflect the *initial* session establishment.
+  // Subsequent profile fetches (e.g., due to auth state changes) should not block the entire app.
+  console.log("useSession: Render. isLoadingSession:", isLoadingSession, "isFetchingProfile:", isFetchingProfile, "Session:", session ? "present" : "null", "Profile:", profile ? "present" : "null");
+  return { session, user, profile, loading: isLoadingSession, isFetchingProfile };
 };
 
 export const isAdmin = (profile: Profile | null): boolean => {

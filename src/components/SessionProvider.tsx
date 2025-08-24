@@ -6,16 +6,17 @@ interface SessionContextType {
   session: Session | null;
   user: User | null;
   profile: Profile | null;
-  loading: boolean;
+  loading: boolean; // This will now refer to isLoadingSession from useSession
+  isFetchingProfile: boolean; // New prop to expose profile fetching status
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
 export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { session, user, profile, loading } = useSession(); // Use the centralized useSession hook
+  const { session, user, profile, loading, isFetchingProfile } = useSession(); // 'loading' here is isLoadingSession
 
   return (
-    <SessionContext.Provider value={{ session, user, profile, loading }}>
+    <SessionContext.Provider value={{ session, user, profile, loading, isFetchingProfile }}>
       {children}
     </SessionContext.Provider>
   );
