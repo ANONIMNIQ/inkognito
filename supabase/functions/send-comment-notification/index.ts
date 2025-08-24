@@ -12,9 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log("Edge Function 'send-comment-notification' invoked.");
     const { confession_id, comment_content } = await req.json()
-    console.log("Received payload:", { confession_id, comment_content });
 
     if (!confession_id || !comment_content) {
       console.error("Validation Error: confession_id and comment_content are required.");
@@ -25,7 +23,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
-    console.log("Supabase admin client created.");
 
     const { data: confession, error: confessionError } = await supabaseAdmin
       .from('confessions')
@@ -39,21 +36,17 @@ serve(async (req) => {
     }
     
     if (!confession || !confession.author_email) {
-      console.log("No confession found or no author_email for confession_id:", confession_id);
       return new Response(JSON.stringify({ message: 'No subscriber for this confession.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       })
     }
 
-    console.log("Confession data fetched:", confession);
-
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
     if (!RESEND_API_KEY) {
       console.error("Configuration Error: RESEND_API_KEY is not set.");
       throw new Error('RESEND_API_KEY is not set in Supabase secrets.')
     }
-    console.log("RESEND_API_KEY is present.");
 
     const confessionUrl = `https://inkognito.online/confessions/${confession.id}/${confession.slug}#comments`;
     const unsubscribeUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/unsubscribe?id=${confession.id}&token=${confession.unsubscribe_token}`;
@@ -84,7 +77,6 @@ serve(async (req) => {
       subject: `Нов коментар на вашата изповед: "${confession.title}"`,
       html: emailHtml,
     };
-    console.log("Sending email with payload:", emailPayload);
 
     const resendResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -101,7 +93,6 @@ serve(async (req) => {
       throw new Error(`Failed to send email: ${resendResponse.status} ${errorBody}`);
     }
 
-    console.log("Email sent successfully via Resend.");
     return new Response(JSON.stringify({ message: 'Email sent successfully.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
@@ -113,4 +104,4 @@ serve(async (req) => {
       status: 500,
     })
   }
-})
+});

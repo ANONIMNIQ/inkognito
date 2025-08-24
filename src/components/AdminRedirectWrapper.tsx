@@ -10,8 +10,6 @@ interface AdminRedirectWrapperProps {
 const AdminRedirectWrapper: React.FC<AdminRedirectWrapperProps> = ({ children }) => {
   const { session, profile, loading } = useSessionContext();
 
-  console.log("AdminRedirectWrapper: loading:", loading, "session:", session ? "present" : "null", "profile:", profile ? profile.role : "null");
-
   if (loading) {
     // Still loading session/profile, render nothing or a loading indicator
     return (
@@ -23,7 +21,6 @@ const AdminRedirectWrapper: React.FC<AdminRedirectWrapperProps> = ({ children })
 
   // If session exists and profile is loaded, check if admin
   if (session && profile && isAdmin(profile)) {
-    console.log("AdminRedirectWrapper: Admin user detected, redirecting to /admin/dashboard");
     return <Navigate to="/admin/dashboard" replace />;
   }
 

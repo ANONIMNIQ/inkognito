@@ -12,11 +12,8 @@ const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log("AdminDashboard useEffect: loading:", loading, "user:", user ? "present" : "null", "profile:", profile ? profile.role : "null");
-
     if (!loading) { // Only act once loading (overallLoading) is complete
       if (!user || !profile || !isAdmin(profile)) {
-        console.log("AdminDashboard: User not authenticated, profile missing, or not admin. Redirecting to /admin/login");
         navigate("/admin/login", { replace: true });
         toast.error("You do not have administrative access.");
       }

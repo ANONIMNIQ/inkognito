@@ -7,10 +7,6 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  console.log("Edge Function 'generate-ai-comment' invoked.");
-  console.log("Request method:", req.method);
-  console.log("Request URL:", req.url);
-
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -20,17 +16,14 @@ serve(async (req) => {
   let rawRequestBody = '';
   try {
     rawRequestBody = await req.text();
-    console.log("Incoming raw request body:", rawRequestBody);
 
     if (rawRequestBody) {
       const body = JSON.parse(rawRequestBody);
       // Handle both direct invocation payload (from our trigger) and webhook payload
       if (body.record) { // This is a webhook payload
-        console.log("Detected webhook payload format.");
         confessionContent = body.record.content;
         confessionId = body.record.id;
       } else { // This is a direct invocation payload
-        console.log("Detected direct invocation payload format.");
         confessionContent = body.confessionContent;
         confessionId = body.confessionId;
       }
@@ -54,7 +47,6 @@ serve(async (req) => {
   }
 
   const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY');
-  console.log("GOOGLE_API_KEY status:", GOOGLE_API_KEY ? "present" : "missing");
 
   if (!GOOGLE_API_KEY) {
     console.error("Configuration Error: GOOGLE_API_KEY not set in Supabase secrets.");
@@ -65,7 +57,6 @@ serve(async (req) => {
   }
 
   // Call Google Gemini API
-  console.log("Calling Google Gemini API...");
   const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GOOGLE_API_KEY}`, {
     method: "POST",
     headers: {
@@ -88,7 +79,6 @@ serve(async (req) => {
   });
 
   const responseText = await response.text();
-  console.log(`Google Gemini API raw response (Status: ${response.status}):`, responseText);
 
   if (!response.ok) {
     console.error(`Google Gemini API error: Status ${response.status}, Body: ${responseText}`);
@@ -114,7 +104,6 @@ serve(async (req) => {
   }
   
   const aiResponseContent = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "AI comment generation failed.";
-  console.log("AI generated content:", aiResponseContent);
 
   // Insert the AI comment directly into the comments table
   const supabaseAdmin = createClient(
@@ -138,7 +127,6 @@ serve(async (req) => {
     });
   }
 
-  console.log("AI comment successfully inserted for confession:", confessionId);
   return new Response(JSON.stringify({ message: 'AI comment generated and inserted successfully.' }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     status: 200,

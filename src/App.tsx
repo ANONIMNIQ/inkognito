@@ -18,8 +18,6 @@ const queryClient = new QueryClient();
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { session, profile, loading } = useSessionContext();
 
-  console.log("ProtectedRoute: loading:", loading, "session:", session ? "present" : "null", "profile:", profile ? profile.role : "null");
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
@@ -29,7 +27,6 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   }
 
   if (!session || !isAdmin(profile)) {
-    console.log("ProtectedRoute: Not authenticated or not admin, redirecting to /admin/login");
     return <Navigate to="/admin/login" replace />;
   }
 
