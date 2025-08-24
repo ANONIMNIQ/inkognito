@@ -199,6 +199,8 @@ const Index: React.FC = () => {
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string, slug: string, email?: string) => {
     const { data, error } = await supabase.from("confessions").insert({ title, content, gender, category, slug, author_email: email }).select('id, slug');
+    console.log("Supabase insert data:", data); // Added logging
+    console.log("Supabase insert error:", error); // Added logging
     if (error) {
       toast.error("Error posting confession: " + error.message);
     } else {
