@@ -7,6 +7,8 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  console.log("Unsubscribe function invoked."); // Log at the very beginning
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -26,6 +28,9 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    console.log("SUPABASE_URL present:", !!supabaseUrl);
+    console.log("SUPABASE_SERVICE_ROLE_KEY length:", supabaseServiceRoleKey?.length || 0);
 
     if (!supabaseUrl || !supabaseServiceRoleKey) {
       console.error("Unsubscribe: Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables.");
