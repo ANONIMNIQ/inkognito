@@ -58,9 +58,10 @@ const Index: React.FC = () => {
   const { lockScroll, unlockScroll } = useScrollLock();
 
   useEffect(() => {
-    console.log("[Realtime Comments] Setting up Supabase real-time channel for comments.");
+    const channelId = `public-comments-${Date.now()}`;
+    console.log(`[Realtime Comments] Setting up Supabase channel: ${channelId}`);
     const commentsChannel = supabase
-      .channel('public-comments')
+      .channel(channelId)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'comments' },
@@ -68,32 +69,42 @@ const Index: React.FC = () => {
           console.log("[Realtime Comments] Received new comment payload:", payload);
           const newComment = payload.new as Comment;
           setConfessions((currentConfessions) => {
-            console.log("[Realtime Comments] Updating confessions state for new comment:", newComment.id);
-            return currentConfessions.map((confession) => {
+            console.log("[Realtime Comments] Updating state. Current confession count:", currentConfessions.length);
+            let confessionFound = false;
+            const newConfessions = currentConfessions.map((confession) => {
               if (confession.id === newComment.confession_id) {
+                confessionFound = true;
+                console.log(`[Realtime Comments] Found matching confession: ${confession.id}. Current comment count: ${confession.comments.length}`);
                 if (confession.comments.some(c => c.id === newComment.id)) {
-                  console.log(`[Realtime Comments] Comment ${newComment.id} already exists for confession ${confession.id}. Skipping.`);
+                  console.log(`[Realtime Comments] Comment ${newComment.id} already exists. Skipping.`);
                   return confession;
                 }
-                console.log(`[Realtime Comments] Adding comment ${newComment.id} to confession ${confession.id}.`);
-                return {
+                const updatedConfession = {
                   ...confession,
                   comment_count: confession.comment_count + 1,
                   comments: [newComment, ...confession.comments],
                 };
+                console.log(`[Realtime Comments] New comment count for confession ${confession.id}: ${updatedConfession.comments.length}`);
+                return updatedConfession;
               }
               return confession;
             });
+
+            if (!confessionFound) {
+              console.log("[Realtime Comments] No matching confession found in current state.");
+            }
+            console.log("[Realtime Comments] State update complete. Array reference changed:", newConfessions !== currentConfessions);
+            return newConfessions;
           });
         }
       )
       .subscribe();
 
     return () => {
-      console.log("[Realtime Comments] Unsubscribing from Supabase real-time channel.");
+      console.log(`[Realtime Comments] Unsubscribing from Supabase channel: ${channelId}`);
       supabase.removeChannel(commentsChannel);
     };
-  }, []); // Dependency array is empty, subscription is stable
+  }, []);
 
   const fetchConfessions = useCallback(async (
     { initialLoad = false, category = "Всички", currentPage = 0, targetId, targetSlug }:
