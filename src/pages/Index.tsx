@@ -90,7 +90,7 @@ const Index: React.FC = () => {
     return () => {
       supabase.removeChannel(commentsChannel);
     };
-  }, [expandedConfessionId]);
+  }, []); // <-- Dependency array is now empty, subscription is stable
 
   const fetchConfessions = useCallback(async (
     { initialLoad = false, category = "Всички", currentPage = 0, targetId, targetSlug }:
