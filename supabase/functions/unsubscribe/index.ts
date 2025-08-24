@@ -25,16 +25,17 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { data, error } = await supabaseAdmin
+    // Step 1: Find the confession using ID and token
+    const { data: confession, error: selectError } = await supabaseAdmin
       .from('confessions')
-      .update({ author_email: null })
+      .select('title, author_email')
       .eq('id', confessionId)
       .eq('unsubscribe_token', token)
-      .select('title')
       .single();
 
-    if (error || !data) {
-      console.error("Unsubscribe error:", error);
+    // If no confession is found, the link is invalid
+    if (selectError || !confession) {
+      console.error("Unsubscribe error: Confession not found or token mismatch.", selectError);
       const errorHtml = `
         <html>
           <body style="font-family: sans-serif; text-align: center; padding: 40px;">
@@ -49,11 +50,41 @@ serve(async (req) => {
       });
     }
 
+    // Step 2: Check if already unsubscribed
+    if (confession.author_email === null) {
+      const alreadyUnsubscribedHtml = `
+        <html>
+          <body style="font-family: sans-serif; text-align: center; padding: 40px;">
+            <h1>Вече сте отписани</h1>
+            <p>Вече сте се отписали от известия за тази изповед: <strong>"${confession.title}"</strong>.</p>
+            <p><a href="https://inkognito.online">Върни се към сайта</a></p>
+          </body>
+        </html>
+      `;
+      return new Response(alreadyUnsubscribedHtml, {
+        headers: { ...corsHeaders, 'Content-Type': 'text/html' },
+        status: 200,
+      });
+    }
+
+    // Step 3: Perform the update
+    const { error: updateError } = await supabaseAdmin
+      .from('confessions')
+      .update({ author_email: null })
+      .eq('id', confessionId);
+
+    if (updateError) {
+      // This would be a more critical server-side error
+      console.error("Unsubscribe update error:", updateError);
+      throw new Error("Failed to update confession for unsubscribe.");
+    }
+
+    // Step 4: Return success
     const successHtml = `
       <html>
         <body style="font-family: sans-serif; text-align: center; padding: 40px;">
           <h1>Успешно отписан!</h1>
-          <p>Вие повече няма да получавате известия за нови коментари на изповедта: <strong>"${data.title}"</strong>.</p>
+          <p>Вие повече няма да получавате известия за нови коментари на изповедта: <strong>"${confession.title}"</strong>.</p>
           <p><a href="https://inkognito.online">Върни се към сайта</a></p>
         </body>
       </html>
