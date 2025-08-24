@@ -126,7 +126,7 @@ const Index: React.FC = () => {
       if (paramId) {
         fetchConfessions({ initialLoad: true, targetId: paramId, targetSlug: paramSlug });
       } else {
-Confessions({ initialLoad: true, category: categoryFromUrl, currentPage: 0 });
+        fetchConfessions({ initialLoad: true, category: categoryFromUrl, currentPage: 0 });
       }
     }
     
