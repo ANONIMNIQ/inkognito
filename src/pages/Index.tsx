@@ -57,6 +57,41 @@ const Index: React.FC = () => {
   const observer = useRef<IntersectionObserver>();
   const { lockScroll, unlockScroll } = useScrollLock();
 
+  // Real-time subscription for new comments
+  useEffect(() => {
+    const commentsChannel = supabase
+      .channel('public-comments')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'comments' },
+        (payload) => {
+          const newComment = payload.new as Comment;
+
+          setConfessions((currentConfessions) =>
+            currentConfessions.map((confession) => {
+              if (confession.id === newComment.confession_id) {
+                // Only add the comment to the array if the comments for this card are already fetched.
+                // Otherwise, just increment the counter.
+                const areCommentsFetched = confession.comments.length > 0;
+                
+                return {
+                  ...confession,
+                  comment_count: confession.comment_count + 1,
+                  comments: areCommentsFetched ? [newComment, ...confession.comments] : confession.comments,
+                };
+              }
+              return confession;
+            })
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(commentsChannel);
+    };
+  }, []);
+
   const fetchConfessions = useCallback(async (
     { initialLoad = false, category = "Всички", currentPage = 0, targetId, targetSlug }:
     { initialLoad?: boolean; category?: string; currentPage?: number; targetId?: string; targetSlug?: string }
@@ -227,12 +262,12 @@ const Index: React.FC = () => {
   };
 
   const handleAddComment = async (confessionId: string, content: string, gender: "male" | "female" | "incognito") => {
-    const { data, error } = await supabase.from("comments").insert({ confession_id: confessionId, content, gender }).select().single();
+    const { error } = await supabase.from("comments").insert({ confession_id: confessionId, content, gender });
     if (error) {
       toast.error("Error posting comment: " + error.message);
     } else {
-      setConfessions(prev => prev.map(c => c.id === confessionId ? { ...c, comments: [data, ...c.comments], comment_count: c.comment_count + 1 } : c));
       toast.success("Comment posted!");
+      // The realtime subscription will handle the UI update.
       supabase.functions.invoke('send-comment-notification', { body: { confession_id: confessionId, comment_content: content } });
     }
   };
