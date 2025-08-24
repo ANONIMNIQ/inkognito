@@ -18,12 +18,26 @@ serve(async (req) => {
 
     if (!confessionId || !token) {
       console.error("Unsubscribe: Missing confession ID or token in URL.");
-      return new Response('Missing confession ID or token.', { status: 400 });
+      return new Response(JSON.stringify({ code: 400, message: 'Missing confession ID or token.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      console.error("Unsubscribe: Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables.");
+      return new Response(JSON.stringify({ code: 500, message: 'Server configuration error: Supabase credentials missing. Please ensure SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set in your Edge Function secrets.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
     }
 
     const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      supabaseUrl,
+      supabaseServiceRoleKey
     );
 
     // Step 1: Find the confession using ID and token
@@ -37,16 +51,8 @@ serve(async (req) => {
     // If no confession is found, the link is invalid
     if (selectError || !confession) {
       console.error("Unsubscribe error: Confession not found or token mismatch.", selectError);
-      const errorHtml = `
-        <html>
-          <body style="font-family: sans-serif; text-align: center; padding: 40px;">
-            <h1>Грешка при отписване</h1>
-            <p>Връзката за отписване е невалидна или е изтекла. Моля, опитайте отново.</p>
-          </body>
-        </html>
-      `;
-      return new Response(errorHtml, {
-        headers: { ...corsHeaders, 'Content-Type': 'text/html' },
+      return new Response(JSON.stringify({ code: 400, message: 'Invalid unsubscribe link or token.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
       });
     }
@@ -54,17 +60,8 @@ serve(async (req) => {
     // Step 2: Check if already unsubscribed
     if (confession.author_email === null) {
       console.log("Unsubscribe: Already unsubscribed for confession ID:", confessionId);
-      const alreadyUnsubscribedHtml = `
-        <html>
-          <body style="font-family: sans-serif; text-align: center; padding: 40px;">
-            <h1>Вече сте отписани</h1>
-            <p>Вече сте се отписали от известия за тази изповед: <strong>"${confession.title}"</strong>.</p>
-            <p><a href="https://inkognito.online">Върни се към сайта</a></p>
-          </body>
-        </html>
-      `;
-      return new Response(alreadyUnsubscribedHtml, {
-        headers: { ...corsHeaders, 'Content-Type': 'text/html' },
+      return new Response(JSON.stringify({ code: 200, message: `Already unsubscribed from confession: "${confession.title}".` }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       });
     }
@@ -77,39 +74,23 @@ serve(async (req) => {
 
     if (updateError) {
       console.error("Unsubscribe update error:", updateError);
-      throw new Error("Failed to update confession for unsubscribe.");
+      return new Response(JSON.stringify({ code: 500, message: 'Failed to update confession for unsubscribe: ' + updateError.message }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
     }
 
     // Step 4: Return success
     console.log("Unsubscribe: Successfully unsubscribed for confession ID:", confessionId);
-    const successHtml = `
-      <html>
-        <body style="font-family: sans-serif; text-align: center; padding: 40px;">
-          <h1>Успешно отписан!</h1>
-          <p>Вие повече няма да получавате известия за нови коментари на изповедта: <strong>"${confession.title}"</strong>.</p>
-          <p><a href="https://inkognito.online">Върни се към сайта</a></p>
-        </body>
-      </html>
-    `;
-
-    return new Response(successHtml, {
-      headers: { ...corsHeaders, 'Content-Type': 'text/html' },
+    return new Response(JSON.stringify({ code: 200, message: `Successfully unsubscribed from confession: "${confession.title}".` }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
 
   } catch (error) {
-    console.error('Critical error in unsubscribe function:', error.message || error, error);
-    const criticalErrorHtml = `
-      <html>
-        <body style="font-family: sans-serif; text-align: center; padding: 40px;">
-          <h1>Възникна грешка</h1>
-          <p>Нещо се обърка. Моля, опитайте отново по-късно.</p>
-          <p>Детайли за грешката: ${error.message || 'Неизвестна грешка'}</p>
-        </body>
-      </html>
-    `;
-    return new Response(criticalErrorHtml, {
-      headers: { ...corsHeaders, 'Content-Type': 'text/html' },
+    console.error('Critical error in unsubscribe function:', error.message || error);
+    return new Response(JSON.stringify({ code: 500, message: 'An unexpected server error occurred: ' + (error.message || 'Unknown error') }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     });
   }
