@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
+// Removed createClient import for now to isolate the issue
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,96 +7,24 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  console.log("Unsubscribe function invoked."); // Log at the very beginning
+  console.log("Unsubscribe function invoked - TEST 1."); // Very early log
 
   if (req.method === 'OPTIONS') {
+    console.log("OPTIONS request received.");
     return new Response(null, { headers: corsHeaders })
   }
 
-  try {
-    const url = new URL(req.url);
-    const confessionId = url.searchParams.get('id');
-    const token = url.searchParams.get('token');
+  console.log("GET request received - TEST 1."); // Log for GET request
 
-    if (!confessionId || !token) {
-      console.error("Unsubscribe: Missing confession ID or token in URL.");
-      return new Response(JSON.stringify({ code: 400, message: 'Missing confession ID or token.' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      });
-    }
+  const url = new URL(req.url);
+  const confessionId = url.searchParams.get('id');
+  const token = url.searchParams.get('token');
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  console.log(`Confession ID: ${confessionId}, Token: ${token}`); // Log params
 
-    console.log("SUPABASE_URL present:", !!supabaseUrl);
-    console.log("SUPABASE_SERVICE_ROLE_KEY length:", supabaseServiceRoleKey?.length || 0);
-
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
-      console.error("Unsubscribe: Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables.");
-      return new Response(JSON.stringify({ code: 500, message: 'Server configuration error: Supabase credentials missing. Please ensure SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set in your Edge Function secrets.' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      });
-    }
-
-    const supabaseAdmin = createClient(
-      supabaseUrl,
-      supabaseServiceRoleKey
-    );
-
-    // Step 1: Find the confession using ID and token
-    const { data: confession, error: selectError } = await supabaseAdmin
-      .from('confessions')
-      .select('title, author_email')
-      .eq('id', confessionId)
-      .eq('unsubscribe_token', token)
-      .single();
-
-    // If no confession is found, the link is invalid
-    if (selectError || !confession) {
-      console.error("Unsubscribe error: Confession not found or token mismatch.", selectError);
-      return new Response(JSON.stringify({ code: 400, message: 'Invalid unsubscribe link or token.' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      });
-    }
-
-    // Step 2: Check if already unsubscribed
-    if (confession.author_email === null) {
-      console.log("Unsubscribe: Already unsubscribed for confession ID:", confessionId);
-      return new Response(JSON.stringify({ code: 200, message: `Already unsubscribed from confession: "${confession.title}".` }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      });
-    }
-
-    // Step 3: Perform the update
-    const { error: updateError } = await supabaseAdmin
-      .from('confessions')
-      .update({ author_email: null })
-      .eq('id', confessionId);
-
-    if (updateError) {
-      console.error("Unsubscribe update error:", updateError);
-      return new Response(JSON.stringify({ code: 500, message: 'Failed to update confession for unsubscribe: ' + updateError.message }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      });
-    }
-
-    // Step 4: Return success
-    console.log("Unsubscribe: Successfully unsubscribed for confession ID:", confessionId);
-    return new Response(JSON.stringify({ code: 200, message: `Successfully unsubscribed from confession: "${confession.title}".` }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
-
-  } catch (error) {
-    console.error('Critical error in unsubscribe function:', error.message || error);
-    return new Response(JSON.stringify({ code: 500, message: 'An unexpected server error occurred: ' + (error.message || 'Unknown error') }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    });
-  }
+  // Just return a simple success response for now
+  return new Response(JSON.stringify({ code: 200, message: 'Unsubscribe function test successful.' }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    status: 200,
+  });
 });
