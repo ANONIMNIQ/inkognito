@@ -16,17 +16,17 @@ serve(async (req) => {
   }
 
   let confessionContent;
-  let rawRequestBody = ''; // Variable to store the raw request body
+  let confessionId;
+  let rawRequestBody = '';
   try {
-    rawRequestBody = await req.text(); // Read the raw body as text first
-    console.log("Incoming raw request body:", rawRequestBody); // Log the raw body
+    rawRequestBody = await req.text();
+    console.log("Incoming raw request body:", rawRequestBody);
 
-    // Only attempt to parse if the raw body is not empty
     if (rawRequestBody) {
       const body = JSON.parse(rawRequestBody);
       confessionContent = body.confessionContent;
+      confessionId = body.confessionId; // Extract confessionId
     } else {
-      // If body is empty, treat it as missing content
       throw new Error('Empty request body received.');
     }
   } catch (jsonParseError) {
@@ -37,9 +37,9 @@ serve(async (req) => {
     });
   }
 
-  if (!confessionContent) {
-    console.error("Validation Error: Confession content is required.");
-    return new Response(JSON.stringify({ error: 'Confession content is required' }), {
+  if (!confessionContent || !confessionId) {
+    console.error("Validation Error: Confession content and ID are required.");
+    return new Response(JSON.stringify({ error: 'Confession content and ID are required' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     });
@@ -67,19 +67,18 @@ serve(async (req) => {
       contents: [
         {
           parts: [
-            { text: "You are a compassionate and thoughtful anonymous commenter on a confession board. Provide a short, supportive, or reflective comment." }, // Removed 'Keep it under 50 words.'
+            { text: "You are a compassionate and thoughtful anonymous commenter on a confession board. Provide a short, supportive, or reflective comment in Bulgarian. Keep it concise, under 100 words." },
             { text: `Confession: "${confessionContent}"` }
           ]
         }
       ],
       generationConfig: {
-        maxOutputTokens: 200, // Increased from 50 to 200
+        maxOutputTokens: 200,
         temperature: 0.7,
       },
     }),
   });
 
-  // Always read the response body as text first for debugging
   const responseText = await response.text();
   console.log(`Google Gemini API raw response (Status: ${response.status}):`, responseText);
 
@@ -95,7 +94,7 @@ serve(async (req) => {
 
   let data;
   try {
-    data = JSON.parse(responseText); // Attempt to parse the text as JSON
+    data = JSON.parse(responseText);
   } catch (jsonError) {
     console.error("Failed to parse Google Gemini API response as JSON:", jsonError);
     return new Response(JSON.stringify({
@@ -109,14 +108,31 @@ serve(async (req) => {
   const aiResponseContent = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "AI comment generation failed.";
   console.log("AI generated content:", aiResponseContent);
 
-  return new Response(JSON.stringify({
-    id: crypto.randomUUID(), // Generate a UUID for the comment
-    content: `AI коментар: "${aiResponseContent}"`,
-    gender: "incognito", // Default gender for AI
-    timestamp: new Date().toISOString(),
-  }), {
+  // Insert the AI comment directly into the comments table
+  const supabaseAdmin = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  );
+
+  const { error: insertError } = await supabaseAdmin
+    .from('comments')
+    .insert({
+      confession_id: confessionId,
+      content: `AI коментар: "${aiResponseContent}"`,
+      gender: "incognito", // Default gender for AI comments
+    });
+
+  if (insertError) {
+    console.error("Error inserting AI comment into database:", insertError);
+    return new Response(JSON.stringify({ error: 'Failed to insert AI comment into database: ' + insertError.message }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500,
+    });
+  }
+
+  console.log("AI comment successfully inserted for confession:", confessionId);
+  return new Response(JSON.stringify({ message: 'AI comment generated and inserted successfully.' }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     status: 200,
   });
-
 });
