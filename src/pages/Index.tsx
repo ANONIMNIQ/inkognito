@@ -72,15 +72,12 @@ const Index: React.FC = () => {
                 if (confession.comments.some(c => c.id === newComment.id)) {
                   return confession;
                 }
-                // Only prepend the comment if the comments section for this confession is already loaded.
-                // This is true for the expanded confession on a detail page.
-                const areCommentsLoaded = confession.id === expandedConfessionId;
+                // ALWAYS add the new comment to the comments array for the relevant confession
+                // This ensures the data is up-to-date in the state, even if not currently visible.
                 return {
                   ...confession,
                   comment_count: confession.comment_count + 1,
-                  comments: areCommentsLoaded
-                    ? [newComment, ...confession.comments]
-                    : confession.comments,
+                  comments: [newComment, ...confession.comments], // Always prepend new comments to the state array
                 };
               }
               return confession;
