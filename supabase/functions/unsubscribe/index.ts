@@ -17,6 +17,7 @@ serve(async (req) => {
     const token = url.searchParams.get('token');
 
     if (!confessionId || !token) {
+      console.error("Unsubscribe: Missing confession ID or token in URL.");
       return new Response('Missing confession ID or token.', { status: 400 });
     }
 
@@ -52,6 +53,7 @@ serve(async (req) => {
 
     // Step 2: Check if already unsubscribed
     if (confession.author_email === null) {
+      console.log("Unsubscribe: Already unsubscribed for confession ID:", confessionId);
       const alreadyUnsubscribedHtml = `
         <html>
           <body style="font-family: sans-serif; text-align: center; padding: 40px;">
@@ -74,12 +76,12 @@ serve(async (req) => {
       .eq('id', confessionId);
 
     if (updateError) {
-      // This would be a more critical server-side error
       console.error("Unsubscribe update error:", updateError);
       throw new Error("Failed to update confession for unsubscribe.");
     }
 
     // Step 4: Return success
+    console.log("Unsubscribe: Successfully unsubscribed for confession ID:", confessionId);
     const successHtml = `
       <html>
         <body style="font-family: sans-serif; text-align: center; padding: 40px;">
@@ -96,12 +98,13 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Critical error in unsubscribe function:', error);
+    console.error('Critical error in unsubscribe function:', error.message || error, error);
     const criticalErrorHtml = `
       <html>
         <body style="font-family: sans-serif; text-align: center; padding: 40px;">
           <h1>Възникна грешка</h1>
           <p>Нещо се обърка. Моля, опитайте отново по-късно.</p>
+          <p>Детайли за грешката: ${error.message || 'Неизвестна грешка'}</p>
         </body>
       </html>
     `;
