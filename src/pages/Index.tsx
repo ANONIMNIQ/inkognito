@@ -296,7 +296,8 @@ const Index: React.FC = () => {
 
   const handleLikeConfession = async (confessionId: string) => {
     setConfessions(prev => prev.map(c => c.id === confessionId ? { ...c, likes: c.likes + 1 } : c));
-    const { error } = await supabase.rpc("increment_confession_likes", { confession_id: confessionId });
+    // Corrected parameter name from 'confession_id' to 'confession_id_param'
+    const { error } = await supabase.rpc("increment_confession_likes", { confession_id_param: confessionId });
     if (error) {
       toast.error("Error liking confession: " + error.message);
       setConfessions(prev => prev.map(c => c.id === confessionId ? { ...c, likes: c.likes - 1 } : c));
