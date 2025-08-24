@@ -72,7 +72,8 @@ const Index: React.FC = () => {
                 if (confession.comments.some(c => c.id === newComment.id)) {
                   return confession;
                 }
-                // On the detail page, comments are always considered "loaded"
+                // Only prepend the comment if the comments section for this confession is already loaded.
+                // This is true for the expanded confession on a detail page.
                 const areCommentsLoaded = confession.id === expandedConfessionId;
                 return {
                   ...confession,
@@ -105,7 +106,7 @@ const Index: React.FC = () => {
       let allConfessions: Confession[] = [];
       let newHasMore = true;
 
-      if (targetId) { // Detail View Logic - SIMPLIFIED
+      if (targetId) { // Detail View Logic
         const { data: target, error: targetError } = await supabase.from("confessions").select("*, comments(count)").eq("id", targetId).single();
         if (targetError || !target) throw new Error("Confession not found.");
         if (target.slug !== targetSlug) {
@@ -120,14 +121,19 @@ const Index: React.FC = () => {
           .eq("confession_id", targetId)
           .order("created_at", { ascending: false });
 
-        const formattedConfession = {
-          ...target,
-          comment_count: (target.comments[0] as any)?.count || 0,
-          comments: commentsData || []
-        };
+        const { data: before } = await supabase.from("confessions").select("*, comments(count)").lt("created_at", target.created_at).order("created_at", { ascending: false }).limit(CONFESSIONS_PER_PAGE);
+        const { data: after } = await supabase.from("confessions").select("*, comments(count)").gt("created_at", target.created_at).order("created_at", { ascending: true }).limit(CONFESSIONS_PER_PAGE);
         
-        allConfessions = [formattedConfession];
-        newHasMore = false; // No infinite scroll on detail page
+        const format = (c: any, comments: any[] = []) => ({ ...c, comment_count: c.comments[0]?.count || 0, comments });
+        
+        const targetWithComments = format(target, commentsData || []);
+        
+        allConfessions = [
+          ...(after || []).reverse().map(c => format(c)), 
+          targetWithComments, 
+          ...(before || []).map(c => format(c))
+        ];
+        newHasMore = (before || []).length === CONFESSIONS_PER_PAGE;
 
       } else { // Index View Logic
         const from = currentPage * CONFESSIONS_PER_PAGE;
