@@ -70,14 +70,12 @@ const Index: React.FC = () => {
           setConfessions((currentConfessions) =>
             currentConfessions.map((confession) => {
               if (confession.id === newComment.confession_id) {
-                // Only add the comment to the array if the comments for this card are already fetched.
-                // Otherwise, just increment the counter.
-                const areCommentsFetched = confession.comments.length > 0;
-                
+                // Simplified logic: Always add the new comment.
+                // This ensures real-time updates work reliably.
                 return {
                   ...confession,
                   comment_count: confession.comment_count + 1,
-                  comments: areCommentsFetched ? [newComment, ...confession.comments] : confession.comments,
+                  comments: [newComment, ...confession.comments],
                 };
               }
               return confession;
