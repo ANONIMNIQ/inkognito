@@ -199,15 +199,26 @@ const Index: React.FC = () => {
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string, slug: string, email?: string) => {
     const { data, error } = await supabase.from("confessions").insert({ title, content, gender, category, slug, author_email: email }).select('id, slug');
-    console.log("Supabase insert data:", data); // Added logging
-    console.log("Supabase insert error:", error); // Added logging
     if (error) {
       toast.error("Error posting confession: " + error.message);
     } else {
-      // Assuming data is an array, take the first element
       const newConfession = data?.[0];
       if (newConfession) {
         toast.success("Confession posted!");
+        
+        // Invoke the edge function from the client-side in the background
+        supabase.functions.invoke('generate-ai-comment', {
+          body: {
+            confessionId: newConfession.id,
+            confessionContent: content
+          }
+        }).then(({ error: invokeError }) => {
+          if (invokeError) {
+            console.error("Error invoking AI comment function:", invokeError.message);
+            // This error is not shown to the user to keep the UI clean.
+          }
+        });
+
         navigate(`/confessions/${newConfession.id}/${newConfession.slug}`);
       } else {
         toast.error("Error: No confession data returned after posting.");
