@@ -24,8 +24,16 @@ serve(async (req) => {
 
     if (rawRequestBody) {
       const body = JSON.parse(rawRequestBody);
-      confessionContent = body.confessionContent;
-      confessionId = body.confessionId; // Extract confessionId
+      // Handle both direct invocation payload (from our trigger) and webhook payload
+      if (body.record) { // This is a webhook payload
+        console.log("Detected webhook payload format.");
+        confessionContent = body.record.content;
+        confessionId = body.record.id;
+      } else { // This is a direct invocation payload
+        console.log("Detected direct invocation payload format.");
+        confessionContent = body.confessionContent;
+        confessionId = body.confessionId;
+      }
     } else {
       throw new Error('Empty request body received.');
     }
