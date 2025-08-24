@@ -58,39 +58,42 @@ const Index: React.FC = () => {
   const { lockScroll, unlockScroll } = useScrollLock();
 
   useEffect(() => {
+    console.log("[Realtime Comments] Setting up Supabase real-time channel for comments.");
     const commentsChannel = supabase
       .channel('public-comments')
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'comments' },
         (payload) => {
+          console.log("[Realtime Comments] Received new comment payload:", payload);
           const newComment = payload.new as Comment;
-          setConfessions((currentConfessions) =>
-            currentConfessions.map((confession) => {
+          setConfessions((currentConfessions) => {
+            console.log("[Realtime Comments] Updating confessions state for new comment:", newComment.id);
+            return currentConfessions.map((confession) => {
               if (confession.id === newComment.confession_id) {
-                // Prevent adding duplicate comments if the subscription fires multiple times
                 if (confession.comments.some(c => c.id === newComment.id)) {
+                  console.log(`[Realtime Comments] Comment ${newComment.id} already exists for confession ${confession.id}. Skipping.`);
                   return confession;
                 }
-                // ALWAYS add the new comment to the comments array for the relevant confession
-                // This ensures the data is up-to-date in the state, even if not currently visible.
+                console.log(`[Realtime Comments] Adding comment ${newComment.id} to confession ${confession.id}.`);
                 return {
                   ...confession,
                   comment_count: confession.comment_count + 1,
-                  comments: [newComment, ...confession.comments], // Always prepend new comments to the state array
+                  comments: [newComment, ...confession.comments],
                 };
               }
               return confession;
-            })
-          );
+            });
+          });
         }
       )
       .subscribe();
 
     return () => {
+      console.log("[Realtime Comments] Unsubscribing from Supabase real-time channel.");
       supabase.removeChannel(commentsChannel);
     };
-  }, []); // <-- Dependency array is now empty, subscription is stable
+  }, []); // Dependency array is empty, subscription is stable
 
   const fetchConfessions = useCallback(async (
     { initialLoad = false, category = "Всички", currentPage = 0, targetId, targetSlug }:
