@@ -42,8 +42,8 @@ const Index: React.FC = () => {
 
   const { loading: authLoading } = useSessionContext();
   const [confessions, setConfessions] = useState<Confession[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [loading, setLoading] = useState(true); // Initial load state for the whole page
+  const [loadingMore, setLoadingMore] = useState(false); // State for subsequent infinite scroll loads
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [expandedConfessionId, setExpandedConfessionId] = useState<string | null>(null);
@@ -94,19 +94,16 @@ const Index: React.FC = () => {
     { initialLoad = false, category = "Всички", currentPage = 0, targetId, targetSlug }:
     { initialLoad?: boolean; category?: string; currentPage?: number; targetId?: string; targetSlug?: string }
   ) => {
+    console.log(`fetchConfessions called: initialLoad=${initialLoad}, currentPage=${currentPage}, targetId=${targetId}`);
     if (initialLoad) {
-      console.log("fetchConfessions: Initial load - setting loading to true.");
       setLoading(true);
     } else {
-      console.log("fetchConfessions: Infinite scroll load - setting loadingMore to true.");
       setLoadingMore(true);
     }
 
     // --- TEMPORARY: Add artificial delay for testing skeleton loaders ---
     if (!initialLoad) {
-      console.log("fetchConfessions: Starting artificial 1-second delay for infinite scroll.");
       await new Promise(resolve => setTimeout(resolve, 1000)); // 1-second delay
-      console.log("fetchConfessions: Artificial delay complete.");
     }
     // ------------------------------------------------------------------
 
@@ -116,6 +113,7 @@ const Index: React.FC = () => {
 
       if (targetId) { // Detail View Logic
         console.log(`fetchConfessions: Fetching target confession ${targetId} for detail view.`);
+        // For detail view, we still need the comment count for the specific confession
         const { data: target, error: targetError } = await supabase.from("confessions").select("*, comments!fk_confession_id(count)").eq("id", targetId).single();
         if (targetError || !target) throw new Error("Confession not found.");
         if (target.slug !== targetSlug) {
@@ -130,6 +128,7 @@ const Index: React.FC = () => {
           .eq("confession_id", targetId)
           .order("created_at", { ascending: false });
 
+        // Fetch surrounding confessions for context
         const { data: before } = await supabase.from("confessions").select("*, comments!fk_confession_id(count)").lt("created_at", target.created_at).order("created_at", { ascending: false }).limit(CONFESSIONS_PER_PAGE);
         const { data: after } = await supabase.from("confessions").select("*, comments!fk_confession_id(count)").gt("created_at", target.created_at).order("created_at", { ascending: true }).limit(CONFESSIONS_PER_PAGE);
         
@@ -149,7 +148,7 @@ const Index: React.FC = () => {
         const from = currentPage * CONFESSIONS_PER_PAGE;
         const to = from + CONFESSIONS_PER_PAGE - 1;
         console.log(`fetchConfessions: Index view fetching confessions. Page: ${currentPage}, Range: ${from}-${to}`);
-        let query = supabase.from("confessions").select("*").order("created_at", { ascending: false }); // TEMPORARY: Removed comments!fk_confession_id(count)
+        let query = supabase.from("confessions").select("*").order("created_at", { ascending: false });
         if (category !== "Всички") query = query.eq("category", category);
         const { data, error } = await query.range(from, to);
         if (error) throw error;
@@ -158,23 +157,27 @@ const Index: React.FC = () => {
         
         // Now fetch comment counts for the fetched confessions
         const confessionIds = data.map(c => c.id);
-        let commentsCountData: { confession_id: string; count: number }[] = [];
+        let commentsCountMap = new Map<string, number>();
         if (confessionIds.length > 0) {
-          const { data: counts, error: countsError } = await supabase
+          // Fetch all comments for the current batch of confessions
+          const { data: commentsRaw, error: commentsRawError } = await supabase
             .from('comments')
-            .select('confession_id, count')
-            .in('confession_id', confessionIds)
-            .returns<{ confession_id: string; count: number }[]>();
+            .select('confession_id') // Only need confession_id to count
+            .in('confession_id', confessionIds);
 
-          if (countsError) {
-            console.error("Error fetching comment counts:", countsError);
+          if (commentsRawError) {
+            console.error("Error fetching raw comments for counting:", commentsRawError);
+            toast.error("Error fetching comment counts: " + commentsRawError.message);
           } else {
-            commentsCountData = counts || [];
+            // Manually count comments per confession_id
+            commentsRaw?.forEach(comment => {
+              commentsCountMap.set(comment.confession_id, (commentsCountMap.get(comment.confession_id) || 0) + 1);
+            });
           }
         }
 
         allConfessions = data.map((c: any) => {
-          const commentCount = commentsCountData.find(cc => cc.confession_id === c.id)?.count || 0;
+          const commentCount = commentsCountMap.get(c.id) || 0;
           return { ...c, comment_count: commentCount, comments: [] };
         });
         newHasMore = data.length === CONFESSIONS_PER_PAGE;
@@ -189,11 +192,11 @@ const Index: React.FC = () => {
       setHasMore(false);
     } finally {
       if (initialLoad) {
-        console.log("fetchConfessions: Initial load complete - setting loading to false.");
         setLoading(false);
+        console.log("fetchConfessions: Initial load complete - setting loading to false.");
       } else {
-        console.log("fetchConfessions: Infinite scroll load complete - setting loadingMore to false.");
         setLoadingMore(false); // Only set to false here after the fetch
+        console.log("fetchConfessions: Infinite scroll load complete - setting loadingMore to false.");
       }
     }
   }, [navigate]);
@@ -205,11 +208,11 @@ const Index: React.FC = () => {
     const categoryFromUrl = searchParams.get('category') || "Всички";
     const confessionIsLoaded = confessions.some(c => c.id === paramId);
 
-    const isContextChange = (paramId && !confessionIsLoaded) || (!paramId && selectedCategory !== categoryFromUrl) || confessions.length === 0;
+    const isContextChange = (paramId && !confessionIsLoaded) || (!paramId && selectedCategory !== categoryFromUrl) || (confessions.length === 0 && !loading && !loadingMore);
 
     if (isContextChange) {
       console.log("useEffect[URL]: Context change detected. Resetting states and fetching confessions.");
-      setLoading(true);
+      setLoading(true); // Ensure loading is true for any context change
       setConfessions([]);
       setPage(0);
       setHasMore(true);
@@ -234,13 +237,13 @@ const Index: React.FC = () => {
         setSearchParams(newSearchParams, { replace: true });
       }, 100);
     }
-  }, [authLoading, paramId, paramSlug, searchParams, fetchConfessions, selectedCategory, confessions.length]);
+  }, [authLoading, paramId, paramSlug, searchParams, fetchConfessions, selectedCategory, confessions.length, loading, loadingMore]); // Added loading, loadingMore to dependencies
 
   // Effect for infinite scroll on index view
   const lastConfessionElementRef = useCallback(node => {
     console.log("lastConfessionElementRef triggered with node:", node);
-    if (loadingMore || paramId) {
-      console.log("Infinite scroll skipped: loadingMore or paramId is active.");
+    if (loading || loadingMore || paramId) { // Added 'loading' to condition
+      console.log(`Infinite scroll skipped: loading=${loading}, loadingMore=${loadingMore}, paramId=${paramId ? 'active' : 'inactive'}.`);
       return;
     }
     if (observer.current) {
@@ -260,7 +263,7 @@ const Index: React.FC = () => {
       observer.current.observe(node);
       console.log("New observer observing node:", node);
     }
-  }, [loadingMore, hasMore, paramId]);
+  }, [loading, loadingMore, hasMore, paramId]); // Added 'loading' to dependencies
 
   useEffect(() => {
     if (page > 0 && !paramId) {
