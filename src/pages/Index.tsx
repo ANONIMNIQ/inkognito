@@ -299,7 +299,7 @@ const Index: React.FC = () => {
     };
 
     loadData();
-  }, [authLoading, selectedCategory, paramId, paramSlug, fetchConfessionsPage, fetchSingleConfession, confessions.length]);
+  }, [authLoading, selectedCategory, paramId, paramSlug, fetchConfessionsPage, fetchSingleConfession]); // Removed confessions.length from dependencies
 
   // Effect to handle infinite scroll
   useEffect(() => {
@@ -333,41 +333,29 @@ const Index: React.FC = () => {
     }
   }, [loading, expandedConfessionId, location.hash]);
 
-  // Cascade animation for confessions (initial load only)
+  // Effect to manage initial visible count and kick off cascade
   useEffect(() => {
     if (loading || !isFormAnimationComplete) {
       return;
     }
 
-    const currentLength = confessions.length;
-    const prevLength = prevConfessionsLengthRef.current;
-
     // If a specific confession is expanded, show all immediately
     if (paramId) {
-      setVisibleConfessionCount(currentLength);
+      setVisibleConfessionCount(confessions.length);
     }
-    // Initial cascade for the first batch (only if not already cascaded)
-    else if (visibleConfessionCount === 0 && currentLength > 0 && page === 0) {
-      setVisibleConfessionCount(1); // Start cascade
+    // Otherwise, if we have confessions and haven't started cascading, start it.
+    else if (confessions.length > 0 && visibleConfessionCount === 0) {
+      setVisibleConfessionCount(1);
     }
-    // If a new batch has been loaded via infinite scroll (page > 0)
-    // and the visible count is not yet caught up to the total loaded confessions
-    else if (page > 0 && currentLength > prevLength && visibleConfessionCount < currentLength) {
-      setVisibleConfessionCount(currentLength); // Show the entire new batch at once
-    }
-
-    prevConfessionsLengthRef.current = currentLength;
-  }, [loading, isFormAnimationComplete, paramId, confessions.length, loadingMore, visibleConfessionCount, page]);
+  }, [loading, isFormAnimationComplete, paramId, confessions.length, visibleConfessionCount]);
 
   const handleAnimationComplete = useCallback(() => {
-    // Only continue cascade if it's the initial load (page 0) and not a specific confession
-    if (!paramId && page === 0) {
-      setVisibleConfessionCount(prev => {
-        if (prev < confessions.length) return prev + 1;
-        return prev;
-      });
+    // Continue cascade as long as there are more confessions to show
+    // and we are not in a single-confession view (paramId)
+    if (!paramId && visibleConfessionCount < confessions.length) {
+      setVisibleConfessionCount(prev => prev + 1);
     }
-  }, [confessions.length, paramId, page]);
+  }, [confessions.length, paramId, visibleConfessionCount]);
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string, slug: string, email?: string) => {
     const { data, error } = await supabase.from("confessions").insert({ title, content, gender, category, slug, author_email: email }).select('id, slug');
@@ -505,7 +493,7 @@ const Index: React.FC = () => {
               onToggleExpand={handleConfessionToggle}
               onSelectCategory={handleSelectCategory}
               shouldOpenCommentsOnLoad={conf.id === expandedConfessionId && location.hash === '#comments'}
-              onAnimationComplete={!paramId && page === 0 ? handleAnimationComplete : undefined} // Only pass for initial cascade
+              onAnimationComplete={handleAnimationComplete}
               currentCategory={selectedCategory}
             />
           ))}
