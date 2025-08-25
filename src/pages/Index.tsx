@@ -264,10 +264,10 @@ const Index: React.FC = () => {
             
             if (fetchId !== currentFetchId.current) return;
 
-            // Fetch a few newer confessions for context
+            // Fetch ALL newer confessions for context
             let afterQuery = supabase.from("confessions").select("*").gt("created_at", targetConf.created_at).order("created_at", { ascending: true });
             if (currentCategory !== "Всички") afterQuery = afterQuery.eq("category", currentCategory);
-            const { data: afterData } = await afterQuery.limit(5);
+            const { data: afterData } = await afterQuery; // No limit
 
             // Fetch a full page of older confessions to enable infinite scroll
             let beforeQuery = supabase.from("confessions").select("*").lt("created_at", targetConf.created_at).order("created_at", { ascending: false });
