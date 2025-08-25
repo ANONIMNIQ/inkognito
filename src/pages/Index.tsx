@@ -61,7 +61,7 @@ const Index: React.FC = () => {
   const hasMoreRef = useRef(hasMore);
   const latestConfessionsRef = useRef<Confession[]>([]);
   const loadingMoreRef = useRef(loadingMore); // Ref for loadingMore
-  const lastLoadedContextRef = useRef<{ category: string; paramId: string | undefined | null } | null>(null); // ADDED: Missing useRef declaration
+  const lastLoadedContextRef = useRef<{ category: string; paramId: string | undefined | null } | null>(null);
 
   useEffect(() => {
     hasMoreRef.current = hasMore;
@@ -321,12 +321,12 @@ const Index: React.FC = () => {
 
   // Effect to handle infinite scroll (triggered by page state change)
   useEffect(() => {
-    if (page > 0 && hasMoreRef.current && !loadingMore) {
+    if (page > 0 && hasMoreRef.current && !loadingMoreRef.current) { // Use ref for loadingMore
       console.log(`[Infinite Scroll] Page incremented to ${page}. Initiating fetch for next batch.`);
       const oldestCreatedAt = latestConfessionsRef.current.length > 0 ? latestConfessionsRef.current[latestConfessionsRef.current.length - 1].created_at : undefined;
       fetchConfessionsPage({ category: selectedCategory, oldestCreatedAtForInfiniteScroll: oldestCreatedAt });
     }
-  }, [page, fetchConfessionsPage, selectedCategory, loadingMore]); // Keep loadingMore in dependencies for this effect to react to its changes.
+  }, [page, fetchConfessionsPage, selectedCategory]); // Removed loadingMore from dependencies
 
   // Intersection Observer for infinite scroll
   const lastConfessionElementRef = useCallback(node => {
