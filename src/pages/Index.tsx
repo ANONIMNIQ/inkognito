@@ -188,7 +188,7 @@ const Index: React.FC = () => {
         return null;
       }
 
-      if (categoryFromUrl !== "Всички" && confessionData.category !== categoryFromUrl) {
+      if (categoryFromUrl !== "Всички" && confessionData.category !== currentCategory) { // Changed confessionData.category === categoryFromUrl to currentCategory
         const newSearch = confessionData.category !== "Всички" ? `?category=${confessionData.category}` : '';
         navigate(`/confessions/${confessionData.id}/${confessionData.slug}${newSearch}`, { replace: true });
         return null;
@@ -217,7 +217,7 @@ const Index: React.FC = () => {
       navigate(redirectPath, { replace: true });
       return null;
     }
-  }, [navigate, searchParams]);
+  }, [navigate, searchParams, selectedCategory]); // Added selectedCategory to dependencies
 
   // Effect to update selectedCategory from URL search params
   useEffect(() => {
@@ -240,9 +240,12 @@ const Index: React.FC = () => {
 
     const isCategoryChanged = lastLoadedContextRef.current?.category !== currentCategory;
     const isNavigatingToNewConfession = currentParamId && !latestConfessionsRef.current.some(c => c.id === currentParamId);
-    const isReturningToListFromSingleView = !currentParamId && lastLoadedContextRef.current?.paramId;
+    // When returning to list from single view, we only need a full refetch if the current confessions list is empty
+    // or if the category has changed. If we already have a list of confessions for the current category,
+    // we should just collapse the card without reloading the entire list.
+    const isReturningToListAndListIsEmpty = !currentParamId && lastLoadedContextRef.current?.paramId && confessions.length === 0;
 
-    const needsFullRefetch = isCategoryChanged || isNavigatingToNewConfession || isReturningToListFromSingleView;
+    const needsFullRefetch = isCategoryChanged || isNavigatingToNewConfession || isReturningToListAndListIsEmpty;
 
     if (needsFullRefetch) {
       currentFetchId.current++;
@@ -254,6 +257,7 @@ const Index: React.FC = () => {
       setHasMore(true);
       setVisibleConfessionCount(0);
       prevConfessionsLengthRef.current = 0;
+      // setConfessions([]); // This line was removed in the previous turn, which is good.
 
       const loadData = async () => {
         try {
@@ -302,11 +306,20 @@ const Index: React.FC = () => {
       };
       loadData();
     } else {
+      // If needsFullRefetch is false, it means:
+      // 1. Category hasn't changed.
+      // 2. We are not navigating to a new, unseen confession.
+      // 3. We are either already on the list view, or collapsing a confession
+      //    and the list is NOT empty (so no full refetch needed).
+      // In this case, we just update the context ref if it's different,
+      // and the UI will react to `expandedConfessionId` changing.
       if (lastLoadedContextRef.current?.category !== currentCategory || lastLoadedContextRef.current?.paramId !== currentParamId) {
         lastLoadedContextRef.current = { category: currentCategory, paramId: currentParamId };
       }
+      // Crucially, we do NOT set setLoading(false) here if it was already false,
+      // and we do NOT trigger any data fetching.
     }
-  }, [authLoading, selectedCategory, paramId, paramSlug, fetchConfessionsPage, fetchSingleConfession]);
+  }, [authLoading, selectedCategory, paramId, paramSlug, fetchConfessionsPage, fetchSingleConfession, confessions.length]); // Added confessions.length to dependencies
 
   // Effect to handle infinite scroll
   useEffect(() => {
@@ -433,7 +446,11 @@ const Index: React.FC = () => {
     let newPath = '/';
 
     if (!isCurrentlyExpanded) {
+      // If expanding, navigate to the specific confession URL
       newPath = `/confessions/${confessionId}/${slug}`;
+    } else {
+      // If collapsing, navigate to the base path for the current category
+      newPath = '/'; // Start with base path
     }
     
     if (currentCategoryParam && currentCategoryParam !== "Всички") {
