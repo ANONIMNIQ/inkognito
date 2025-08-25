@@ -191,6 +191,20 @@ const Index: React.FC = () => {
       setHasMore(newHasMore);
       setConfessions(prev => initialLoad ? allConfessions : [...prev, ...allConfessions]);
 
+      // NEW: Set visibleConfessionCount based on scenario after data is fetched
+      if (initialLoad) {
+        if (targetId) {
+          // For detail view, show all fetched confessions immediately
+          setVisibleConfessionCount(allConfessions.length);
+        } else {
+          // For initial load of main feed, start cascade from 1
+          setVisibleConfessionCount(1);
+        }
+      } else {
+        // For infinite scroll, the cascade will continue from the previous batch
+        // by the handleAnimationComplete callback. We don't explicitly set it here.
+      }
+
     } catch (error: any) {
       toast.error("Error fetching confessions: " + error.message);
       setHasMore(false);
@@ -243,7 +257,7 @@ const Index: React.FC = () => {
         setSearchParams(newSearchParams, { replace: true });
       }, 100);
     }
-  }, [authLoading, paramId, paramSlug, searchParams, fetchConfessions, selectedCategory, confessions.length]); // Removed loading, loadingMore from dependencies
+  }, [authLoading, paramId, paramSlug, searchParams, fetchConfessions, selectedCategory, confessions.length]);
 
   // Effect for infinite scroll on index view
   const lastConfessionElementRef = useCallback(node => {
@@ -271,7 +285,7 @@ const Index: React.FC = () => {
       observer.current.observe(node);
       console.log("New observer observing node:", node);
     }
-  }, [loading, loadingMore, hasMore, paramId]); // Keep 'loading' here
+  }, [loading, loadingMore, hasMore, paramId]);
 
   useEffect(() => {
     if (page > 0 && !paramId) {
@@ -294,30 +308,24 @@ const Index: React.FC = () => {
 
   // Effect to manage the animation chain and update visible count after new loads
   useEffect(() => {
-    // Start cascade animation once initial loading is done and confessions are available
-    if (!loading && confessions.length > 0) {
-      if (paramId) {
-        // If it's a direct link, show all loaded confessions immediately without animation chain
-        setVisibleConfessionCount(confessions.length);
-      } else {
-        const currentConfessionsLength = confessions.length;
-        const previousConfessionsLength = prevConfessionsLengthRef.current;
+    // Only run if not loading and there are confessions
+    if (loading || confessions.length === 0) return;
 
-        // Condition 1: Initial load, start cascade from 1 if not already started
-        if (visibleConfessionCount === 0 && currentConfessionsLength > 0) {
-          setVisibleConfessionCount(1);
-        } 
-        // Condition 2: New batch loaded via infinite scroll, continue cascade
-        // This triggers when `loadingMore` becomes false, `confessions.length` has increased,
-        // and `visibleConfessionCount` is at the end of the *previous* batch.
-        else if (!loadingMore && currentConfessionsLength > previousConfessionsLength && visibleConfessionCount === previousConfessionsLength) {
-          setVisibleConfessionCount(previousConfessionsLength + 1);
-        }
+    // If we are on the main feed (not a detail page)
+    if (!paramId) {
+      const currentConfessionsLength = confessions.length;
+      const previousConfessionsLength = prevConfessionsLengthRef.current;
+
+      // If a new batch of confessions has been loaded (either initial or infinite scroll)
+      // and the cascade hasn't caught up to the new length, advance it.
+      // The initial setVisibleConfessionCount(1) is now handled in fetchConfessions.
+      if (currentConfessionsLength > previousConfessionsLength && visibleConfessionCount === previousConfessionsLength) {
+        setVisibleConfessionCount(previousConfessionsLength + 1);
       }
     }
     // Update the ref with the current confessions length for the next render cycle
     prevConfessionsLengthRef.current = confessions.length;
-  }, [loading, paramId, confessions.length, visibleConfessionCount, loadingMore]); // Removed isFormAnimationComplete
+  }, [loading, paramId, confessions.length, visibleConfessionCount]);
 
   const handleAnimationComplete = useCallback(() => {
     setVisibleConfessionCount(prev => {
