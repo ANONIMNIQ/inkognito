@@ -223,7 +223,7 @@ const Index: React.FC = () => {
     if (loadingMore || paramId || loading) return; // Prevent if initial loading or more data is already happening, or if in detail view
     if (observer.current) observer.current.disconnect();
     observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore) {
+      if (entries[0].isIntersecting && hasMore) { // Added hasMore check here
         console.log(`[IntersectionObserver] Triggered: Loading more confessions. Current page: ${page}`);
         setPage(prev => prev + 1);
       }
@@ -233,12 +233,12 @@ const Index: React.FC = () => {
 
   // Effect to trigger subsequent page fetches
   useEffect(() => {
-    // Only fetch if page > 0 (not initial load), not in detail view, and not already loading
-    if (page > 0 && !paramId && !loading && !loadingMore) {
+    // Only fetch if page > 0 (not initial load), not in detail view, not already loading, AND there are more confessions
+    if (page > 0 && !paramId && !loading && !loadingMore && hasMore) { // Added hasMore
       console.log(`[useEffect: Page Change] Page changed to ${page}. Initiating fetch for more confessions.`);
       fetchConfessions({ initialLoad: false, category: selectedCategory, currentPage: page });
     }
-  }, [page, paramId, selectedCategory, loading, loadingMore, fetchConfessions]);
+  }, [page, paramId, selectedCategory, loading, loadingMore, hasMore, fetchConfessions]); // Added hasMore dependency
 
   // Scroll to expanded confession and potentially comments
   useEffect(() => {
@@ -262,12 +262,10 @@ const Index: React.FC = () => {
       } else if (confessions.length > 0 && visibleConfessionCount === 0) {
         console.log("[useEffect: Animation] Starting animation chain for first confession.");
         setVisibleConfessionCount(1);
-      } else if (!loadingMore && confessions.length > visibleConfessionCount) {
-        // If new confessions were loaded via infinite scroll, update visible count immediately
-        setVisibleConfessionCount(confessions.length);
       }
+      // Removed the else if block that was causing all infinite scroll items to appear at once
     }
-  }, [loading, isFormAnimationComplete, paramId, confessions.length, visibleConfessionCount, loadingMore]);
+  }, [loading, isFormAnimationComplete, paramId, confessions.length, visibleConfessionCount]);
 
   const handleAnimationComplete = useCallback(() => {
     // This callback is primarily for the initial load animation
@@ -415,7 +413,7 @@ const Index: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-6">
-          {confessions.slice(0, visibleConfessionCount).map((conf) => (
+          {confessions.slice(0, visibleConfessionCount).map((conf, index) => (
             <ConfessionCard
               key={conf.id}
               confession={{ ...conf, timestamp: new Date(conf.created_at), comments: conf.comments.map(c => ({ ...c, timestamp: new Date(c.created_at) })) }}
@@ -427,7 +425,8 @@ const Index: React.FC = () => {
               onToggleExpand={handleConfessionToggle}
               onSelectCategory={handleSelectCategory}
               shouldOpenCommentsOnLoad={conf.id === expandedConfessionId && location.hash === '#comments'}
-              onAnimationComplete={handleAnimationComplete}
+              animationDelay={!paramId && !loadingMore ? index * 100 : 0}
+              onAnimationComplete={!paramId && !loadingMore && index === visibleConfessionCount - 1 ? handleAnimationComplete : undefined}
             />
           ))}
         </div>
