@@ -288,7 +288,7 @@ const Index: React.FC = () => {
     }
   }, [loading, expandedConfessionId, location.hash]);
 
-  // Effect to manage the animation chain
+  // Effect to manage the animation chain and update visible count after new loads
   useEffect(() => {
     if (!loading && isFormAnimationComplete) {
       if (paramId) {
@@ -297,9 +297,12 @@ const Index: React.FC = () => {
       } else if (confessions.length > 0 && visibleConfessionCount === 0) {
         // Otherwise, start the animation chain for the first card
         setVisibleConfessionCount(1);
+      } else if (!loadingMore && confessions.length > visibleConfessionCount) {
+        // If loadingMore just finished and there are new confessions, show them all
+        setVisibleConfessionCount(confessions.length);
       }
     }
-  }, [loading, isFormAnimationComplete, paramId, confessions.length, visibleConfessionCount]);
+  }, [loading, isFormAnimationComplete, paramId, confessions.length, visibleConfessionCount, loadingMore]);
 
   const handleAnimationComplete = useCallback(() => {
     setVisibleConfessionCount(prev => {
