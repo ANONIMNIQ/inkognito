@@ -116,7 +116,7 @@ serve(async (req) => {
     .insert({
       confession_id: confessionId,
       content: `AI коментар: "${aiResponseContent}"`,
-      gender: "incognito", // Default gender for AI comments
+      gender: "ai", // Changed gender to "ai"
     });
 
   if (insertError) {

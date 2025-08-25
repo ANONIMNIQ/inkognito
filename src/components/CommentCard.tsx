@@ -10,7 +10,7 @@ interface CommentCardProps {
   comment: {
     id: string;
     content: string;
-    gender: "male" | "female" | "incognito";
+    gender: "male" | "female" | "incognito" | "ai";
     timestamp: Date;
   };
   isEditing?: boolean;
@@ -29,6 +29,8 @@ const CommentCard: React.FC<CommentCardProps> = ({ comment, isEditing = false, e
       ? "bg-blue-50 dark:bg-blue-900"
       : comment.gender === "female"
       ? "bg-pink-50 dark:bg-pink-900"
+      : comment.gender === "ai"
+      ? "bg-purple-50 dark:bg-purple-900" // Purple color for AI comments
       : "bg-gray-100 dark:bg-gray-700";
 
   const textColor = "text-gray-800 dark:text-gray-200";
@@ -47,6 +49,8 @@ const CommentCard: React.FC<CommentCardProps> = ({ comment, isEditing = false, e
               ? "border-r-blue-50 dark:border-r-blue-900"
               : comment.gender === "female"
               ? "border-r-pink-50 dark:border-r-pink-900"
+              : comment.gender === "ai"
+              ? "border-r-purple-50 dark:border-r-purple-900" // Purple border for AI comments
               : "border-r-gray-100 dark:border-r-gray-700"
           )}
         ></div>

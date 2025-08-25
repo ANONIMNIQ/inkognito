@@ -2,7 +2,7 @@ import React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface GenderAvatarProps {
-  gender: "male" | "female" | "incognito";
+  gender: "male" | "female" | "incognito" | "ai";
   className?: string;
 }
 
@@ -15,6 +15,8 @@ const GenderAvatar: React.FC<GenderAvatarProps> = ({ gender, className }) => {
         return { src: "/avatars/female.png", fallback: "F" };
       case "incognito":
         return { src: "/avatars/anonymous.png", fallback: "A" };
+      case "ai":
+        return { src: "/avatars/ai.png", fallback: "AI" };
       default:
         return { src: "/avatars/anonymous.png", fallback: "A" }; // Default case
     }

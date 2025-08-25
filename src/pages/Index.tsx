@@ -15,7 +15,7 @@ interface Comment {
   id: string;
   confession_id: string;
   content: string;
-  gender: "male" | "female" | "incognito";
+  gender: "male" | "female" | "incognito" | "ai";
   created_at: string;
 }
 
@@ -296,7 +296,6 @@ const Index: React.FC = () => {
 
   const handleLikeConfession = async (confessionId: string) => {
     setConfessions(prev => prev.map(c => c.id === confessionId ? { ...c, likes: c.likes + 1 } : c));
-    // Corrected parameter name from 'confession_id' to 'confession_id_param'
     const { error } = await supabase.rpc("increment_confession_likes", { confession_id_param: confessionId });
     if (error) {
       toast.error("Error liking confession: " + error.message);

@@ -25,7 +25,7 @@ interface Comment {
   id: string;
   confession_id: string;
   content: string;
-  gender: "male" | "female" | "incognito";
+  gender: "male" | "female" | "incognito" | "ai";
   created_at: string;
 }
 
