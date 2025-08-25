@@ -97,8 +97,10 @@ const Index: React.FC = () => {
     if (initialLoad) {
       console.log("fetchConfessions: Initial load - setting loading to true.");
       setLoading(true);
+    } else {
+      console.log("fetchConfessions: Infinite scroll load - setting loadingMore to true.");
+      setLoadingMore(true);
     }
-    // Removed setLoadingMore(true) from here to avoid double-setting
 
     // --- TEMPORARY: Add artificial delay for testing skeleton loaders ---
     if (!initialLoad) {
@@ -113,6 +115,7 @@ const Index: React.FC = () => {
       let newHasMore = true;
 
       if (targetId) { // Detail View Logic
+        console.log(`fetchConfessions: Fetching target confession ${targetId} for detail view.`);
         const { data: target, error: targetError } = await supabase.from("confessions").select("*, comments!fk_confession_id(count)").eq("id", targetId).single();
         if (targetError || !target) throw new Error("Confession not found.");
         if (target.slug !== targetSlug) {
@@ -140,17 +143,42 @@ const Index: React.FC = () => {
           ...(before || []).map(c => format(c))
         ];
         newHasMore = (before || []).length === CONFESSIONS_PER_PAGE;
+        console.log(`fetchConfessions: Detail view fetched ${allConfessions.length} confessions. Has more: ${newHasMore}`);
 
       } else { // Index View Logic
         const from = currentPage * CONFESSIONS_PER_PAGE;
         const to = from + CONFESSIONS_PER_PAGE - 1;
-        let query = supabase.from("confessions").select("*, comments!fk_confession_id(count)").order("created_at", { ascending: false });
+        console.log(`fetchConfessions: Index view fetching confessions. Page: ${currentPage}, Range: ${from}-${to}`);
+        let query = supabase.from("confessions").select("*").order("created_at", { ascending: false }); // TEMPORARY: Removed comments!fk_confession_id(count)
         if (category !== "Всички") query = query.eq("category", category);
         const { data, error } = await query.range(from, to);
         if (error) throw error;
 
-        allConfessions = data.map((c: any) => ({ ...c, comment_count: c.comments[0]?.count || 0, comments: [] }));
+        console.log(`fetchConfessions: Index view fetched ${data.length} confessions.`);
+        
+        // Now fetch comment counts for the fetched confessions
+        const confessionIds = data.map(c => c.id);
+        let commentsCountData: { confession_id: string; count: number }[] = [];
+        if (confessionIds.length > 0) {
+          const { data: counts, error: countsError } = await supabase
+            .from('comments')
+            .select('confession_id, count')
+            .in('confession_id', confessionIds)
+            .returns<{ confession_id: string; count: number }[]>();
+
+          if (countsError) {
+            console.error("Error fetching comment counts:", countsError);
+          } else {
+            commentsCountData = counts || [];
+          }
+        }
+
+        allConfessions = data.map((c: any) => {
+          const commentCount = commentsCountData.find(cc => cc.confession_id === c.id)?.count || 0;
+          return { ...c, comment_count: commentCount, comments: [] };
+        });
         newHasMore = data.length === CONFESSIONS_PER_PAGE;
+        console.log(`fetchConfessions: Index view processed ${allConfessions.length} confessions. Has more: ${newHasMore}`);
       }
 
       setHasMore(newHasMore);
@@ -237,8 +265,6 @@ const Index: React.FC = () => {
   useEffect(() => {
     if (page > 0 && !paramId) {
       console.log(`Page changed to ${page}. Initiating fetchConfessions for more data.`);
-      console.log("useEffect[page]: Setting loadingMore to true.");
-      setLoadingMore(true); // Only set to true here
       fetchConfessions({ initialLoad: false, category: selectedCategory, currentPage: page });
     }
   }, [page, paramId, selectedCategory, fetchConfessions]);
