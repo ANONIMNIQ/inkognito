@@ -54,6 +54,7 @@ const Index: React.FC = () => {
   const [isFormAnimationComplete, setIsFormAnimationComplete] = useState(false); // Kept for form-specific logic if needed elsewhere
 
   const confessionFormContainerRef = useRef<HTMLDivElement>(null);
+  const lastConfessionRef = useRef<HTMLDivElement>(null); // Ref for the last confession card
   const observer = useRef<IntersectionObserver>();
   const { lockScroll, unlockScroll } = useScrollLock();
 
@@ -259,33 +260,42 @@ const Index: React.FC = () => {
     }
   }, [authLoading, paramId, paramSlug, searchParams, fetchConfessions, selectedCategory, confessions.length]);
 
-  // Effect for infinite scroll on index view
-  const lastConfessionElementRef = useCallback(node => {
-    console.log("lastConfessionElementRef triggered with node:", node);
-    if (loading || loadingMore || paramId) { // Keep 'loading' here to prevent early triggers
-      console.log(`Infinite scroll skipped: loading=${loading}, loadingMore=${loadingMore}, paramId=${paramId ? 'active' : 'inactive'}.`);
+  // Effect to manage the IntersectionObserver
+  useEffect(() => {
+    // Disconnect observer if any of these conditions are met
+    if (loading || loadingMore || paramId || !hasMore) {
+      if (observer.current) {
+        observer.current.disconnect();
+        observer.current = undefined; // Clear the observer instance
+        console.log("IntersectionObserver disconnected.");
+      }
       return;
     }
-    if (observer.current) {
-      observer.current.disconnect();
-      console.log("Previous observer disconnected.");
+
+    // If we are on the main feed, not loading, have more items, and the ref is set
+    // and no observer is currently active, create a new one.
+    if (lastConfessionRef.current && !observer.current) {
+      observer.current = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting && hasMore) {
+          console.log("IntersectionObserver triggered: Last element is intersecting. Calling setPage.");
+          setPage(prev => prev + 1);
+        }
+      }, {
+        rootMargin: '0px 0px 200px 0px' // Trigger when 200px from bottom of viewport
+      });
+      observer.current.observe(lastConfessionRef.current);
+      console.log("New IntersectionObserver observing last confession.");
     }
-    observer.current = new IntersectionObserver(entries => {
-      console.log("IntersectionObserver callback triggered. Entries:", entries);
-      if (entries[0].isIntersecting && hasMore) {
-        console.log("Last element is intersecting and hasMore is true. Calling setPage.");
-        setPage(prev => prev + 1);
-      } else {
-        console.log("Last element not intersecting or no more confessions to load.");
+
+    // Cleanup function: disconnect observer when dependencies change or component unmounts
+    return () => {
+      if (observer.current) {
+        observer.current.disconnect();
+        observer.current = undefined;
+        console.log("IntersectionObserver disconnected during cleanup.");
       }
-    }, {
-      rootMargin: '0px 0px 200px 0px' // Trigger when 200px from bottom of viewport
-    });
-    if (node) {
-      observer.current.observe(node);
-      console.log("New observer observing node:", node);
-    }
-  }, [loading, loadingMore, hasMore, paramId]);
+    };
+  }, [loading, loadingMore, hasMore, paramId]); // Dependencies for when to manage the observer
 
   useEffect(() => {
     if (page > 0 && !paramId) {
@@ -316,16 +326,23 @@ const Index: React.FC = () => {
       const currentConfessionsLength = confessions.length;
       const previousConfessionsLength = prevConfessionsLengthRef.current;
 
-      // If a new batch of confessions has been loaded (either initial or infinite scroll)
-      // and the cascade hasn't caught up to the new length, advance it.
-      // The initial setVisibleConfessionCount(1) is now handled in fetchConfessions.
-      if (currentConfessionsLength > previousConfessionsLength && visibleConfessionCount === previousConfessionsLength) {
+      // Condition 1: Initial load, start cascade from 1 if not already started
+      if (visibleConfessionCount === 0 && currentConfessionsLength > 0) {
+        setVisibleConfessionCount(1);
+      } 
+      // Condition 2: New batch loaded via infinite scroll, continue cascade
+      // This triggers when `loadingMore` becomes false, `confessions.length` has increased,
+      // and `visibleConfessionCount` is at the end of the *previous* batch.
+      else if (!loadingMore && currentConfessionsLength > previousConfessionsLength && visibleConfessionCount === previousConfessionsLength) {
         setVisibleConfessionCount(previousConfessionsLength + 1);
       }
+    } else {
+      // For detail view, show all loaded confessions immediately without animation chain
+      setVisibleConfessionCount(confessions.length);
     }
     // Update the ref with the current confessions length for the next render cycle
     prevConfessionsLengthRef.current = confessions.length;
-  }, [loading, paramId, confessions.length, visibleConfessionCount]);
+  }, [loading, paramId, confessions.length, visibleConfessionCount, loadingMore]);
 
   const handleAnimationComplete = useCallback(() => {
     setVisibleConfessionCount(prev => {
@@ -457,7 +474,7 @@ const Index: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-6">
-          {confessions.slice(0, visibleConfessionCount).map((conf) => (
+          {confessions.slice(0, visibleConfessionCount).map((conf, index) => (
             <ConfessionCard
               key={conf.id}
               confession={{ ...conf, timestamp: new Date(conf.created_at), comments: conf.comments.map(c => ({ ...c, timestamp: new Date(c.created_at) })) }}
@@ -470,17 +487,14 @@ const Index: React.FC = () => {
               onSelectCategory={handleSelectCategory}
               shouldOpenCommentsOnLoad={conf.id === expandedConfessionId && location.hash === '#comments'}
               onAnimationComplete={handleAnimationComplete}
+              // Attach ref only to the last visible confession for infinite scroll
+              ref={(!paramId && index === visibleConfessionCount - 1 && hasMore) ? lastConfessionRef : null}
             />
           ))}
         </div>
       )}
       {loadingMore && <div className="space-y-6 mt-8"><ConfessionCardSkeleton /><ConfessionCardSkeleton /></div>}
       
-      {/* Invisible trigger for infinite scroll - now always rendered when not loading and has more */}
-      {!loading && !loadingMore && hasMore && !paramId && (
-        <div ref={lastConfessionElementRef} style={{ height: "1px" }} />
-      )}
-
       {!hasMore && confessions.length > 0 && !paramId && <p className="text-center text-gray-500 dark:text-gray-400 mt-8">Това са всички изповеди.</p>}
       <ComposeButton isVisible={isComposeButtonVisible} onClick={handleComposeClick} />
     </div>
