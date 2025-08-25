@@ -94,12 +94,17 @@ const Index: React.FC = () => {
     { initialLoad = false, category = "Всички", currentPage = 0, targetId, targetSlug }:
     { initialLoad?: boolean; category?: string; currentPage?: number; targetId?: string; targetSlug?: string }
   ) => {
-    if (initialLoad) setLoading(true);
-    else setLoadingMore(true);
+    if (initialLoad) {
+      console.log("fetchConfessions: Initial load - setting loading to true.");
+      setLoading(true);
+    }
+    // Removed setLoadingMore(true) from here to avoid double-setting
 
     // --- TEMPORARY: Add artificial delay for testing skeleton loaders ---
     if (!initialLoad) {
+      console.log("fetchConfessions: Starting artificial 1-second delay for infinite scroll.");
       await new Promise(resolve => setTimeout(resolve, 1000)); // 1-second delay
+      console.log("fetchConfessions: Artificial delay complete.");
     }
     // ------------------------------------------------------------------
 
@@ -155,8 +160,13 @@ const Index: React.FC = () => {
       toast.error("Error fetching confessions: " + error.message);
       setHasMore(false);
     } finally {
-      if (initialLoad) setLoading(false);
-      else setLoadingMore(false);
+      if (initialLoad) {
+        console.log("fetchConfessions: Initial load complete - setting loading to false.");
+        setLoading(false);
+      } else {
+        console.log("fetchConfessions: Infinite scroll load complete - setting loadingMore to false.");
+        setLoadingMore(false); // Only set to false here after the fetch
+      }
     }
   }, [navigate]);
 
@@ -170,6 +180,7 @@ const Index: React.FC = () => {
     const isContextChange = (paramId && !confessionIsLoaded) || (!paramId && selectedCategory !== categoryFromUrl) || confessions.length === 0;
 
     if (isContextChange) {
+      console.log("useEffect[URL]: Context change detected. Resetting states and fetching confessions.");
       setLoading(true);
       setConfessions([]);
       setPage(0);
@@ -226,7 +237,8 @@ const Index: React.FC = () => {
   useEffect(() => {
     if (page > 0 && !paramId) {
       console.log(`Page changed to ${page}. Initiating fetchConfessions for more data.`);
-      setLoadingMore(true);
+      console.log("useEffect[page]: Setting loadingMore to true.");
+      setLoadingMore(true); // Only set to true here
       fetchConfessions({ initialLoad: false, category: selectedCategory, currentPage: page });
     }
   }, [page, paramId, selectedCategory, fetchConfessions]);
