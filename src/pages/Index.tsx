@@ -264,13 +264,20 @@ const Index: React.FC = () => {
             
             if (fetchId !== currentFetchId.current) return;
 
-            let beforeQuery = supabase.from("confessions").select("*").lt("created_at", targetConf.created_at).order("created_at", { ascending: false });
-            if (currentCategory !== "Всички") beforeQuery = beforeQuery.eq("category", currentCategory);
-            const { data: beforeData } = await beforeQuery.limit(CONFESSIONS_PER_PAGE / 2);
-
+            // Fetch a few newer confessions for context
             let afterQuery = supabase.from("confessions").select("*").gt("created_at", targetConf.created_at).order("created_at", { ascending: true });
             if (currentCategory !== "Всички") afterQuery = afterQuery.eq("category", currentCategory);
-            const { data: afterData } = await afterQuery.limit(CONFESSIONS_PER_PAGE / 2);
+            const { data: afterData } = await afterQuery.limit(5);
+
+            // Fetch a full page of older confessions to enable infinite scroll
+            let beforeQuery = supabase.from("confessions").select("*").lt("created_at", targetConf.created_at).order("created_at", { ascending: false });
+            if (currentCategory !== "Всички") beforeQuery = beforeQuery.eq("category", currentCategory);
+            const { data: beforeData, error: beforeError } = await beforeQuery.limit(CONFESSIONS_PER_PAGE);
+            if (beforeError) throw beforeError;
+
+            // Correctly set hasMore based on the fetch result
+            const newHasMore = beforeData.length === CONFESSIONS_PER_PAGE;
+            setHasMore(newHasMore);
 
             const formatConfession = (c: any) => ({ ...c, comment_count: 0, comments: [] });
             const combinedConfessions = [
@@ -284,7 +291,6 @@ const Index: React.FC = () => {
 
             setConfessions(uniqueConfessions);
             latestConfessionsRef.current = uniqueConfessions;
-            setHasMore(false);
           } else {
             await fetchConfessionsPage({ category: currentCategory, replace: true, fetchId });
           }
