@@ -466,8 +466,8 @@ const Index: React.FC = () => {
       )}
       {loadingMore && <div className="space-y-6 mt-8"><ConfessionCardSkeleton /><ConfessionCardSkeleton /></div>}
       
-      {/* Invisible trigger for infinite scroll - now conditionally rendered */}
-      {!loading && !loadingMore && hasMore && !paramId && (visibleConfessionCount === confessions.length) && (
+      {/* Invisible trigger for infinite scroll - now always rendered when not loading and has more */}
+      {!loading && !loadingMore && hasMore && !paramId && (
         <div ref={lastConfessionElementRef} style={{ height: "1px" }} />
       )}
 
