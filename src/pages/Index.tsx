@@ -38,7 +38,7 @@ const Index: React.FC = () => {
   const { id: paramId, slug: paramSlug } = useParams<{ id: string; slug: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   const { loading: authLoading } = useSessionContext();
   const [confessions, setConfessions] = useState<Confession[]>([]);
@@ -56,7 +56,6 @@ const Index: React.FC = () => {
   const confessionFormContainerRef = useRef<HTMLDivElement>(null);
   const observer = useRef<IntersectionObserver>();
   const { lockScroll, unlockScroll } = useScrollLock();
-  const initialLoadDone = useRef(false);
 
   const prevConfessionsLengthRef = useRef(0);
   const hasMoreRef = useRef(hasMore);
@@ -120,7 +119,7 @@ const Index: React.FC = () => {
         
         if (targetError || !target) throw new Error("Confession not found or category mismatch.");
         if (target.slug !== targetSlug) {
-          navigate(`/confessions/${target.id}/${target.slug}`, { replace: true });
+          navigate(`/confessions/${target.id}/${target.slug}${location.search}`, { replace: true });
           return;
         }
 
@@ -183,36 +182,28 @@ const Index: React.FC = () => {
       if (initialLoad) setLoading(false);
       else setLoadingMore(false);
     }
-  }, [navigate]);
+  }, [navigate, location.search]);
 
   useEffect(() => {
     if (authLoading) return;
 
     const categoryFromUrl = searchParams.get('category') || "Всички";
-    const isInitialLoad = !initialLoadDone.current;
-    const isCategoryChange = initialLoadDone.current && categoryFromUrl !== selectedCategory;
-
-    if (isInitialLoad || isCategoryChange) {
-      if (isInitialLoad) initialLoadDone.current = true;
-      
-      setLoading(true);
-      setConfessions([]);
-      setPage(0);
-      setHasMore(true);
-      setSelectedCategory(categoryFromUrl);
-      setVisibleConfessionCount(0);
-
-      if (isInitialLoad && paramId) {
-        fetchConfessions({ initialLoad: true, targetId: paramId, targetSlug: paramSlug, category: categoryFromUrl });
-      } else {
-        fetchConfessions({ initialLoad: true, category: categoryFromUrl });
-      }
-    }
-  }, [authLoading, searchParams, selectedCategory, paramId, paramSlug, fetchConfessions]);
-
-  useEffect(() => {
+    
+    setLoading(true);
+    setConfessions([]);
+    setPage(0);
+    setHasMore(true);
+    setSelectedCategory(categoryFromUrl);
     setExpandedConfessionId(paramId || null);
-  }, [paramId]);
+    setVisibleConfessionCount(0);
+
+    fetchConfessions({ 
+        initialLoad: true, 
+        targetId: paramId, 
+        targetSlug: paramSlug, 
+        category: categoryFromUrl 
+    });
+  }, [authLoading, paramId, paramSlug, location.search, fetchConfessions]);
 
   const lastConfessionElementRef = useCallback(node => {
     if (loading || loadingMore) return;
@@ -241,7 +232,7 @@ const Index: React.FC = () => {
         }, 300);
       }
     }
-  }, [loading, expandedConfessionId, location.hash]);
+  }, [loading, expandedConfessionId]);
 
   useEffect(() => {
     if (loading || !isFormAnimationComplete) {
@@ -251,7 +242,7 @@ const Index: React.FC = () => {
     const currentLength = confessions.length;
     const prevLength = prevConfessionsLengthRef.current;
 
-    if (paramId && visibleConfessionCount === 0 && currentLength > 0) {
+    if (paramId && !loadingMore) {
       setVisibleConfessionCount(currentLength);
     }
     else if (!paramId && visibleConfessionCount === 0 && currentLength > 0) {
@@ -265,11 +256,12 @@ const Index: React.FC = () => {
   }, [loading, isFormAnimationComplete, paramId, confessions.length, loadingMore]);
 
   const handleAnimationComplete = useCallback(() => {
+    if (paramId) return;
     setVisibleConfessionCount(prev => {
       if (prev < confessions.length) return prev + 1;
       return prev;
     });
-  }, [confessions.length]);
+  }, [confessions.length, paramId]);
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string, slug: string, email?: string) => {
     const { data, error } = await supabase.from("confessions").insert({ title, content, gender, category, slug, author_email: email }).select('id, slug');
