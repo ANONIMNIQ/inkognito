@@ -42,14 +42,14 @@ const Index: React.FC = () => {
 
   const { loading: authLoading } = useSessionContext();
   const [confessions, setConfessions] = useState<Confession[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(true); // Initial loading state for the first fetch
+  const [loadingMore, setLoadingMore] = useState(false); // Loading state for subsequent infinite scroll fetches
+  const [page, setPage] = useState(0); // Current page for infinite scroll
+  const [hasMore, setHasMore] = useState(true); // Whether there are more confessions to load
   const [expandedConfessionId, setExpandedConfessionId] = useState<string | null>(null);
   const [isComposeButtonVisible, setIsComposeButtonVisible] = useState(false);
   const [forceExpandForm, setForceExpandForm] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>("Всички");
+  const [selectedCategory, setSelectedCategory] = useState<string>("Всички"); // State for category filter
   const [visibleConfessionCount, setVisibleConfessionCount] = useState(0);
   const [isFormAnimationComplete, setIsFormAnimationComplete] = useState(false);
 
@@ -57,6 +57,7 @@ const Index: React.FC = () => {
   const observer = useRef<IntersectionObserver>();
   const { lockScroll, unlockScroll } = useScrollLock();
 
+  // Real-time comments subscription
   useEffect(() => {
     const commentsChannel = supabase
       .channel('public-comments')
@@ -68,7 +69,6 @@ const Index: React.FC = () => {
           setConfessions((currentConfessions) => {
             return currentConfessions.map((confession) => {
               if (confession.id === newComment.confession_id) {
-                // Avoid adding duplicate comments if the event fires multiple times
                 if (confession.comments.some(c => c.id === newComment.id)) {
                   return confession;
                 }
@@ -90,9 +90,10 @@ const Index: React.FC = () => {
     };
   }, []);
 
+  // useCallback for fetching confessions
   const fetchConfessions = useCallback(async (
-    { initialLoad = false, category = "Всички", currentPage = 0, targetId, targetSlug }:
-    { initialLoad?: boolean; category?: string; currentPage?: number; targetId?: string; targetSlug?: string }
+    { initialLoad = false, currentPage = 0, targetId, targetSlug, category }:
+    { initialLoad?: boolean; currentPage?: number; targetId?: string; targetSlug?: string; category: string } // category is now explicitly passed
   ) => {
     console.log(`[fetchConfessions] Called: initialLoad=${initialLoad}, category=${category}, currentPage=${currentPage}, targetId=${targetId}`);
     if (initialLoad) setLoading(true);
@@ -112,7 +113,6 @@ const Index: React.FC = () => {
           return;
         }
 
-        // Fetch comments for the target confession immediately
         const { data: commentsData } = await supabase
           .from("comments")
           .select("*")
@@ -161,28 +161,43 @@ const Index: React.FC = () => {
       else setLoadingMore(false);
       console.log(`[fetchConfessions] Finished. Current confessions count: ${confessions.length}`);
     }
-  }, [navigate, confessions.length]); // Added confessions.length to dependencies for accurate logging
+  }, [navigate]); // Only navigate is a dependency, category is passed as argument
 
-  // This is the main effect that reacts to URL changes
+  // Main effect to handle URL changes (paramId, category) and initial load
   useEffect(() => {
     if (authLoading) return;
 
     const categoryFromUrl = searchParams.get('category') || "Всички";
-    const confessionIsLoaded = confessions.some(c => c.id === paramId);
+    const isDetailView = !!paramId;
 
-    const isContextChange = (paramId && !confessionIsLoaded) || (!paramId && selectedCategory !== categoryFromUrl) || (confessions.length === 0 && !loading && !loadingMore);
+    // Determine if a fetch is needed based on URL and current state
+    let shouldFetch = false;
 
-    if (isContextChange) {
-      console.log(`[useEffect: URL Change] Context change detected. paramId=${paramId}, categoryFromUrl=${categoryFromUrl}, selectedCategory=${selectedCategory}, confessionIsLoaded=${confessionIsLoaded}, confessions.length=${confessions.length}`);
-      setLoading(true);
-      setConfessions([]);
-      setPage(0);
+    if (isDetailView) {
+      // If it's a detail view and the specific confession isn't loaded yet
+      if (!confessions.some(c => c.id === paramId)) {
+        shouldFetch = true;
+      }
+    } else {
+      // If it's an index view
+      // If category changed OR no confessions loaded yet for the current category
+      if (selectedCategory !== categoryFromUrl || (confessions.length === 0 && !loading && !loadingMore)) {
+        shouldFetch = true;
+      }
+    }
+
+    if (shouldFetch) {
+      console.log(`[useEffect: Main Fetch Trigger] Triggering fetch. isDetailView=${isDetailView}, categoryFromUrl=${categoryFromUrl}, selectedCategory=${selectedCategory}`);
+      
+      setLoading(true); // Indicate a new full load is starting
+      setConfessions([]); // Clear existing confessions
+      setPage(0); // Reset page to 0
       setHasMore(true);
-      setSelectedCategory(categoryFromUrl);
+      setSelectedCategory(categoryFromUrl); // Update selectedCategory state
       setVisibleConfessionCount(0); // Reset animation chain
 
-      if (paramId) {
-        fetchConfessions({ initialLoad: true, targetId: paramId, targetSlug: paramSlug });
+      if (isDetailView) {
+        fetchConfessions({ initialLoad: true, targetId: paramId, targetSlug: paramSlug, category: categoryFromUrl });
       } else {
         fetchConfessions({ initialLoad: true, category: categoryFromUrl, currentPage: 0 });
       }
@@ -200,11 +215,11 @@ const Index: React.FC = () => {
         setSearchParams(newSearchParams, { replace: true });
       }, 100);
     }
-  }, [authLoading, paramId, paramSlug, searchParams, fetchConfessions, selectedCategory, confessions.length, loading, loadingMore, setSearchParams]);
+  }, [authLoading, paramId, paramSlug, searchParams, fetchConfessions, navigate, selectedCategory, confessions.length, loading, loadingMore, setSearchParams]);
 
   // Effect for infinite scroll on index view
   const lastConfessionElementRef = useCallback(node => {
-    if (loadingMore || paramId || loading) return; // Also prevent if initial loading is still happening
+    if (loadingMore || paramId || loading) return;
     if (observer.current) observer.current.disconnect();
     observer.current = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting && hasMore) {
@@ -213,15 +228,15 @@ const Index: React.FC = () => {
       }
     });
     if (node) observer.current.observe(node);
-  }, [loadingMore, hasMore, paramId, loading, page]); // Added 'loading' and 'page' to dependencies
+  }, [loadingMore, hasMore, paramId, loading, page]);
 
+  // Effect to trigger subsequent page fetches
   useEffect(() => {
-    if (page > 0 && !paramId) {
+    if (page > 0 && !paramId && !loading && !loadingMore) { // Ensure not loading initial or more data already
       console.log(`[useEffect: Page Change] Page changed to ${page}. Initiating fetch for more confessions.`);
-      setLoadingMore(true);
       fetchConfessions({ initialLoad: false, category: selectedCategory, currentPage: page });
     }
-  }, [page, paramId, selectedCategory, fetchConfessions]);
+  }, [page, paramId, selectedCategory, loading, loadingMore, fetchConfessions]);
 
   // Scroll to expanded confession and potentially comments
   useEffect(() => {
@@ -240,11 +255,9 @@ const Index: React.FC = () => {
   useEffect(() => {
     if (!loading && isFormAnimationComplete) {
       if (paramId) {
-        // If it's a direct link, show all loaded confessions immediately without animation chain
-        console.log("[useEffect: Animation] Direct link, showing all confessions immediately.");
+        console.log("[useEffect: Animation] Direct link, showing all loaded confessions immediately without animation chain.");
         setVisibleConfessionCount(confessions.length);
       } else if (confessions.length > 0 && visibleConfessionCount === 0) {
-        // Otherwise, start the animation chain for the first card
         console.log("[useEffect: Animation] Starting animation chain for first confession.");
         setVisibleConfessionCount(1);
       }
@@ -253,7 +266,6 @@ const Index: React.FC = () => {
 
   const handleAnimationComplete = useCallback(() => {
     setVisibleConfessionCount(prev => {
-      // Only increment if there are more confessions to show
       if (prev < confessions.length) {
         console.log(`[handleAnimationComplete] Incrementing visible confessions: ${prev + 1}`);
         return prev + 1;
@@ -275,7 +287,6 @@ const Index: React.FC = () => {
         toast.success("Confession posted!");
         console.log(`[handleAddConfession] Confession posted, ID: ${newConfession.id}. Invoking AI comment function.`);
         
-        // Invoke the edge function from the client-side in the background
         supabase.functions.invoke('generate-ai-comment', {
           body: {
             confessionId: newConfession.id,
@@ -284,7 +295,6 @@ const Index: React.FC = () => {
         }).then(({ error: invokeError }) => {
           if (invokeError) {
             console.error("[handleAddConfession] Error invoking AI comment function:", invokeError.message);
-            // This error is not shown to the user to keep the UI clean.
           }
         });
 
@@ -305,7 +315,6 @@ const Index: React.FC = () => {
     } else {
       toast.success("Comment posted!");
       console.log(`[handleAddComment] Comment posted for confession ID: ${confessionId}. Invoking notification function.`);
-      // The realtime subscription will handle the UI update.
       supabase.functions.invoke('send-comment-notification', { body: { confession_id: confessionId, comment_content: content } });
     }
   };
