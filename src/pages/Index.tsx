@@ -61,6 +61,7 @@ const Index: React.FC = () => {
   const hasMoreRef = useRef(hasMore);
   const latestConfessionsRef = useRef<Confession[]>([]);
   const loadingMoreRef = useRef(loadingMore); // Ref for loadingMore
+  const lastLoadedContextRef = useRef<{ category: string; paramId: string | undefined | null } | null>(null); // ADDED: Missing useRef declaration
 
   useEffect(() => {
     hasMoreRef.current = hasMore;
