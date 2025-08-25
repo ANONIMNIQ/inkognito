@@ -42,8 +42,8 @@ const Index: React.FC = () => {
 
   const { loading: authLoading } = useSessionContext();
   const [confessions, setConfessions] = useState<Confession[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [loading, setLoading] = useState(true); // Initial page load
+  const [loadingMore, setLoadingMore] = useState(false); // Infinite scroll loading
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [expandedConfessionId, setExpandedConfessionId] = useState<string | null>(null);
@@ -60,6 +60,10 @@ const Index: React.FC = () => {
   const prevConfessionsLengthRef = useRef(0);
   const hasMoreRef = useRef(hasMore);
   const latestConfessionsRef = useRef<Confession[]>([]);
+  const currentCategoryRef = useRef(selectedCategory); // To track category for infinite scroll
+
+  // Ref to track the category and paramId that the current `confessions` array was loaded for
+  const loadedDataIdentifierRef = useRef<{ category: string; paramId: string | undefined } | null>(null);
 
   useEffect(() => {
     hasMoreRef.current = hasMore;
@@ -69,6 +73,11 @@ const Index: React.FC = () => {
     latestConfessionsRef.current = confessions;
   }, [confessions]);
 
+  useEffect(() => {
+    currentCategoryRef.current = selectedCategory;
+  }, [selectedCategory]);
+
+  // Real-time comments subscription
   useEffect(() => {
     const commentsChannel = supabase
       .channel('public-comments')
@@ -101,110 +110,162 @@ const Index: React.FC = () => {
     };
   }, []);
 
-  const fetchConfessions = useCallback(async (
-    { initialLoad = false, category = "Всички", targetId, targetSlug, oldestCreatedAtForInfiniteScroll }:
-    { initialLoad?: boolean; category?: string; targetId?: string; targetSlug?: string; oldestCreatedAtForInfiniteScroll?: string }
+  // Function to fetch a page of confessions (for initial load or infinite scroll)
+  const fetchConfessionsPage = useCallback(async (
+    { category, oldestCreatedAtForInfiniteScroll }:
+    { category: string; oldestCreatedAtForInfiniteScroll?: string }
   ) => {
-    if (initialLoad) setLoading(true);
-    else setLoadingMore(true);
-
+    setLoadingMore(true);
     try {
-      let fetchedData: Confession[] = [];
-      let newHasMore = true;
+      let query = supabase.from("confessions").select("*").order("created_at", { ascending: false });
+      if (category !== "Всички") query = query.eq("category", category);
 
-      if (targetId && initialLoad) {
-        let targetQuery = supabase.from("confessions").select("*, comments!fk_confession_id(count)").eq("id", targetId);
-        if (category !== "Всички") targetQuery = targetQuery.eq("category", category);
-        const { data: target, error: targetError } = await targetQuery.single();
-        
-        if (targetError || !target) throw new Error("Confession not found or category mismatch.");
-        if (target.slug !== targetSlug) {
-          navigate(`/confessions/${target.id}/${target.slug}${location.search}`, { replace: true });
-          return;
-        }
-
-        const { data: commentsData } = await supabase.from("comments").select("*").eq("confession_id", targetId).order("created_at", { ascending: false });
-
-        let beforeQuery = supabase.from("confessions").select("*, comments!fk_confession_id(count)").lt("created_at", target.created_at).order("created_at", { ascending: false });
-        if (category !== "Всички") beforeQuery = beforeQuery.eq("category", category);
-        const { data: before } = await beforeQuery.limit(CONFESSIONS_PER_PAGE);
-
-        let afterQuery = supabase.from("confessions").select("*, comments!fk_confession_id(count)").gt("created_at", target.created_at).order("created_at", { ascending: true });
-        if (category !== "Всички") afterQuery = afterQuery.eq("category", category);
-        const { data: after } = await afterQuery.limit(CONFESSIONS_PER_PAGE);
-        
-        const format = (c: any, comments: any[] = []) => ({ ...c, comment_count: c.comments[0]?.count || 0, comments });
-        const targetWithComments = format(target, commentsData || []);
-        
-        fetchedData = [
-          ...(after || []).reverse().map(c => format(c)), 
-          targetWithComments, 
-          ...(before || []).map(c => format(c))
-        ];
-        newHasMore = (before || []).length === CONFESSIONS_PER_PAGE;
+      if (oldestCreatedAtForInfiniteScroll) {
+        query = query.lt("created_at", oldestCreatedAtForInfiniteScroll);
       } else {
-        let query = supabase.from("confessions").select("*").order("created_at", { ascending: false });
-        if (category !== "Всички") query = query.eq("category", category);
-
-        if (oldestCreatedAtForInfiniteScroll) {
-          query = query.lt("created_at", oldestCreatedAtForInfiniteScroll);
-        } else {
-          query = query.range(0, CONFESSIONS_PER_PAGE - 1);
-        }
-        
-        const { data, error } = await query.limit(CONFESSIONS_PER_PAGE);
-        if (error) throw error;
-
-        const confessionIds = data.map(c => c.id);
-        let commentsCountMap = new Map<string, number>();
-        if (confessionIds.length > 0) {
-          const { data: commentsRaw } = await supabase.from('comments').select('confession_id').in('confession_id', confessionIds);
-          commentsRaw?.forEach(comment => {
-            commentsCountMap.set(comment.confession_id, (commentsCountMap.get(comment.confession_id) || 0) + 1);
-          });
-        }
-
-        fetchedData = data.map((c: any) => ({ ...c, comment_count: commentsCountMap.get(c.id) || 0, comments: [] }));
-        newHasMore = data.length === CONFESSIONS_PER_PAGE;
+        query = query.range(0, CONFESSIONS_PER_PAGE - 1);
       }
+      
+      const { data, error } = await query.limit(CONFESSIONS_PER_PAGE);
+      if (error) throw error;
+
+      const confessionIds = data.map(c => c.id);
+      let commentsCountMap = new Map<string, number>();
+      if (confessionIds.length > 0) {
+        const { data: commentsRaw } = await supabase.from('comments').select('confession_id').in('confession_id', confessionIds);
+        commentsRaw?.forEach(comment => {
+          commentsCountMap.set(comment.confession_id, (commentsCountMap.get(comment.confession_id) || 0) + 1);
+        });
+      }
+
+      const fetchedData = data.map((c: any) => ({ ...c, comment_count: commentsCountMap.get(c.id) || 0, comments: [] }));
+      const newHasMore = data.length === CONFESSIONS_PER_PAGE;
 
       setHasMore(newHasMore);
       setConfessions(prev => {
-        if (initialLoad) return fetchedData;
         const existingIds = new Set(prev.map(c => c.id));
         const newUniqueConfessions = fetchedData.filter(c => !existingIds.has(c.id));
         return [...prev, ...newUniqueConfessions];
       });
+      return fetchedData;
     } catch (error: any) {
       toast.error("Error fetching confessions: " + error.message);
       setHasMore(false);
+      return [];
     } finally {
-      if (initialLoad) setLoading(false);
-      else setLoadingMore(false);
+      setLoadingMore(false);
+    }
+  }, []);
+
+  // Function to fetch a single confession with its comments
+  const fetchSingleConfession = useCallback(async (id: string, slug: string, category: string) => {
+    try {
+      let query = supabase.from("confessions").select("*").eq("id", id);
+      if (category !== "Всички") query = query.eq("category", category);
+      const { data: confessionData, error: confessionError } = await query.single();
+
+      if (confessionError || !confessionData) {
+        throw new Error("Confession not found or category mismatch.");
+      }
+      if (confessionData.slug !== slug) {
+        navigate(`/confessions/${confessionData.id}/${confessionData.slug}${location.search}`, { replace: true });
+        return null;
+      }
+
+      const { data: commentsData, error: commentsError } = await supabase.from("comments").select("*").eq("confession_id", id).order("created_at", { ascending: false });
+      if (commentsError) console.error("Error fetching comments for single confession:", commentsError);
+
+      const formattedConfession: Confession = {
+        ...confessionData,
+        comment_count: commentsData?.length || 0,
+        comments: commentsData || [],
+      };
+      return formattedConfession;
+    } catch (error: any) {
+      toast.error("Error fetching confession details: " + error.message);
+      navigate(`/${location.search}`, { replace: true });
+      return null;
     }
   }, [navigate, location.search]);
 
+
+  // Effect to update selectedCategory from URL search params
+  useEffect(() => {
+    const categoryFromUrl = searchParams.get('category') || "Всички";
+    if (categoryFromUrl !== selectedCategory) {
+      setSelectedCategory(categoryFromUrl);
+    }
+  }, [searchParams, selectedCategory]);
+
+  // Main data loading effect: triggered by category change or initial mount/paramId change
   useEffect(() => {
     if (authLoading) return;
 
-    const categoryFromUrl = searchParams.get('category') || "Всички";
-    
+    const currentIdentifier = { category: selectedCategory, paramId: paramId };
+    // Check if the current confessions list already matches the identifier
+    const isDataAlreadyLoaded = 
+      loadedDataIdentifierRef.current &&
+      loadedDataIdentifierRef.current.category === currentIdentifier.category &&
+      loadedDataIdentifierRef.current.paramId === currentIdentifier.paramId &&
+      confessions.length > 0; // Ensure there's actually data
+
+    if (isDataAlreadyLoaded) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
-    setConfessions([]);
+    setConfessions([]); // Clear existing confessions to show loading state
     setPage(0);
     setHasMore(true);
-    setSelectedCategory(categoryFromUrl);
+    setVisibleConfessionCount(0); // Reset visible count for new animation
+
+    const loadData = async () => {
+      if (paramId) {
+        const targetConf = await fetchSingleConfession(paramId, paramSlug!, selectedCategory);
+        if (targetConf) {
+          // Fetch confessions before and after the target
+          const { data: beforeData } = await supabase.from("confessions").select("*").lt("created_at", targetConf.created_at).order("created_at", { ascending: false });
+          const { data: afterData } = await supabase.from("confessions").select("*").gt("created_at", targetConf.created_at).order("created_at", { ascending: true });
+
+          const formatConfession = (c: any) => ({ ...c, comment_count: 0, comments: [] });
+          const combinedConfessions = [
+            ...(afterData || []).reverse().map(formatConfession),
+            targetConf,
+            ...(beforeData || []).map(formatConfession)
+          ];
+          
+          const uniqueConfessions = Array.from(new Map(combinedConfessions.map(c => [c.id, c])).values())
+                                        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+          setConfessions(uniqueConfessions);
+          setHasMore((beforeData || []).length === CONFESSIONS_PER_PAGE);
+        }
+      } else {
+        await fetchConfessionsPage({ category: selectedCategory });
+      }
+      setLoading(false);
+      loadedDataIdentifierRef.current = currentIdentifier; // Mark this combination as loaded
+    };
+
+    loadData();
+  }, [authLoading, selectedCategory, paramId, paramSlug, fetchConfessionsPage, fetchSingleConfession, confessions.length]); // Added confessions.length to trigger re-evaluation if data changes externally
+
+  // Effect to update expandedConfessionId from URL params (this should NOT trigger data fetch)
+  useEffect(() => {
     setExpandedConfessionId(paramId || null);
-    setVisibleConfessionCount(0);
+  }, [paramId]);
 
-    fetchConfessions({ 
-        initialLoad: true, 
-        targetId: paramId, 
-        targetSlug: paramSlug, 
-        category: categoryFromUrl 
-    });
-  }, [authLoading, paramId, paramSlug, location.search, fetchConfessions]);
 
+  // Effect to handle infinite scroll
+  useEffect(() => {
+    if (page > 0 && hasMoreRef.current && !loadingMore) {
+      const oldestCreatedAt = latestConfessionsRef.current.length > 0 ? latestConfessionsRef.current[latestConfessionsRef.current.length - 1].created_at : undefined;
+      fetchConfessionsPage({ category: currentCategoryRef.current, oldestCreatedAtForInfiniteScroll: oldestCreatedAt });
+    }
+  }, [page, fetchConfessionsPage, loadingMore]);
+
+  // Intersection Observer for infinite scroll
   const lastConfessionElementRef = useCallback(node => {
     if (loading || loadingMore) return;
     if (observer.current) observer.current.disconnect();
@@ -216,13 +277,7 @@ const Index: React.FC = () => {
     if (node) observer.current.observe(node);
   }, [loading, loadingMore]);
 
-  useEffect(() => {
-    if (page > 0 && hasMoreRef.current) {
-      const oldestCreatedAt = latestConfessionsRef.current.length > 0 ? latestConfessionsRef.current[latestConfessionsRef.current.length - 1].created_at : undefined;
-      fetchConfessions({ initialLoad: false, category: selectedCategory, oldestCreatedAtForInfiniteScroll: oldestCreatedAt });
-    }
-  }, [page, selectedCategory, fetchConfessions]);
-
+  // Effect to scroll to expanded confession
   useEffect(() => {
     if (!loading && expandedConfessionId) {
       const el = document.getElementById(expandedConfessionId);
@@ -232,8 +287,9 @@ const Index: React.FC = () => {
         }, 300);
       }
     }
-  }, [loading, expandedConfessionId]);
+  }, [loading, expandedConfessionId, location.hash]);
 
+  // Cascade animation for confessions
   useEffect(() => {
     if (loading || !isFormAnimationComplete) {
       return;
@@ -242,10 +298,12 @@ const Index: React.FC = () => {
     const currentLength = confessions.length;
     const prevLength = prevConfessionsLengthRef.current;
 
-    if (paramId && !loadingMore) {
+    // If a specific confession is expanded, show all immediately
+    if (paramId) {
       setVisibleConfessionCount(currentLength);
     }
-    else if (!paramId && visibleConfessionCount === 0 && currentLength > 0) {
+    // Otherwise, animate one by one
+    else if (visibleConfessionCount === 0 && currentLength > 0) {
       setVisibleConfessionCount(1);
     }
     else if (!loadingMore && currentLength > prevLength) {
@@ -253,14 +311,16 @@ const Index: React.FC = () => {
     }
 
     prevConfessionsLengthRef.current = currentLength;
-  }, [loading, isFormAnimationComplete, paramId, confessions.length, loadingMore]);
+  }, [loading, isFormAnimationComplete, paramId, confessions.length, loadingMore, visibleConfessionCount]);
 
   const handleAnimationComplete = useCallback(() => {
-    if (paramId) return;
-    setVisibleConfessionCount(prev => {
-      if (prev < confessions.length) return prev + 1;
-      return prev;
-    });
+    // Only cascade animate if no specific confession is expanded
+    if (!paramId) {
+      setVisibleConfessionCount(prev => {
+        if (prev < confessions.length) return prev + 1;
+        return prev;
+      });
+    }
   }, [confessions.length, paramId]);
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string, slug: string, email?: string) => {
@@ -312,12 +372,15 @@ const Index: React.FC = () => {
 
   const handleConfessionToggle = (confessionId: string, slug: string) => {
     const newExpandedId = expandedConfessionId === confessionId ? null : confessionId;
-    const search = location.search;
+    const currentCategory = searchParams.get('category');
+    let newPath = '/';
     if (newExpandedId) {
-      navigate(`/confessions/${confessionId}/${slug}${search}`, { replace: true });
-    } else {
-      navigate(`/${search}`, { replace: true });
+      newPath = `/confessions/${confessionId}/${slug}`;
     }
+    if (currentCategory && currentCategory !== "Всички") {
+      newPath += `?category=${currentCategory}`;
+    }
+    navigate(newPath, { replace: true });
   };
 
   const handleSelectCategory = (category: string) => {
