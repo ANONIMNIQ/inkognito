@@ -244,21 +244,25 @@ const Index: React.FC = () => {
   }, [loading, expandedConfessionId, location.hash]);
 
   useEffect(() => {
-    if (!loading && isFormAnimationComplete) {
-      if (paramId) {
-        setVisibleConfessionCount(confessions.length);
-      } else {
-        const currentConfessionsLength = confessions.length;
-        const previousConfessionsLength = prevConfessionsLengthRef.current;
-        if (currentConfessionsLength > 0 && visibleConfessionCount === 0) {
-          setVisibleConfessionCount(1);
-        } else if (!loadingMore && currentConfessionsLength > previousConfessionsLength && visibleConfessionCount === previousConfessionsLength) {
-          setVisibleConfessionCount(previousConfessionsLength + 1);
-        }
-      }
+    if (loading || !isFormAnimationComplete) {
+      return;
     }
-    prevConfessionsLengthRef.current = confessions.length;
-  }, [loading, isFormAnimationComplete, paramId, confessions.length, visibleConfessionCount, loadingMore]);
+
+    const currentLength = confessions.length;
+    const prevLength = prevConfessionsLengthRef.current;
+
+    if (paramId && visibleConfessionCount === 0 && currentLength > 0) {
+      setVisibleConfessionCount(currentLength);
+    }
+    else if (!paramId && visibleConfessionCount === 0 && currentLength > 0) {
+      setVisibleConfessionCount(1);
+    }
+    else if (!loadingMore && currentLength > prevLength) {
+      setVisibleConfessionCount(prevLength + 1);
+    }
+
+    prevConfessionsLengthRef.current = currentLength;
+  }, [loading, isFormAnimationComplete, paramId, confessions.length, loadingMore]);
 
   const handleAnimationComplete = useCallback(() => {
     setVisibleConfessionCount(prev => {
