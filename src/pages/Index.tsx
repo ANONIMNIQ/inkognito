@@ -101,8 +101,8 @@ const Index: React.FC = () => {
     if (initialLoad) setLoading(true);
     else setLoadingMore(true);
 
-    let allConfessions: Confession[] = []; // Declared here
-    let newHasMore = true; // Declared here
+    let allConfessions: Confession[] = [];
+    let newHasMore = true;
 
     try {
       if (targetId) { // Detail View Logic
@@ -152,7 +152,16 @@ const Index: React.FC = () => {
       }
 
       setHasMore(newHasMore);
-      setConfessions(prev => initialLoad ? allConfessions : [...prev, ...allConfessions]);
+      setConfessions(prev => {
+        if (initialLoad) {
+          return allConfessions;
+        } else {
+          // Filter out any confessions that are already in the 'prev' array to prevent duplicates
+          const existingIds = new Set(prev.map(c => c.id));
+          const uniqueNewConfessions = allConfessions.filter(c => !existingIds.has(c.id));
+          return [...prev, ...uniqueNewConfessions];
+        }
+      });
 
     } catch (error: any) {
       toast.error("Error fetching confessions: " + error.message);
@@ -162,7 +171,7 @@ const Index: React.FC = () => {
     } finally {
       if (initialLoad) setLoading(false);
       else setLoadingMore(false);
-      console.log(`[fetchConfessions] Finished. Current confessions count: ${allConfessions.length}`);
+      console.log(`[fetchConfessions] Finished. Current confessions count: ${confessions.length}`);
     }
   }, [navigate]); // Only navigate is a dependency
 
@@ -253,20 +262,26 @@ const Index: React.FC = () => {
       } else if (confessions.length > 0 && visibleConfessionCount === 0) {
         console.log("[useEffect: Animation] Starting animation chain for first confession.");
         setVisibleConfessionCount(1);
+      } else if (!loadingMore && confessions.length > visibleConfessionCount) {
+        // If new confessions were loaded via infinite scroll, update visible count immediately
+        setVisibleConfessionCount(confessions.length);
       }
     }
-  }, [loading, isFormAnimationComplete, paramId, confessions.length, visibleConfessionCount]);
+  }, [loading, isFormAnimationComplete, paramId, confessions.length, visibleConfessionCount, loadingMore]);
 
   const handleAnimationComplete = useCallback(() => {
-    setVisibleConfessionCount(prev => {
-      if (prev < confessions.length) {
-        console.log(`[handleAnimationComplete] Incrementing visible confessions: ${prev + 1}`);
-        return prev + 1;
-      }
-      console.log("[handleAnimationComplete] All confessions visible.");
-      return prev;
-    });
-  }, [confessions.length]);
+    // This callback is primarily for the initial load animation
+    if (!paramId && !loadingMore) { // Only increment if not in detail view and not loading more (infinite scroll)
+      setVisibleConfessionCount(prev => {
+        if (prev < confessions.length) {
+          console.log(`[handleAnimationComplete] Incrementing visible confessions: ${prev + 1}`);
+          return prev + 1;
+        }
+        console.log("[handleAnimationComplete] All initial confessions visible.");
+        return prev;
+      });
+    }
+  }, [confessions.length, paramId, loadingMore]);
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string, slug: string, email?: string) => {
     console.log("[handleAddConfession] Attempting to add new confession.");
