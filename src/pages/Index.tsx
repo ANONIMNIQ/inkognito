@@ -228,9 +228,11 @@ const Index: React.FC = () => {
     } 
     // Case 2: Navigating to a specific confession (paramId is set)
     else if (currentParamId) {
-      // If we were previously on a different specific confession, OR
-      // if the current specific confession is NOT already displayed in the list.
-      if (lastLoadedContextRef.current?.paramId !== currentParamId || !confessions.some(c => c.id === currentParamId)) {
+      // If the paramId has changed to a *different* specific confession, OR
+      // if the target confession is NOT currently in the list (meaning it needs to be fetched)
+      if (lastLoadedContextRef.current?.paramId !== currentParamId && lastLoadedContextRef.current?.paramId !== undefined) {
+        needsFullRefetch = true;
+      } else if (!confessions.some(c => c.id === currentParamId)) {
         needsFullRefetch = true;
       }
     }
@@ -297,7 +299,7 @@ const Index: React.FC = () => {
     };
 
     loadData();
-  }, [authLoading, selectedCategory, paramId, paramSlug, fetchConfessionsPage, fetchSingleConfession]); // Removed `confessions.length` from dependencies
+  }, [authLoading, selectedCategory, paramId, paramSlug, fetchConfessionsPage, fetchSingleConfession, confessions.length]); // Added confessions.length back to dependencies for cascade animation logic
 
   // Effect to handle infinite scroll
   useEffect(() => {
