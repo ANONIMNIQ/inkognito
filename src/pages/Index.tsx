@@ -146,8 +146,13 @@ const Index: React.FC = () => {
           .eq("confession_id", targetId)
           .order("created_at", { ascending: false });
 
-        const { data: before } = await supabase.from("confessions").select("*, comments!fk_confession_id(count)").lt("created_at", target.created_at).order("created_at", { ascending: false }).limit(CONFESSIONS_PER_PAGE);
-        const { data: after } = await supabase.from("confessions").select("*, comments!fk_confession_id(count)").gt("created_at", target.created_at).order("created_at", { ascending: true }).limit(CONFESSIONS_PER_PAGE);
+        let beforeQuery = supabase.from("confessions").select("*, comments!fk_confession_id(count)").lt("created_at", target.created_at).order("created_at", { ascending: false });
+        if (category !== "Всички") beforeQuery = beforeQuery.eq("category", category);
+        const { data: before } = await beforeQuery.limit(CONFESSIONS_PER_PAGE);
+
+        let afterQuery = supabase.from("confessions").select("*, comments!fk_confession_id(count)").gt("created_at", target.created_at).order("created_at", { ascending: true });
+        if (category !== "Всички") afterQuery = afterQuery.eq("category", category);
+        const { data: after } = await afterQuery.limit(CONFESSIONS_PER_PAGE);
         
         const format = (c: any, comments: any[] = []) => ({ ...c, comment_count: c.comments[0]?.count || 0, comments });
         
@@ -225,7 +230,7 @@ const Index: React.FC = () => {
         console.log("fetchConfessions: Infinite scroll load complete - setting loadingMore to false.");
       }
     }
-  }, [navigate]);
+  }, [navigate, selectedCategory]); // Added selectedCategory to dependencies
 
   // This is the main effect that reacts to URL changes and triggers initial/context-based fetches
   useEffect(() => {
@@ -243,11 +248,11 @@ const Index: React.FC = () => {
       setConfessions([]);
       setPage(0);
       setHasMore(true);
-      setSelectedCategory(categoryFromUrl);
+      setSelectedCategory(categoryFromUrl); // This updates selectedCategory
       setVisibleConfessionCount(0); // Reset animation chain
 
       if (paramId) {
-        fetchConfessions({ initialLoad: true, targetId: paramId, targetSlug: paramSlug });
+        fetchConfessions({ initialLoad: true, targetId: paramId, targetSlug: paramSlug, category: categoryFromUrl }); // Pass category to detail view fetch
       } else {
         fetchConfessions({ initialLoad: true, category: categoryFromUrl }); // No currentPage needed here, fetchConfessions handles range(0, N-1)
       }
