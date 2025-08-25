@@ -20,6 +20,7 @@ interface Confession {
   created_at: string;
   comments: Comment[];
   author_email?: string; // Added author_email
+  category: string; // Ensure category is part of the Confession interface
 }
 
 const AdminConfessionList: React.FC = () => {
@@ -101,10 +102,10 @@ const AdminConfessionList: React.FC = () => {
     }
   };
 
-  const handleEditConfession = async (confessionId: string, title: string, content: string) => {
+  const handleEditConfession = async (confessionId: string, title: string, content: string, category: string) => { // Updated function signature
     const { error } = await supabase
       .from("confessions")
-      .update({ title, content })
+      .update({ title, content, category }) // Include category in update
       .eq("id", confessionId);
 
     if (error) {
@@ -112,7 +113,7 @@ const AdminConfessionList: React.FC = () => {
     } else {
       setConfessions((prev) =>
         prev.map((conf) =>
-          conf.id === confessionId ? { ...conf, title, content } : conf
+          conf.id === confessionId ? { ...conf, title, content, category } : conf // Update category in state
         )
       );
       toast.success("Confession updated successfully!");

@@ -19,7 +19,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useIsMobile } from "@/hooks/use-mobile"; // Import useIsMobile
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { categories } from "./CategoryFilter"; // Import categories
 
 interface Comment {
   id: string;
@@ -38,12 +46,13 @@ interface Confession {
   created_at: string;
   comments: Comment[];
   author_email?: string;
+  category: string; // Ensure category is part of the Confession interface
 }
 
 interface AdminConfessionCardProps {
   confession: Confession;
   onDeleteConfession: (confessionId: string) => void;
-  onEditConfession: (confessionId: string, title: string, content: string) => void;
+  onEditConfession: (confessionId: string, title: string, content: string, category: string) => void; // Updated prop signature
   onDeleteComment: (commentId: string) => void;
   onEditComment: (commentId: string, content: string) => void;
 }
@@ -60,10 +69,11 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
   const [isEditingConfession, setIsEditingConfession] = useState(false);
   const [editedConfessionTitle, setEditedConfessionTitle] = useState(confession.title);
   const [editedConfessionContent, setEditedConfessionContent] = useState(confession.content);
+  const [editedConfessionCategory, setEditedConfessionCategory] = useState(confession.category); // New state for category
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editedCommentContent, setEditedCommentContent] = useState("");
 
-  const isMobile = useIsMobile(); // Use the hook
+  const isMobile = useIsMobile();
 
   const bubbleBackgroundColor =
     confession.gender === "male"
@@ -78,13 +88,14 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
   const placeholderColor = "placeholder:text-gray-500 dark:placeholder:text-gray-400";
 
   const handleSaveConfession = () => {
-    onEditConfession(confession.id, editedConfessionTitle, editedConfessionContent);
+    onEditConfession(confession.id, editedConfessionTitle, editedConfessionContent, editedConfessionCategory); // Pass category
     setIsEditingConfession(false);
   };
 
   const handleCancelConfessionEdit = () => {
     setEditedConfessionTitle(confession.title);
     setEditedConfessionContent(confession.content);
+    setEditedConfessionCategory(confession.category); // Reset category
     setIsEditingConfession(false);
   };
 
@@ -172,10 +183,10 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
                   <Input
                     value={editedConfessionTitle}
                     onChange={(e) => setEditedConfessionTitle(e.target.value)}
-                    className={cn("text-base md:text-lg font-semibold font-serif w-full", textColor, placeholderColor, borderColor)} // Smaller title on mobile
+                    className={cn("text-base md:text-lg font-semibold font-serif w-full", textColor, placeholderColor, borderColor)}
                   />
                 ) : (
-                  <Button variant="link" className={cn("p-0 h-auto text-left text-base md:text-lg font-semibold hover:no-underline font-serif whitespace-normal justify-start", textColor)}> {/* Smaller title on mobile */}
+                  <Button variant="link" className={cn("p-0 h-auto text-left text-base md:text-lg font-semibold hover:no-underline font-serif whitespace-normal justify-start", textColor)}>
                     {confession.title}
                   </Button>
                 )}
@@ -190,12 +201,29 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
 
             <CollapsibleContent className="space-y-4 pt-2">
               {isEditingConfession ? (
-                <Textarea
-                  value={editedConfessionContent}
-                  onChange={(e) => setEditedConfessionContent(e.target.value)}
-                  className={cn("whitespace-pre-wrap font-serif text-base md:text-base", textColor, placeholderColor, borderColor)}
-                  rows={5}
-                />
+                <>
+                  <Textarea
+                    value={editedConfessionContent}
+                    onChange={(e) => setEditedConfessionContent(e.target.value)}
+                    className={cn("whitespace-pre-wrap font-serif text-base md:text-base", textColor, placeholderColor, borderColor)}
+                    rows={5}
+                  />
+                  <div>
+                    <label htmlFor="edit-category" className={cn("text-sm", textColor)}>Категория</label>
+                    <Select value={editedConfessionCategory} onValueChange={setEditedConfessionCategory}>
+                      <SelectTrigger id="edit-category" className={cn("mt-1 w-full bg-transparent", textColor, borderColor)}>
+                        <SelectValue placeholder="Избери категория" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700">
+                        {categories.filter(c => c !== "Всички").map((cat) => (
+                          <SelectItem key={cat} value={cat}>
+                            {cat}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
               ) : (
                 <p className={cn("whitespace-pre-wrap font-serif text-base md:text-base", textColor)}>{confession.content}</p>
               )}
@@ -207,7 +235,7 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
         </div>
       </div>
 
-      <div className={cn("mt-4", isMobile ? "ml-0" : "ml-14")}> {/* Adjust margin for mobile */}
+      <div className={cn("mt-4", isMobile ? "ml-0" : "ml-14")}>
         <Collapsible open={isCommentsOpen} onOpenChange={setIsCommentsOpen}>
           <CollapsibleTrigger asChild>
             <Button variant="link" className={cn("w-full justify-start p-0 h-auto", linkColor)}>
@@ -226,8 +254,8 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
                     isEditing={editingCommentId === comment.id}
                     editedContent={editedCommentContent}
                     onContentChange={setEditedCommentContent}
-                    hideAvatarOnMobile={true} // Pass prop to hide avatar
-                    commentNumber={confession.comments.length - index} // Calculate comment number backwards
+                    hideAvatarOnMobile={true}
+                    commentNumber={confession.comments.length - index}
                   />
                   <div className="flex space-x-1 mt-1">
                     {editingCommentId === comment.id ? (
