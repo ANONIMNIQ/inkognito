@@ -57,15 +57,22 @@ const Index: React.FC = () => {
   const observer = useRef<IntersectionObserver>();
   const { lockScroll, unlockScroll } = useScrollLock();
 
-  // Ref to store the previous length of the confessions array
+  // Ref to store the previous length of the confessions array for animation
   const prevConfessionsLengthRef = useRef(0);
   // Ref to store the latest hasMore state for IntersectionObserver
   const hasMoreRef = useRef(hasMore);
+  // Ref to store the latest confessions array for use in callbacks without stale closures
+  const latestConfessionsRef = useRef<Confession[]>([]);
 
   // Update hasMoreRef whenever hasMore state changes
   useEffect(() => {
     hasMoreRef.current = hasMore;
   }, [hasMore]);
+
+  // Update latestConfessionsRef whenever confessions state changes
+  useEffect(() => {
+    latestConfessionsRef.current = confessions;
+  }, [confessions]);
 
   // Debugging log for component render
   console.log("Index component render: loading =", loading, "loadingMore =", loadingMore, "page =", page, "confessions.length =", confessions.length, "visibleConfessionCount =", visibleConfessionCount);
@@ -104,10 +111,10 @@ const Index: React.FC = () => {
   }, []);
 
   const fetchConfessions = useCallback(async (
-    { initialLoad = false, category = "Всички", currentPage = 0, targetId, targetSlug, oldestCreatedAtForInfiniteScroll }:
-    { initialLoad?: boolean; category?: string; currentPage?: number; targetId?: string; targetSlug?: string; oldestCreatedAtForInfiniteScroll?: string }
+    { initialLoad = false, category = "Всички", targetId, targetSlug, oldestCreatedAtForInfiniteScroll }:
+    { initialLoad?: boolean; category?: string; targetId?: string; targetSlug?: string; oldestCreatedAtForInfiniteScroll?: string }
   ) => {
-    console.log(`fetchConfessions called: initialLoad=${initialLoad}, currentPage=${currentPage}, targetId=${targetId}, oldestCreatedAtForInfiniteScroll=${oldestCreatedAtForInfiniteScroll}`);
+    console.log(`fetchConfessions called: initialLoad=${initialLoad}, targetId=${targetId}, oldestCreatedAtForInfiniteScroll=${oldestCreatedAtForInfiniteScroll}`);
     if (initialLoad) {
       setLoading(true);
     } else {
@@ -162,10 +169,8 @@ const Index: React.FC = () => {
           console.log(`fetchConfessions: Infinite scroll fetching older than ${oldestCreatedAtForInfiniteScroll}.`);
           query = query.lt("created_at", oldestCreatedAtForInfiniteScroll);
         } else { // Initial load for index view, or first page of index view
-          const from = currentPage * CONFESSIONS_PER_PAGE;
-          const to = from + CONFESSIONS_PER_PAGE - 1;
-          console.log(`fetchConfessions: Index view fetching confessions. Page: ${currentPage}, Range: ${from}-${to}`);
-          query = query.range(from, to);
+          console.log(`fetchConfessions: Index view initial fetch. Range: 0-${CONFESSIONS_PER_PAGE - 1}`);
+          query = query.range(0, CONFESSIONS_PER_PAGE - 1);
         }
         
         const { data, error } = await query.limit(CONFESSIONS_PER_PAGE);
@@ -244,7 +249,7 @@ const Index: React.FC = () => {
       if (paramId) {
         fetchConfessions({ initialLoad: true, targetId: paramId, targetSlug: paramSlug });
       } else {
-        fetchConfessions({ initialLoad: true, category: categoryFromUrl, currentPage: 0 });
+        fetchConfessions({ initialLoad: true, category: categoryFromUrl }); // No currentPage needed here, fetchConfessions handles range(0, N-1)
       }
     }
     
@@ -259,7 +264,7 @@ const Index: React.FC = () => {
         setSearchParams(newSearchParams, { replace: true });
       }, 100);
     }
-  }, [authLoading, paramId, paramSlug, searchParams, fetchConfessions, selectedCategory, confessions.length]); // Removed loading, loadingMore from dependencies
+  }, [authLoading, paramId, paramSlug, searchParams, fetchConfessions, selectedCategory, confessions.length]);
 
   // Effect for infinite scroll on index view
   const lastConfessionElementRef = useCallback(node => {
@@ -293,12 +298,12 @@ const Index: React.FC = () => {
   useEffect(() => {
     if (page > 0 && hasMoreRef.current) { // Use hasMoreRef.current here too
       console.log(`Page changed to ${page}. Initiating fetchConfessions for more data. Current hasMore: ${hasMoreRef.current}`);
-      const oldestCreatedAt = confessions.length > 0 ? confessions[confessions.length - 1].created_at : undefined;
+      const oldestCreatedAt = latestConfessionsRef.current.length > 0 ? latestConfessionsRef.current[latestConfessionsRef.current.length - 1].created_at : undefined;
       fetchConfessions({ initialLoad: false, category: selectedCategory, oldestCreatedAtForInfiniteScroll: oldestCreatedAt });
     } else if (page > 0 && !hasMoreRef.current) {
       console.log(`Page changed to ${page} but hasMore is false. Not fetching.`);
     }
-  }, [page, selectedCategory, fetchConfessions, confessions]); // Removed hasMore from dependencies here
+  }, [page, selectedCategory, fetchConfessions]); // Removed confessions from dependencies here
 
   // Scroll to expanded confession and potentially comments
   useEffect(() => {
