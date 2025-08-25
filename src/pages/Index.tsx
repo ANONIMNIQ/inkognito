@@ -56,6 +56,7 @@ const Index: React.FC = () => {
   const confessionFormContainerRef = useRef<HTMLDivElement>(null);
   const observer = useRef<IntersectionObserver>();
   const { lockScroll, unlockScroll } = useScrollLock();
+  const previousViewIdentifier = useRef<string | null>(null); // Ref to track the current view for fetching
 
   // Real-time comments subscription
   useEffect(() => {
@@ -69,6 +70,7 @@ const Index: React.FC = () => {
           setConfessions((currentConfessions) => {
             return currentConfessions.map((confession) => {
               if (confession.id === newComment.confession_id) {
+                // Avoid adding duplicate comments if the event fires multiple times
                 if (confession.comments.some(c => c.id === newComment.id)) {
                   return confession;
                 }
@@ -93,7 +95,7 @@ const Index: React.FC = () => {
   // useCallback for fetching confessions
   const fetchConfessions = useCallback(async (
     { initialLoad = false, currentPage = 0, targetId, targetSlug, category }:
-    { initialLoad?: boolean; currentPage?: number; targetId?: string; targetSlug?: string; category: string } // category is now explicitly passed
+    { initialLoad?: boolean; currentPage?: number; targetId?: string; targetSlug?: string; category: string }
   ) => {
     console.log(`[fetchConfessions] Called: initialLoad=${initialLoad}, category=${category}, currentPage=${currentPage}, targetId=${targetId}`);
     if (initialLoad) setLoading(true);
@@ -159,9 +161,9 @@ const Index: React.FC = () => {
     } finally {
       if (initialLoad) setLoading(false);
       else setLoadingMore(false);
-      console.log(`[fetchConfessions] Finished. Current confessions count: ${confessions.length}`);
+      console.log(`[fetchConfessions] Finished. Current confessions count: ${allConfessions.length}`);
     }
-  }, [navigate]); // Only navigate is a dependency, category is passed as argument
+  }, [navigate]); // Only navigate is a dependency
 
   // Main effect to handle URL changes (paramId, category) and initial load
   useEffect(() => {
@@ -170,30 +172,19 @@ const Index: React.FC = () => {
     const categoryFromUrl = searchParams.get('category') || "Всички";
     const isDetailView = !!paramId;
 
-    // Determine if a fetch is needed based on URL and current state
-    let shouldFetch = false;
+    // Create a unique identifier for the current view state
+    const currentViewIdentifier = isDetailView ? `detail-${paramId}-${paramSlug}` : `index-${categoryFromUrl}`;
 
-    if (isDetailView) {
-      // If it's a detail view and the specific confession isn't loaded yet
-      if (!confessions.some(c => c.id === paramId)) {
-        shouldFetch = true;
-      }
-    } else {
-      // If it's an index view
-      // If category changed OR no confessions loaded yet for the current category
-      if (selectedCategory !== categoryFromUrl || (confessions.length === 0 && !loading && !loadingMore)) {
-        shouldFetch = true;
-      }
-    }
+    // Only trigger a full re-fetch if the view identifier has changed
+    if (currentViewIdentifier !== previousViewIdentifier.current) {
+      console.log(`[useEffect: Main Fetch Trigger] View changed from ${previousViewIdentifier.current} to ${currentViewIdentifier}. Triggering new fetch.`);
+      previousViewIdentifier.current = currentViewIdentifier; // Update the ref
 
-    if (shouldFetch) {
-      console.log(`[useEffect: Main Fetch Trigger] Triggering fetch. isDetailView=${isDetailView}, categoryFromUrl=${categoryFromUrl}, selectedCategory=${selectedCategory}`);
-      
       setLoading(true); // Indicate a new full load is starting
-      setConfessions([]); // Clear existing confessions
-      setPage(0); // Reset page to 0
+      setConfessions([]); // Clear existing confessions for a fresh start
+      setPage(0); // Reset page to 0 for new fetch
       setHasMore(true);
-      setSelectedCategory(categoryFromUrl); // Update selectedCategory state
+      setSelectedCategory(categoryFromUrl); // Update selectedCategory state to reflect URL
       setVisibleConfessionCount(0); // Reset animation chain
 
       if (isDetailView) {
@@ -215,11 +206,11 @@ const Index: React.FC = () => {
         setSearchParams(newSearchParams, { replace: true });
       }, 100);
     }
-  }, [authLoading, paramId, paramSlug, searchParams, fetchConfessions, navigate, selectedCategory, confessions.length, loading, loadingMore, setSearchParams]);
+  }, [authLoading, paramId, paramSlug, searchParams, fetchConfessions, navigate, setSearchParams]); // Dependencies are now only external inputs and stable functions
 
   // Effect for infinite scroll on index view
   const lastConfessionElementRef = useCallback(node => {
-    if (loadingMore || paramId || loading) return;
+    if (loadingMore || paramId || loading) return; // Prevent if initial loading or more data is already happening, or if in detail view
     if (observer.current) observer.current.disconnect();
     observer.current = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting && hasMore) {
@@ -232,7 +223,8 @@ const Index: React.FC = () => {
 
   // Effect to trigger subsequent page fetches
   useEffect(() => {
-    if (page > 0 && !paramId && !loading && !loadingMore) { // Ensure not loading initial or more data already
+    // Only fetch if page > 0 (not initial load), not in detail view, and not already loading
+    if (page > 0 && !paramId && !loading && !loadingMore) {
       console.log(`[useEffect: Page Change] Page changed to ${page}. Initiating fetch for more confessions.`);
       fetchConfessions({ initialLoad: false, category: selectedCategory, currentPage: page });
     }
