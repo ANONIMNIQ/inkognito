@@ -60,9 +60,7 @@ const Index: React.FC = () => {
   const prevConfessionsLengthRef = useRef(0);
   const hasMoreRef = useRef(hasMore);
   const latestConfessionsRef = useRef<Confession[]>([]);
-  
-  // Ref to track the category and paramId that the current `confessions` array was loaded for
-  const lastLoadedContextRef = useRef<{ category: string; paramId: string | undefined } | null>(null);
+  const loadingMoreRef = useRef(loadingMore); // Ref for loadingMore
 
   useEffect(() => {
     hasMoreRef.current = hasMore;
@@ -71,6 +69,10 @@ const Index: React.FC = () => {
   useEffect(() => {
     latestConfessionsRef.current = confessions;
   }, [confessions]);
+
+  useEffect(() => {
+    loadingMoreRef.current = loadingMore; // Keep loadingMoreRef updated
+  }, [loadingMore]);
 
   // Real-time comments subscription
   useEffect(() => {
@@ -111,6 +113,7 @@ const Index: React.FC = () => {
     { category: string; oldestCreatedAtForInfiniteScroll?: string }
   ) => {
     console.log(`[Fetch] Fetching confessions for category: ${category}, oldestCreatedAt: ${oldestCreatedAtForInfiniteScroll || 'none'}`);
+    setLoadingMore(true); // Set loadingMore to true at the start of fetch
     try {
       let query = supabase.from("confessions").select("*").order("created_at", { ascending: false });
       if (category !== "Всички") query = query.eq("category", category);
@@ -154,9 +157,9 @@ const Index: React.FC = () => {
       setHasMore(false);
       return [];
     } finally {
-      // setLoadingMore(false) is handled by the calling useEffect
+      setLoadingMore(false); // Set loadingMore to false at the end of fetch
     }
-  }, []);
+  }, []); // No dependency on loadingMore here, as it's managed internally
 
   // Function to fetch a single confession with its comments
   const fetchSingleConfession = useCallback(async (id: string, slug: string, categoryFromUrl: string) => {
@@ -303,12 +306,10 @@ const Index: React.FC = () => {
           setConfessions(uniqueConfessions);
           setHasMore(false);
         } else {
-          setLoadingMore(true); // Set loadingMore for initial fetch
           await fetchConfessionsPage({ category: currentCategory });
         }
       } finally {
         setLoading(false);
-        setLoadingMore(false); // Reset loadingMore after initial fetch
         lastLoadedContextRef.current = { category: currentCategory, paramId: currentParamId };
         console.log("[Effect] Full re-fetch completed. Loading set to false.");
       }
@@ -321,24 +322,23 @@ const Index: React.FC = () => {
   useEffect(() => {
     if (page > 0 && hasMoreRef.current && !loadingMore) {
       console.log(`[Infinite Scroll] Page incremented to ${page}. Initiating fetch for next batch.`);
-      setLoadingMore(true); // Set loadingMore here for subsequent fetches
       const oldestCreatedAt = latestConfessionsRef.current.length > 0 ? latestConfessionsRef.current[latestConfessionsRef.current.length - 1].created_at : undefined;
       fetchConfessionsPage({ category: selectedCategory, oldestCreatedAtForInfiniteScroll: oldestCreatedAt });
     }
-  }, [page, fetchConfessionsPage, loadingMore, selectedCategory]);
+  }, [page, fetchConfessionsPage, selectedCategory, loadingMore]); // Keep loadingMore in dependencies for this effect to react to its changes.
 
   // Intersection Observer for infinite scroll
   const lastConfessionElementRef = useCallback(node => {
     if (observer.current) observer.current.disconnect();
     observer.current = new IntersectionObserver(entries => {
       // Only increment page if intersecting, has more, and NOT currently loading more
-      if (entries[0].isIntersecting && hasMoreRef.current && !loadingMore) {
+      if (entries[0].isIntersecting && hasMoreRef.current && !loadingMoreRef.current) { // Use ref here
         console.log("[Observer] Last element intersected. Incrementing page.");
         setPage(prev => prev + 1);
       }
     }, { rootMargin: '0px 0px 200px 0px' });
     if (node) observer.current.observe(node);
-  }, [loadingMore]); // Dependency on loadingMore to ensure the callback has the latest value
+  }, []); // Removed loadingMore from dependencies
 
   // Effect to scroll to expanded confession
   useEffect(() => {
