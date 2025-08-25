@@ -57,6 +57,9 @@ const Index: React.FC = () => {
   const observer = useRef<IntersectionObserver>();
   const { lockScroll, unlockScroll } = useScrollLock();
 
+  // Debugging log for component render
+  console.log("Index component render: loading =", loading, "loadingMore =", loadingMore, "page =", page, "confessions.length =", confessions.length);
+
   useEffect(() => {
     const commentsChannel = supabase
       .channel('public-comments')
@@ -113,7 +116,6 @@ const Index: React.FC = () => {
 
       if (targetId) { // Detail View Logic
         console.log(`fetchConfessions: Fetching target confession ${targetId} for detail view.`);
-        // For detail view, we still need the comment count for the specific confession
         const { data: target, error: targetError } = await supabase.from("confessions").select("*, comments!fk_confession_id(count)").eq("id", targetId).single();
         if (targetError || !target) throw new Error("Confession not found.");
         if (target.slug !== targetSlug) {
@@ -128,7 +130,6 @@ const Index: React.FC = () => {
           .eq("confession_id", targetId)
           .order("created_at", { ascending: false });
 
-        // Fetch surrounding confessions for context
         const { data: before } = await supabase.from("confessions").select("*, comments!fk_confession_id(count)").lt("created_at", target.created_at).order("created_at", { ascending: false }).limit(CONFESSIONS_PER_PAGE);
         const { data: after } = await supabase.from("confessions").select("*, comments!fk_confession_id(count)").gt("created_at", target.created_at).order("created_at", { ascending: true }).limit(CONFESSIONS_PER_PAGE);
         
@@ -201,14 +202,15 @@ const Index: React.FC = () => {
     }
   }, [navigate]);
 
-  // This is the main effect that reacts to URL changes
+  // This is the main effect that reacts to URL changes and triggers initial/context-based fetches
   useEffect(() => {
     if (authLoading) return;
 
     const categoryFromUrl = searchParams.get('category') || "Всички";
     const confessionIsLoaded = confessions.some(c => c.id === paramId);
 
-    const isContextChange = (paramId && !confessionIsLoaded) || (!paramId && selectedCategory !== categoryFromUrl) || (confessions.length === 0 && !loading && !loadingMore);
+    // Trigger fetch if paramId changes, category changes, or confessions are empty (initial load)
+    const isContextChange = (paramId && !confessionIsLoaded) || (!paramId && selectedCategory !== categoryFromUrl) || (confessions.length === 0);
 
     if (isContextChange) {
       console.log("useEffect[URL]: Context change detected. Resetting states and fetching confessions.");
@@ -237,12 +239,12 @@ const Index: React.FC = () => {
         setSearchParams(newSearchParams, { replace: true });
       }, 100);
     }
-  }, [authLoading, paramId, paramSlug, searchParams, fetchConfessions, selectedCategory, confessions.length, loading, loadingMore]); // Added loading, loadingMore to dependencies
+  }, [authLoading, paramId, paramSlug, searchParams, fetchConfessions, selectedCategory, confessions.length]); // Removed loading, loadingMore from dependencies
 
   // Effect for infinite scroll on index view
   const lastConfessionElementRef = useCallback(node => {
     console.log("lastConfessionElementRef triggered with node:", node);
-    if (loading || loadingMore || paramId) { // Added 'loading' to condition
+    if (loading || loadingMore || paramId) { // Keep 'loading' here to prevent early triggers
       console.log(`Infinite scroll skipped: loading=${loading}, loadingMore=${loadingMore}, paramId=${paramId ? 'active' : 'inactive'}.`);
       return;
     }
@@ -263,7 +265,7 @@ const Index: React.FC = () => {
       observer.current.observe(node);
       console.log("New observer observing node:", node);
     }
-  }, [loading, loadingMore, hasMore, paramId]); // Added 'loading' to dependencies
+  }, [loading, loadingMore, hasMore, paramId]); // Keep 'loading' here
 
   useEffect(() => {
     if (page > 0 && !paramId) {
