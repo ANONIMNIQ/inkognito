@@ -57,24 +57,18 @@ const Index: React.FC = () => {
   const observer = useRef<IntersectionObserver>();
   const { lockScroll, unlockScroll } = useScrollLock();
 
-  // Ref to store the previous length of the confessions array for animation
   const prevConfessionsLengthRef = useRef(0);
-  // Ref to store the latest hasMore state for IntersectionObserver
   const hasMoreRef = useRef(hasMore);
-  // Ref to store the latest confessions array for use in callbacks without stale closures
   const latestConfessionsRef = useRef<Confession[]>([]);
 
-  // Update hasMoreRef whenever hasMore state changes
   useEffect(() => {
     hasMoreRef.current = hasMore;
   }, [hasMore]);
 
-  // Update latestConfessionsRef whenever confessions state changes
   useEffect(() => {
     latestConfessionsRef.current = confessions;
   }, [confessions]);
 
-  // Debugging log for component render
   console.log("Index component render: loading =", loading, "loadingMore =", loadingMore, "page =", page, "confessions.length =", confessions.length, "visibleConfessionCount =", visibleConfessionCount);
 
   useEffect(() => {
@@ -88,7 +82,6 @@ const Index: React.FC = () => {
           setConfessions((currentConfessions) => {
             return currentConfessions.map((confession) => {
               if (confession.id === newComment.confession_id) {
-                // Avoid adding duplicate comments if the event fires multiple times
                 if (confession.comments.some(c => c.id === newComment.id)) {
                   return confession;
                 }
@@ -121,17 +114,15 @@ const Index: React.FC = () => {
       setLoadingMore(true);
     }
 
-    // --- TEMPORARY: Add artificial delay for testing skeleton loaders ---
     if (!initialLoad) {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // 1-second delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
-    // ------------------------------------------------------------------
 
     try {
       let fetchedData: Confession[] = [];
       let newHasMore = true;
 
-      if (targetId && initialLoad) { // Initial load for detail view
+      if (targetId && initialLoad) {
         console.log(`fetchConfessions: Initial detail view fetch for target confession ${targetId}. Applying category: ${category}`);
         let targetQuery = supabase.from("confessions").select("*, comments!fk_confession_id(count)").eq("id", targetId);
         if (category !== "Всички") targetQuery = targetQuery.eq("category", category);
@@ -146,11 +137,7 @@ const Index: React.FC = () => {
           return;
         }
 
-        const { data: commentsData } = await supabase
-          .from("comments")
-          .select("*")
-          .eq("confession_id", targetId)
-          .order("created_at", { ascending: false });
+        const { data: commentsData } = await supabase.from("comments").select("*").eq("confession_id", targetId).order("created_at", { ascending: false });
 
         let beforeQuery = supabase.from("confessions").select("*, comments!fk_confession_id(count)").lt("created_at", target.created_at).order("created_at", { ascending: false });
         if (category !== "Всички") beforeQuery = beforeQuery.eq("category", category);
@@ -161,24 +148,25 @@ const Index: React.FC = () => {
         const { data: after } = await afterQuery.limit(CONFESSIONS_PER_PAGE);
         
         const format = (c: any, comments: any[] = []) => ({ ...c, comment_count: c.comments[0]?.count || 0, comments });
+        const targetWithComments = format(target, commentsData || []);
         
         fetchedData = [
           ...(after || []).reverse().map(c => format(c)), 
           targetWithComments, 
           ...(before || []).map(c => format(c))
         ];
-        newHasMore = (before || []).length === CONFESSIONS_PER_PAGE; // Only 'before' items determine if there's more to load downwards
+        newHasMore = (before || []).length === CONFESSIONS_PER_PAGE;
         console.log(`fetchConfessions: Detail view initial load fetched ${fetchedData.length} confessions. Has more: ${newHasMore}`);
 
-      } else { // Index View Logic OR subsequent infinite scroll (both index and detail views)
+      } else {
         let query = supabase.from("confessions").select("*").order("created_at", { ascending: false });
         console.log(`Applying category filter for index/infinite scroll: ${category}`);
         if (category !== "Всички") query = query.eq("category", category);
 
-        if (oldestCreatedAtForInfiniteScroll) { // Subsequent load, fetch older than the oldest currently loaded
+        if (oldestCreatedAtForInfiniteScroll) {
           console.log(`fetchConfessions: Infinite scroll fetching older than ${oldestCreatedAtForInfiniteScroll}.`);
           query = query.lt("created_at", oldestCreatedAtForInfiniteScroll);
-        } else { // Initial load for index view, or first page of index view
+        } else {
           console.log(`fetchConfessions: Index view initial fetch. Range: 0-${CONFESSIONS_PER_PAGE - 1}`);
           query = query.range(0, CONFESSIONS_PER_PAGE - 1);
         }
@@ -189,11 +177,7 @@ const Index: React.FC = () => {
         const confessionIds = data.map(c => c.id);
         let commentsCountMap = new Map<string, number>();
         if (confessionIds.length > 0) {
-          const { data: commentsRaw, error: commentsRawError } = await supabase
-            .from('comments')
-            .select('confession_id')
-            .in('confession_id', confessionIds);
-
+          const { data: commentsRaw, error: commentsRawError } = await supabase.from('comments').select('confession_id').in('confession_id', confessionIds);
           if (commentsRawError) {
             console.error("Error fetching raw comments for counting:", commentsRawError);
             toast.error("Error fetching comment counts: " + commentsRawError.message);
@@ -204,23 +188,19 @@ const Index: React.FC = () => {
           }
         }
 
-        fetchedData = data.map((c: any) => {
-          const commentCount = commentsCountMap.get(c.id) || 0;
-          return { ...c, comment_count: commentCount, comments: [] };
-        });
+        fetchedData = data.map((c: any) => ({ ...c, comment_count: commentsCountMap.get(c.id) || 0, comments: [] }));
         newHasMore = data.length === CONFESSIONS_PER_PAGE;
         console.log(`fetchConfessions: Subsequent load processed ${fetchedData.length} confessions. Has more: ${newHasMore}`);
       }
 
       setHasMore(newHasMore);
-      console.log(`setHasMore called with: ${newHasMore}. Current confessions length: ${fetchedData.length}`); // Added log
       setConfessions(prev => {
-        // If it's an initial load for a specific ID, replace all confessions
-        if (targetId && initialLoad) {
+        if (initialLoad) {
           return fetchedData;
         }
-        // For all other cases (initial index load, or infinite scroll), append
-        return [...prev, ...fetchedData];
+        const existingIds = new Set(prev.map(c => c.id));
+        const newUniqueConfessions = fetchedData.filter(c => !existingIds.has(c.id));
+        return [...prev, ...newUniqueConfessions];
       });
 
     } catch (error: any) {
@@ -235,38 +215,27 @@ const Index: React.FC = () => {
         console.log("fetchConfessions: Infinite scroll load complete - setting loadingMore to false.");
       }
     }
-  }, [navigate]); // Removed selectedCategory from dependencies here
+  }, [navigate]);
 
-  // This is the main effect that reacts to URL changes and triggers initial/context-based fetches
   useEffect(() => {
     if (authLoading) return;
 
     const categoryFromUrl = searchParams.get('category') || "Всички";
-    const confessionIsLoaded = confessions.some(c => c.id === paramId);
-
-    // Trigger fetch if paramId changes, category changes, or confessions are empty (initial load)
-    const isContextChange = (paramId && !confessionIsLoaded) || (!paramId && selectedCategory !== categoryFromUrl) || (confessions.length === 0);
-
-    if (isContextChange) {
-      console.log("useEffect[URL]: Context change detected. Resetting states and fetching confessions.");
-      setLoading(true); // Ensure loading is true for any context change
-      setConfessions([]);
-      setPage(0);
-      setHasMore(true);
-      setSelectedCategory(categoryFromUrl); // This updates selectedCategory
-      setVisibleConfessionCount(0); // Reset animation chain
-
-      // Use a setTimeout to ensure fetchConfessions is called after selectedCategory state update has potentially propagated
-      setTimeout(() => {
-        if (paramId) {
-          fetchConfessions({ initialLoad: true, targetId: paramId, targetSlug: paramSlug, category: categoryFromUrl }); // Pass category to detail view fetch
-        } else {
-          fetchConfessions({ initialLoad: true, category: categoryFromUrl }); // Pass category to index view fetch
-        }
-      }, 0); // Small delay to allow state update to settle
-    }
     
+    console.log("URL change detected. Resetting state and fetching for new context.");
+    setLoading(true);
+    setConfessions([]);
+    setPage(0);
+    setHasMore(true);
+    setSelectedCategory(categoryFromUrl);
     setExpandedConfessionId(paramId || null);
+    setVisibleConfessionCount(0);
+
+    if (paramId) {
+      fetchConfessions({ initialLoad: true, targetId: paramId, targetSlug: paramSlug, category: categoryFromUrl });
+    } else {
+      fetchConfessions({ initialLoad: true, category: categoryFromUrl });
+    }
 
     if (searchParams.get('compose') === 'true') {
       setForceExpandForm(true);
@@ -277,48 +246,29 @@ const Index: React.FC = () => {
         setSearchParams(newSearchParams, { replace: true });
       }, 100);
     }
-  }, [authLoading, paramId, paramSlug, searchParams, fetchConfessions, selectedCategory, confessions.length]);
+  }, [authLoading, paramId, paramSlug, searchParams, fetchConfessions]);
 
-  // Effect for infinite scroll on index view
   const lastConfessionElementRef = useCallback(node => {
-    console.log("lastConfessionElementRef triggered with node:", node);
-    if (loading || loadingMore) {
-      console.log(`Infinite scroll skipped: loading=${loading}, loadingMore=${loadingMore}.`);
-      return;
-    }
-    if (observer.current) {
-      observer.current.disconnect();
-      console.log("Previous observer disconnected.");
-    }
+    if (loading || loadingMore) return;
+    if (observer.current) observer.current.disconnect();
     observer.current = new IntersectionObserver(entries => {
-      console.log("IntersectionObserver callback triggered. Entries:", entries);
-      console.log("Current hasMore value when observer triggered (from ref):", hasMoreRef.current); // Use ref here
-      if (entries[0].isIntersecting && hasMoreRef.current) { // Use hasMoreRef.current
-        console.log("Last element is intersecting and hasMore is true. Calling setPage.");
+      if (entries[0].isIntersecting && hasMoreRef.current) {
         setPage(prev => prev + 1);
-      } else {
-        console.log("Last element not intersecting or no more confessions to load.");
       }
-    }, {
-      rootMargin: '0px 0px 200px 0px' // Trigger when 200px from bottom of viewport
-    });
-    if (node) {
-      observer.current.observe(node);
-      console.log("New observer observing node:", node);
-    }
-  }, [loading, loadingMore]); // Removed hasMore from dependencies here
+    }, { rootMargin: '0px 0px 200px 0px' });
+    if (node) observer.current.observe(node);
+  }, [loading, loadingMore]);
 
   useEffect(() => {
-    if (page > 0 && hasMoreRef.current) { // Use hasMoreRef.current here too
+    if (page > 0 && hasMoreRef.current) {
       console.log(`Page changed to ${page}. Initiating fetchConfessions for more data. Current hasMore: ${hasMoreRef.current}, current selectedCategory: ${selectedCategory}`);
       const oldestCreatedAt = latestConfessionsRef.current.length > 0 ? latestConfessionsRef.current[latestConfessionsRef.current.length - 1].created_at : undefined;
       fetchConfessions({ initialLoad: false, category: selectedCategory, oldestCreatedAtForInfiniteScroll: oldestCreatedAt });
     } else if (page > 0 && !hasMoreRef.current) {
       console.log(`Page changed to ${page} but hasMore is false. Not fetching.`);
     }
-  }, [page, selectedCategory, fetchConfessions]); // selectedCategory is still needed here to trigger re-fetch when category changes and page is > 0
+  }, [page, selectedCategory, fetchConfessions]);
 
-  // Scroll to expanded confession and potentially comments
   useEffect(() => {
     if (!loading && expandedConfessionId) {
       const el = document.getElementById(expandedConfessionId);
@@ -330,24 +280,16 @@ const Index: React.FC = () => {
     }
   }, [loading, expandedConfessionId, location.hash]);
 
-  // Effect to manage the animation chain and update visible count after new loads
   useEffect(() => {
     if (!loading && isFormAnimationComplete) {
       if (paramId) {
-        // If it's a direct link, show all loaded confessions immediately without animation chain
         setVisibleConfessionCount(confessions.length);
       } else {
         const currentConfessionsLength = confessions.length;
         const previousConfessionsLength = prevConfessionsLengthRef.current;
-
-        // Condition 1: Initial load, start cascade from 1
         if (currentConfessionsLength > 0 && visibleConfessionCount === 0) {
           setVisibleConfessionCount(1);
-        } 
-        // Condition 2: New batch loaded via infinite scroll, continue cascade
-        // This triggers when `loadingMore` becomes false, `confessions.length` has increased,
-        // and `visibleConfessionCount` is at the end of the *previous* batch.
-        else if (!loadingMore && currentConfessionsLength > previousConfessionsLength && visibleConfessionCount === previousConfessionsLength) {
+        } else if (!loadingMore && currentConfessionsLength > previousConfessionsLength && visibleConfessionCount === previousConfessionsLength) {
           setVisibleConfessionCount(previousConfessionsLength + 1);
         }
       }
@@ -357,7 +299,6 @@ const Index: React.FC = () => {
 
   const handleAnimationComplete = useCallback(() => {
     setVisibleConfessionCount(prev => {
-      // Only increment if there are more confessions to show
       if (prev < confessions.length) {
         return prev + 1;
       }
@@ -373,20 +314,10 @@ const Index: React.FC = () => {
       const newConfession = data?.[0];
       if (newConfession) {
         toast.success("Confession posted!");
-        
-        // Invoke the edge function from the client-side in the background
-        supabase.functions.invoke('generate-ai-comment', {
-          body: {
-            confessionId: newConfession.id,
-            confessionContent: content
-          }
-        }).then(({ error: invokeError }) => {
-          if (invokeError) {
-            console.error("Error invoking AI comment function:", invokeError.message);
-            // This error is not shown to the user to keep the UI clean.
-          }
-        });
-
+        supabase.functions.invoke('generate-ai-comment', { body: { confessionId: newConfession.id, confessionContent: content } })
+          .then(({ error: invokeError }) => {
+            if (invokeError) console.error("Error invoking AI comment function:", invokeError.message);
+          });
         navigate(`/confessions/${newConfession.id}/${newConfession.slug}`);
       } else {
         toast.error("Error: No confession data returned after posting.");
@@ -400,7 +331,6 @@ const Index: React.FC = () => {
       toast.error("Error posting comment: " + error.message);
     } else {
       toast.success("Comment posted!");
-      // The realtime subscription will handle the UI update.
       supabase.functions.invoke('send-comment-notification', { body: { confession_id: confessionId, comment_content: content } });
     }
   };
@@ -504,7 +434,6 @@ const Index: React.FC = () => {
       )}
       {loadingMore && <div className="space-y-6 mt-8"><ConfessionCardSkeleton /><ConfessionCardSkeleton /></div>}
       
-      {/* Invisible trigger for infinite scroll - now conditionally rendered */}
       {!loading && !loadingMore && hasMore && (visibleConfessionCount === confessions.length) && (
         <div ref={lastConfessionElementRef} style={{ height: "1px" }} />
       )}
