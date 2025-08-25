@@ -240,23 +240,21 @@ const Index: React.FC = () => {
       needsFullRefetch = true;
       console.log(`[Effect] Needs full refetch: Category changed (${prevContext?.category} -> ${currentCategory})`);
     } 
-    // Scenario 2: Navigating to a specific confession (paramId is set)
-    else if (currentParamId) {
-      // If we were NOT on a specific confession before (prevContext?.paramId is null/undefined)
-      // OR if the target confession is NOT currently in the list
-      if (!prevContext?.paramId || !confessions.some(c => c.id === currentParamId)) {
-        needsFullRefetch = true;
-        console.log(`[Effect] Needs full refetch: Navigating to new specific confession (${currentParamId}) or it's not in list.`);
-      }
-      // If we are switching between two *different* specific confessions,
-      // AND both are already in the `confessions` array, `needsFullRefetch` will remain `false`.
-      // This means `prevContext?.paramId` was defined, and `confessions.some(c => c.id === currentParamId)` is true.
-      // In this case, the `else if` block above would be skipped.
+    // Scenario 2: Navigating to a specific confession (paramId is set) that is NOT currently in the *latest* loaded list
+    else if (currentParamId && !latestConfessionsRef.current.some(c => c.id === currentParamId)) {
+      needsFullRefetch = true;
+      console.log(`[Effect] Needs full refetch: Navigating to new specific confession (${currentParamId}) not in latest list.`);
     }
     // Scenario 3: Collapsing from a specific confession back to the main feed
     else if (!currentParamId && prevContext?.paramId) {
       needsFullRefetch = true;
       console.log(`[Effect] Needs full refetch: Collapsing from specific confession.`);
+    }
+
+    // Always update expandedConfessionId when paramId changes, regardless of full refetch decision
+    if (expandedConfessionId !== currentParamId) {
+      console.log(`[Effect] Updating expandedConfessionId to: ${currentParamId || 'null'}`);
+      setExpandedConfessionId(currentParamId || null);
     }
 
     // If a full re-fetch is needed, execute it.
@@ -268,7 +266,7 @@ const Index: React.FC = () => {
       setHasMore(true);
       setVisibleConfessionCount(0);
       prevConfessionsLengthRef.current = 0;
-      setExpandedConfessionId(currentParamId || null); // Update expanded state immediately
+      // expandedConfessionId is already set above
 
       const loadData = async () => {
         try {
@@ -308,15 +306,14 @@ const Index: React.FC = () => {
       };
       loadData();
     } else {
-      // If no full re-fetch is needed, just update the expanded state and context
-      if (expandedConfessionId !== currentParamId) {
-        console.log(`[Effect] No full refetch needed. Updating expandedConfessionId to: ${currentParamId || 'null'}`);
-        setExpandedConfessionId(currentParamId || null);
+      // If no full re-fetch is needed, just ensure context is updated
+      // expandedConfessionId is already handled above
+      if (lastLoadedContextRef.current?.category !== currentCategory || lastLoadedContextRef.current?.paramId !== currentParamId) {
+        lastLoadedContextRef.current = currentContext;
+        console.log("[Effect] Context updated without full refetch.");
       }
-      // Always update lastLoadedContextRef to reflect the current state
-      lastLoadedContextRef.current = currentContext; // Update ref here
     }
-  }, [authLoading, selectedCategory, paramId, paramSlug, fetchConfessionsPage, fetchSingleConfession, confessions]); // Added 'confessions' to dependencies for the `some` check
+  }, [authLoading, selectedCategory, paramId, paramSlug, fetchConfessionsPage, fetchSingleConfession]); // Removed 'confessions' from dependencies
 
   // Effect to handle infinite scroll (triggered by page state change)
   useEffect(() => {
