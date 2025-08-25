@@ -193,11 +193,16 @@ const Index: React.FC = () => {
       return formattedConfession;
     } catch (error: any) {
       toast.error("Error fetching confession details: " + error.message);
-      // If any other error (e.g., confession not found), redirect to main page without category
-      navigate(`/`, { replace: true });
+      // If any other error (e.g., confession not found), redirect to main page, preserving category
+      const currentCategoryParam = searchParams.get('category'); // Get current category from URL
+      let redirectPath = '/';
+      if (currentCategoryParam && currentCategoryParam !== "Всички") {
+        redirectPath += `?category=${currentCategoryParam}`;
+      }
+      navigate(redirectPath, { replace: true }); // Redirect to main page with category
       return null;
     }
-  }, [navigate]); // Removed location.search from dependencies as it's passed as categoryFromUrl
+  }, [navigate, searchParams]); // Added searchParams to dependencies
 
   // Effect to update selectedCategory from URL search params
   useEffect(() => {
@@ -253,9 +258,14 @@ const Index: React.FC = () => {
           // We should stop this loadData execution and let the new URL trigger a fresh useEffect.
           return; 
         }
-        // Fetch confessions before and after the target
-        const { data: beforeData } = await supabase.from("confessions").select("*").lt("created_at", targetConf.created_at).order("created_at", { ascending: false });
-        const { data: afterData } = await supabase.from("confessions").select("*").gt("created_at", targetConf.created_at).order("created_at", { ascending: true });
+        // Fetch confessions before and after the target, respecting the current category
+        let beforeQuery = supabase.from("confessions").select("*").lt("created_at", targetConf.created_at).order("created_at", { ascending: false });
+        if (currentCategory !== "Всички") beforeQuery = beforeQuery.eq("category", currentCategory);
+        const { data: beforeData } = await beforeQuery;
+
+        let afterQuery = supabase.from("confessions").select("*").gt("created_at", targetConf.created_at).order("created_at", { ascending: true });
+        if (currentCategory !== "Всички") afterQuery = afterQuery.eq("category", currentCategory);
+        const { data: afterData } = await afterQuery;
 
         const formatConfession = (c: any) => ({ ...c, comment_count: 0, comments: [] });
         const combinedConfessions = [
