@@ -42,22 +42,21 @@ const Index: React.FC = () => {
 
   const { loading: authLoading } = useSessionContext();
   const [confessions, setConfessions] = useState<Confession[]>([]);
-  const [loading, setLoading] = useState(true); // Initial loading state for the first fetch
-  const [loadingMore, setLoadingMore] = useState(false); // Loading state for subsequent infinite scroll fetches
-  const [page, setPage] = useState(0); // Current page for infinite scroll
-  const [hasMore, setHasMore] = useState(true); // Whether there are more confessions to load
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
   const [expandedConfessionId, setExpandedConfessionId] = useState<string | null>(null);
   const [isComposeButtonVisible, setIsComposeButtonVisible] = useState(false);
   const [forceExpandForm, setForceExpandForm] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>("Всички"); // State for category filter
+  const [selectedCategory, setSelectedCategory] = useState<string>("Всички");
   const [visibleConfessionCount, setVisibleConfessionCount] = useState(0);
+  const [isFormAnimationComplete, setIsFormAnimationComplete] = useState(false);
 
   const confessionFormContainerRef = useRef<HTMLDivElement>(null);
   const observer = useRef<IntersectionObserver>();
   const { lockScroll, unlockScroll } = useScrollLock();
-  const previousViewIdentifier = useRef<string | null>(null); // Ref to track the current view for fetching
 
-  // Real-time comments subscription
   useEffect(() => {
     const commentsChannel = supabase
       .channel('public-comments')
@@ -91,35 +90,31 @@ const Index: React.FC = () => {
     };
   }, []);
 
-  // useCallback for fetching confessions
   const fetchConfessions = useCallback(async (
-    { initialLoad = false, currentPage = 0, targetId, targetSlug, category }:
-    { initialLoad?: boolean; currentPage?: number; targetId?: string; targetSlug?: string; category: string }
+    { initialLoad = false, category = "Всички", currentPage = 0, targetId, targetSlug }:
+    { initialLoad?: boolean; category?: string; currentPage?: number; targetId?: string; targetSlug?: string }
   ) => {
-    console.log(`[fetchConfessions] Called: initialLoad=${initialLoad}, category=${category}, currentPage=${currentPage}, targetId=${targetId}`);
     if (initialLoad) setLoading(true);
     else setLoadingMore(true);
 
-    let allConfessions: Confession[] = [];
-    let newHasMore = true;
-
     try {
+      let allConfessions: Confession[] = [];
+      let newHasMore = true;
+
       if (targetId) { // Detail View Logic
-        console.log(`[fetchConfessions] Fetching single confession for ID: ${targetId}`);
         const { data: target, error: targetError } = await supabase.from("confessions").select("*, comments!fk_confession_id(count)").eq("id", targetId).single();
         if (targetError || !target) throw new Error("Confession not found.");
         if (target.slug !== targetSlug) {
-          console.log(`[fetchConfessions] Redirecting due to slug mismatch: ${targetSlug} vs ${target.slug}`);
           navigate(`/confessions/${target.id}/${target.slug}`, { replace: true });
-          return; // Exit early after navigation
+          return;
         }
 
+        // Fetch comments for the target confession immediately
         const { data: commentsData } = await supabase
           .from("comments")
           .select("*")
           .eq("confession_id", targetId)
           .order("created_at", { ascending: false });
-        console.log(`[fetchConfessions] Fetched ${commentsData?.length || 0} comments for target confession.`);
 
         const { data: before } = await supabase.from("confessions").select("*, comments!fk_confession_id(count)").lt("created_at", target.created_at).order("created_at", { ascending: false }).limit(CONFESSIONS_PER_PAGE);
         const { data: after } = await supabase.from("confessions").select("*, comments!fk_confession_id(count)").gt("created_at", target.created_at).order("created_at", { ascending: true }).limit(CONFESSIONS_PER_PAGE);
@@ -134,12 +129,10 @@ const Index: React.FC = () => {
           ...(before || []).map(c => format(c))
         ];
         newHasMore = (before || []).length === CONFESSIONS_PER_PAGE;
-        console.log(`[fetchConfessions] Detail view loaded ${allConfessions.length} confessions. Has more: ${newHasMore}`);
 
       } else { // Index View Logic
         const from = currentPage * CONFESSIONS_PER_PAGE;
         const to = from + CONFESSIONS_PER_PAGE - 1;
-        console.log(`[fetchConfessions] Fetching range: from=${from}, to=${to} for category: ${category}`);
         let query = supabase.from("confessions").select("*, comments!fk_confession_id(count)").order("created_at", { ascending: false });
         if (category !== "Всички") query = query.eq("category", category);
         const { data, error } = await query.range(from, to);
@@ -147,59 +140,39 @@ const Index: React.FC = () => {
 
         allConfessions = data.map((c: any) => ({ ...c, comment_count: c.comments[0]?.count || 0, comments: [] }));
         newHasMore = data.length === CONFESSIONS_PER_PAGE;
-        console.log(`[fetchConfessions] Fetched ${data.length} confessions for page ${currentPage}. Has more: ${newHasMore}`);
       }
 
       setHasMore(newHasMore);
-      setConfessions(prev => {
-        if (initialLoad) {
-          return allConfessions;
-        } else {
-          // Filter out any confessions that are already in the 'prev' array to prevent duplicates
-          const existingIds = new Set(prev.map(c => c.id));
-          const uniqueNewConfessions = allConfessions.filter(c => !existingIds.has(c.id));
-          console.log(`[fetchConfessions] Appending ${uniqueNewConfessions.length} new confessions. Total: ${prev.length + uniqueNewConfessions.length}`);
-          return [...prev, ...uniqueNewConfessions];
-        }
-      });
+      setConfessions(prev => initialLoad ? allConfessions : [...prev, ...allConfessions]);
 
     } catch (error: any) {
       toast.error("Error fetching confessions: " + error.message);
-      console.error("[fetchConfessions] Error:", error);
       setHasMore(false);
-      allConfessions = []; // Ensure it's an empty array on error
     } finally {
       if (initialLoad) setLoading(false);
       else setLoadingMore(false);
-      // Note: confessions.length here might not reflect the *latest* state due to async updates
-      console.log(`[fetchConfessions] Finished. Has more: ${newHasMore}`);
     }
-  }, [navigate]); // Only navigate is a dependency
+  }, [navigate]);
 
-  // Main effect to handle URL changes (paramId, category) and initial load
+  // This is the main effect that reacts to URL changes
   useEffect(() => {
     if (authLoading) return;
 
     const categoryFromUrl = searchParams.get('category') || "Всички";
-    const isDetailView = !!paramId;
+    const confessionIsLoaded = confessions.some(c => c.id === paramId);
 
-    // Create a unique identifier for the current view state
-    const currentViewIdentifier = isDetailView ? `detail-${paramId}-${paramSlug}` : `index-${categoryFromUrl}`;
+    const isContextChange = (paramId && !confessionIsLoaded) || (!paramId && selectedCategory !== categoryFromUrl) || confessions.length === 0;
 
-    // Only trigger a full re-fetch if the view identifier has changed
-    if (currentViewIdentifier !== previousViewIdentifier.current) {
-      console.log(`[useEffect: Main Fetch Trigger] View changed from ${previousViewIdentifier.current} to ${currentViewIdentifier}. Triggering new fetch.`);
-      previousViewIdentifier.current = currentViewIdentifier; // Update the ref
-
-      setLoading(true); // Indicate a new full load is starting
-      setConfessions([]); // Clear existing confessions for a fresh start
-      setPage(0); // Reset page to 0 for new fetch
+    if (isContextChange) {
+      setLoading(true);
+      setConfessions([]);
+      setPage(0);
       setHasMore(true);
-      setSelectedCategory(categoryFromUrl); // Update selectedCategory state to reflect URL
+      setSelectedCategory(categoryFromUrl);
       setVisibleConfessionCount(0); // Reset animation chain
 
-      if (isDetailView) {
-        fetchConfessions({ initialLoad: true, targetId: paramId, targetSlug: paramSlug, category: categoryFromUrl });
+      if (paramId) {
+        fetchConfessions({ initialLoad: true, targetId: paramId, targetSlug: paramSlug });
       } else {
         fetchConfessions({ initialLoad: true, category: categoryFromUrl, currentPage: 0 });
       }
@@ -208,7 +181,6 @@ const Index: React.FC = () => {
     setExpandedConfessionId(paramId || null);
 
     if (searchParams.get('compose') === 'true') {
-      console.log("[useEffect: URL Change] 'compose=true' detected, forcing form expand.");
       setForceExpandForm(true);
       setTimeout(() => {
         confessionFormContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -217,36 +189,32 @@ const Index: React.FC = () => {
         setSearchParams(newSearchParams, { replace: true });
       }, 100);
     }
-  }, [authLoading, paramId, paramSlug, searchParams, fetchConfessions, navigate, setSearchParams]); // Dependencies are now only external inputs and stable functions
+  }, [authLoading, paramId, paramSlug, searchParams, fetchConfessions, selectedCategory, confessions.length]);
 
   // Effect for infinite scroll on index view
   const lastConfessionElementRef = useCallback(node => {
-    if (loadingMore || paramId || loading) return; // Prevent if initial loading or more data is already happening, or if in detail view
+    if (loadingMore || paramId) return;
     if (observer.current) observer.current.disconnect();
     observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore) { // Added hasMore check here
-        console.log(`[IntersectionObserver] Triggered: Loading more confessions. Current page: ${page}`);
+      if (entries[0].isIntersecting && hasMore) {
         setPage(prev => prev + 1);
       }
     });
     if (node) observer.current.observe(node);
-  }, [loadingMore, hasMore, paramId, loading, page]);
+  }, [loadingMore, hasMore, paramId]);
 
-  // Effect to trigger subsequent page fetches
   useEffect(() => {
-    // Only fetch if page > 0 (not initial load), not in detail view, not already loading, AND there are more confessions
-    if (page > 0 && !paramId && !loading && !loadingMore && hasMore) { // Added hasMore
-      console.log(`[useEffect: Page Change] Page changed to ${page}. Initiating fetch for more confessions.`);
+    if (page > 0 && !paramId) {
+      setLoadingMore(true);
       fetchConfessions({ initialLoad: false, category: selectedCategory, currentPage: page });
     }
-  }, [page, paramId, selectedCategory, loading, loadingMore, hasMore, fetchConfessions]); // Added hasMore dependency
+  }, [page, paramId, selectedCategory, fetchConfessions]);
 
   // Scroll to expanded confession and potentially comments
   useEffect(() => {
     if (!loading && expandedConfessionId) {
       const el = document.getElementById(expandedConfessionId);
       if (el) {
-        console.log(`[useEffect: Scroll] Scrolling to expanded confession: ${expandedConfessionId}`);
         setTimeout(() => {
           el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 300);
@@ -254,32 +222,39 @@ const Index: React.FC = () => {
     }
   }, [loading, expandedConfessionId, location.hash]);
 
-  // Effect to manage the animation chain for initial load and infinite scroll
+  // Effect to manage the animation chain
   useEffect(() => {
-    console.log("Animation useEffect triggered. Loading:", loading, "paramId:", paramId, "loadingMore:", loadingMore, "confessions.length:", confessions.length, "visibleConfessionCount:", visibleConfessionCount);
-    if (!loading && !paramId && !loadingMore && confessions.length > 0 && visibleConfessionCount < confessions.length) {
-      const timer = setTimeout(() => {
-        setVisibleConfessionCount(prev => prev + 1);
-      }, 100); // Delay for each card to appear
-      return () => clearTimeout(timer);
-    } else if (!loading && !paramId && !loadingMore && confessions.length > 0 && visibleConfessionCount === 0) {
-        // This handles the very first time confessions are loaded and the cascade needs to start
+    if (!loading && isFormAnimationComplete) {
+      if (paramId) {
+        // If it's a direct link, show all loaded confessions immediately without animation chain
+        setVisibleConfessionCount(confessions.length);
+      } else if (confessions.length > 0 && visibleConfessionCount === 0) {
+        // Otherwise, start the animation chain for the first card
         setVisibleConfessionCount(1);
+      }
     }
-  }, [loading, paramId, loadingMore, confessions.length, visibleConfessionCount]);
+  }, [loading, isFormAnimationComplete, paramId, confessions.length, visibleConfessionCount]);
+
+  const handleAnimationComplete = useCallback(() => {
+    setVisibleConfessionCount(prev => {
+      // Only increment if there are more confessions to show
+      if (prev < confessions.length) {
+        return prev + 1;
+      }
+      return prev;
+    });
+  }, [confessions.length]);
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string, slug: string, email?: string) => {
-    console.log("[handleAddConfession] Attempting to add new confession.");
     const { data, error } = await supabase.from("confessions").insert({ title, content, gender, category, slug, author_email: email }).select('id, slug');
     if (error) {
       toast.error("Error posting confession: " + error.message);
-      console.error("[handleAddConfession] Error posting confession:", error);
     } else {
       const newConfession = data?.[0];
       if (newConfession) {
         toast.success("Confession posted!");
-        console.log(`[handleAddConfession] Confession posted, ID: ${newConfession.id}. Invoking AI comment function.`);
         
+        // Invoke the edge function from the client-side in the background
         supabase.functions.invoke('generate-ai-comment', {
           body: {
             confessionId: newConfession.id,
@@ -287,56 +262,48 @@ const Index: React.FC = () => {
           }
         }).then(({ error: invokeError }) => {
           if (invokeError) {
-            console.error("[handleAddConfession] Error invoking AI comment function:", invokeError.message);
+            console.error("Error invoking AI comment function:", invokeError.message);
+            // This error is not shown to the user to keep the UI clean.
           }
         });
 
         navigate(`/confessions/${newConfession.id}/${newConfession.slug}`);
       } else {
         toast.error("Error: No confession data returned after posting.");
-        console.error("[handleAddConfession] No confession data returned.");
       }
     }
   };
 
   const handleAddComment = async (confessionId: string, content: string, gender: "male" | "female" | "incognito") => {
-    console.log(`[handleAddComment] Attempting to add new comment for confession ID: ${confessionId}`);
     const { error } = await supabase.from("comments").insert({ confession_id: confessionId, content, gender });
     if (error) {
       toast.error("Error posting comment: " + error.message);
-      console.error("[handleAddComment] Error posting comment:", error);
     } else {
       toast.success("Comment posted!");
-      console.log(`[handleAddComment] Comment posted for confession ID: ${confessionId}. Invoking notification function.`);
+      // The realtime subscription will handle the UI update.
       supabase.functions.invoke('send-comment-notification', { body: { confession_id: confessionId, comment_content: content } });
     }
   };
 
   const handleFetchComments = async (confessionId: string) => {
-    console.log(`[handleFetchComments] Fetching comments for confession ID: ${confessionId}`);
     const { data, error } = await supabase.from("comments").select("*").eq("confession_id", confessionId).order("created_at", { ascending: false });
     if (error) {
       toast.error("Error fetching comments: " + error.message);
-      console.error("[handleFetchComments] Error fetching comments:", error);
     } else {
-      console.log(`[handleFetchComments] Fetched ${data?.length || 0} comments for confession ID: ${confessionId}`);
       setConfessions(prev => prev.map(c => c.id === confessionId ? { ...c, comments: data || [] } : c));
     }
   };
 
   const handleLikeConfession = async (confessionId: string) => {
-    console.log(`[handleLikeConfession] Liking confession ID: ${confessionId}`);
     setConfessions(prev => prev.map(c => c.id === confessionId ? { ...c, likes: c.likes + 1 } : c));
     const { error } = await supabase.rpc("increment_confession_likes", { confession_id_param: confessionId });
     if (error) {
       toast.error("Error liking confession: " + error.message);
-      console.error("[handleLikeConfession] Error liking confession:", error);
       setConfessions(prev => prev.map(c => c.id === confessionId ? { ...c, likes: c.likes - 1 } : c));
     }
   };
 
   const handleConfessionToggle = (confessionId: string, slug: string) => {
-    console.log(`[handleConfessionToggle] Toggling confession ID: ${confessionId}`);
     if (expandedConfessionId === confessionId) {
       navigate('/');
     } else {
@@ -345,7 +312,6 @@ const Index: React.FC = () => {
   };
 
   const handleSelectCategory = (category: string) => {
-    console.log(`[handleSelectCategory] Selected category: ${category}`);
     if (category === "Всички") {
       navigate('/');
     } else {
@@ -365,12 +331,9 @@ const Index: React.FC = () => {
   }, []);
 
   const handleComposeClick = () => {
-    console.log("[handleComposeClick] Compose button clicked.");
     confessionFormContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setForceExpandForm(true);
   };
-
-  console.log("Index Render: visibleConfessionCount =", visibleConfessionCount, "confessions.length =", confessions.length, "loading =", loading, "loadingMore =", loadingMore, "hasMore =", hasMore);
 
   return (
     <div className="container mx-auto p-4 max-w-3xl">
@@ -386,6 +349,11 @@ const Index: React.FC = () => {
           onFormFocus={() => setExpandedConfessionId(null)}
           forceExpand={forceExpandForm}
           onFormExpanded={() => setForceExpandForm(false)}
+          onAnimationComplete={() => {
+            if (!isFormAnimationComplete) {
+              setIsFormAnimationComplete(true);
+            }
+          }}
         />
       </div>
 
@@ -397,7 +365,7 @@ const Index: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-6">
-          {confessions.slice(0, visibleConfessionCount).map((conf, index) => (
+          {confessions.slice(0, visibleConfessionCount).map((conf) => (
             <ConfessionCard
               key={conf.id}
               confession={{ ...conf, timestamp: new Date(conf.created_at), comments: conf.comments.map(c => ({ ...c, timestamp: new Date(c.created_at) })) }}
@@ -409,6 +377,7 @@ const Index: React.FC = () => {
               onToggleExpand={handleConfessionToggle}
               onSelectCategory={handleSelectCategory}
               shouldOpenCommentsOnLoad={conf.id === expandedConfessionId && location.hash === '#comments'}
+              onAnimationComplete={handleAnimationComplete}
             />
           ))}
         </div>

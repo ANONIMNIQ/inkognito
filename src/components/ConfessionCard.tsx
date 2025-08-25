@@ -55,6 +55,7 @@ interface ConfessionCardProps {
   onToggleExpand: (confessionId: string, slug: string) => void;
   onSelectCategory: (category: string) => void;
   shouldOpenCommentsOnLoad?: boolean;
+  onAnimationComplete?: () => void;
 }
 
 const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
@@ -67,6 +68,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   onToggleExpand,
   onSelectCategory,
   shouldOpenCommentsOnLoad = false,
+  onAnimationComplete,
 }, ref: Ref<HTMLDivElement>) => {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(COMMENTS_PER_PAGE);
@@ -222,6 +224,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
         )}
         <div 
           className={cn("flex-1 p-4 rounded-xl shadow-md relative min-w-0 opacity-0 animate-fade-zoom-in", bubbleBackgroundColor, isMobile ? "ml-0" : "")}
+          onAnimationEnd={onAnimationComplete}
         >
           <div
             className={cn(
