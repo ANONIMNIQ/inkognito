@@ -333,7 +333,7 @@ const Index: React.FC = () => {
     }
   }, [loading, expandedConfessionId, location.hash]);
 
-  // Cascade animation for confessions
+  // Cascade animation for confessions (initial load only)
   useEffect(() => {
     if (loading || !isFormAnimationComplete) {
       return;
@@ -346,26 +346,28 @@ const Index: React.FC = () => {
     if (paramId) {
       setVisibleConfessionCount(currentLength);
     }
-    // Otherwise, animate one by one
-    else if (visibleConfessionCount === 0 && currentLength > 0) {
-      setVisibleConfessionCount(1);
+    // Initial cascade for the first batch (only if not already cascaded)
+    else if (visibleConfessionCount === 0 && currentLength > 0 && page === 0) {
+      setVisibleConfessionCount(1); // Start cascade
     }
-    else if (!loadingMore && currentLength > prevLength) {
-      setVisibleConfessionCount(prevLength + 1);
+    // If a new batch has been loaded via infinite scroll (page > 0)
+    // and the visible count is not yet caught up to the total loaded confessions
+    else if (page > 0 && currentLength > prevLength && visibleConfessionCount < currentLength) {
+      setVisibleConfessionCount(currentLength); // Show the entire new batch at once
     }
 
     prevConfessionsLengthRef.current = currentLength;
-  }, [loading, isFormAnimationComplete, paramId, confessions.length, loadingMore, visibleConfessionCount]);
+  }, [loading, isFormAnimationComplete, paramId, confessions.length, loadingMore, visibleConfessionCount, page]);
 
   const handleAnimationComplete = useCallback(() => {
-    // Only cascade animate if no specific confession is expanded
-    if (!paramId) {
+    // Only continue cascade if it's the initial load (page 0) and not a specific confession
+    if (!paramId && page === 0) {
       setVisibleConfessionCount(prev => {
         if (prev < confessions.length) return prev + 1;
         return prev;
       });
     }
-  }, [confessions.length, paramId]);
+  }, [confessions.length, paramId, page]);
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string, slug: string, email?: string) => {
     const { data, error } = await supabase.from("confessions").insert({ title, content, gender, category, slug, author_email: email }).select('id, slug');
@@ -503,8 +505,8 @@ const Index: React.FC = () => {
               onToggleExpand={handleConfessionToggle}
               onSelectCategory={handleSelectCategory}
               shouldOpenCommentsOnLoad={conf.id === expandedConfessionId && location.hash === '#comments'}
-              onAnimationComplete={handleAnimationComplete}
-              currentCategory={selectedCategory} // PASSED: The selected category
+              onAnimationComplete={!paramId && page === 0 ? handleAnimationComplete : undefined} // Only pass for initial cascade
+              currentCategory={selectedCategory}
             />
           ))}
         </div>
