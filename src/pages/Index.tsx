@@ -230,94 +230,93 @@ const Index: React.FC = () => {
 
     const currentCategory = selectedCategory;
     const currentParamId = paramId;
+    const currentContext = { category: currentCategory, paramId: currentParamId };
+    const prevContext = lastLoadedContextRef.current;
 
-    // Determine if a full re-fetch is necessary
     let needsFullRefetch = false;
 
-    // Case 1: Category has changed
-    if (lastLoadedContextRef.current?.category !== currentCategory) {
-      console.log(`[Effect] Needs full refetch: Category changed (${lastLoadedContextRef.current?.category} -> ${currentCategory})`);
+    // Scenario 1: Category has changed
+    if (prevContext?.category !== currentCategory) {
       needsFullRefetch = true;
+      console.log(`[Effect] Needs full refetch: Category changed (${prevContext?.category} -> ${currentCategory})`);
     } 
-    // Case 2: Navigating to a specific confession (paramId is set)
+    // Scenario 2: Navigating to a specific confession (paramId is set)
     else if (currentParamId) {
-      // If the paramId has changed to a *different* specific confession, OR
-      // if the target confession is NOT currently in the list (meaning it needs to be fetched)
-      if (lastLoadedContextRef.current?.paramId !== currentParamId && lastLoadedContextRef.current?.paramId !== undefined) {
-        console.log(`[Effect] Needs full refetch: Param ID changed (${lastLoadedContextRef.current?.paramId} -> ${currentParamId})`);
+      // If we were NOT on a specific confession before (prevContext?.paramId is null/undefined)
+      // OR if the target confession is NOT currently in the list
+      if (!prevContext?.paramId || !confessions.some(c => c.id === currentParamId)) {
         needsFullRefetch = true;
-      } else if (!confessions.some(c => c.id === currentParamId)) {
-        console.log(`[Effect] Needs full refetch: Param ID (${currentParamId}) not in current confessions.`);
-        needsFullRefetch = true;
+        console.log(`[Effect] Needs full refetch: Navigating to new specific confession (${currentParamId}) or it's not in list.`);
       }
+      // If we are switching between two *different* specific confessions,
+      // AND both are already in the `confessions` array, `needsFullRefetch` will remain `false`.
+      // This means `prevContext?.paramId` was defined, and `confessions.some(c => c.id === currentParamId)` is true.
+      // In this case, the `else if` block above would be skipped.
     }
-    // Case 3: Collapsing from a specific confession back to the main feed (paramId becomes undefined)
-    else if (!currentParamId && lastLoadedContextRef.current?.paramId) {
-      console.log(`[Effect] Needs full refetch: Collapsing from specific confession.`);
+    // Scenario 3: Collapsing from a specific confession back to the main feed
+    else if (!currentParamId && prevContext?.paramId) {
       needsFullRefetch = true;
+      console.log(`[Effect] Needs full refetch: Collapsing from specific confession.`);
     }
 
-    // If no full re-fetch is needed, just update the expanded state and context
-    if (!needsFullRefetch) {
-      console.log(`[Effect] No full refetch needed. Updating expandedConfessionId to: ${currentParamId || 'null'}`);
-      setExpandedConfessionId(currentParamId || null);
-      // Only update lastLoadedContextRef if it's not already reflecting the current state
-      // This prevents unnecessary re-runs if only hash changes, for example.
-      if (lastLoadedContextRef.current?.category !== currentCategory || lastLoadedContextRef.current?.paramId !== currentParamId) {
-        lastLoadedContextRef.current = { category: currentCategory, paramId: currentParamId };
-      }
-      return;
-    }
+    // If a full re-fetch is needed, execute it.
+    if (needsFullRefetch) {
+      console.log("[Effect] Initiating full re-fetch.");
+      setLoading(true);
+      setConfessions([]); // Clear existing confessions for a fresh load
+      setPage(0);
+      setHasMore(true);
+      setVisibleConfessionCount(0);
+      prevConfessionsLengthRef.current = 0;
+      setExpandedConfessionId(currentParamId || null); // Update expanded state immediately
 
-    // If we reach here, a full re-fetch is needed.
-    console.log("[Effect] Initiating full re-fetch.");
-    setLoading(true);
-    setConfessions([]); // Clear existing confessions for a fresh load
-    setPage(0);
-    setHasMore(true);
-    setVisibleConfessionCount(0);
-    prevConfessionsLengthRef.current = 0; // Reset this too
-    setExpandedConfessionId(currentParamId || null); // Update expanded state immediately
+      const loadData = async () => {
+        try {
+          if (currentParamId) {
+            const targetConf = await fetchSingleConfession(currentParamId, paramSlug!, currentCategory);
+            if (!targetConf) {
+              return; 
+            }
+            let beforeQuery = supabase.from("confessions").select("*").lt("created_at", targetConf.created_at).order("created_at", { ascending: false });
+            if (currentCategory !== "Всички") beforeQuery = beforeQuery.eq("category", currentCategory);
+            const { data: beforeData } = await beforeQuery.limit(CONFESSIONS_PER_PAGE / 2);
 
-    const loadData = async () => {
-      try {
-        if (currentParamId) {
-          const targetConf = await fetchSingleConfession(currentParamId, paramSlug!, currentCategory);
-          if (!targetConf) {
-            return; 
+            let afterQuery = supabase.from("confessions").select("*").gt("created_at", targetConf.created_at).order("created_at", { ascending: true });
+            if (currentCategory !== "Всички") afterQuery = afterQuery.eq("category", currentCategory);
+            const { data: afterData } = await afterQuery.limit(CONFESSIONS_PER_PAGE / 2);
+
+            const formatConfession = (c: any) => ({ ...c, comment_count: 0, comments: [] });
+            const combinedConfessions = [
+              ...(afterData || []).reverse().map(formatConfession),
+              targetConf,
+              ...(beforeData || []).map(formatConfession)
+            ];
+            
+            const uniqueConfessions = Array.from(new Map(combinedConfessions.map(c => [c.id, c])).values())
+                                          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+            setConfessions(uniqueConfessions);
+            setHasMore(false);
+          } else {
+            await fetchConfessionsPage({ category: currentCategory });
           }
-          let beforeQuery = supabase.from("confessions").select("*").lt("created_at", targetConf.created_at).order("created_at", { ascending: false });
-          if (currentCategory !== "Всички") beforeQuery = beforeQuery.eq("category", currentCategory);
-          const { data: beforeData } = await beforeQuery.limit(CONFESSIONS_PER_PAGE / 2);
-
-          let afterQuery = supabase.from("confessions").select("*").gt("created_at", targetConf.created_at).order("created_at", { ascending: true });
-          if (currentCategory !== "Всички") afterQuery = afterQuery.eq("category", currentCategory);
-          const { data: afterData } = await afterQuery.limit(CONFESSIONS_PER_PAGE / 2);
-
-          const formatConfession = (c: any) => ({ ...c, comment_count: 0, comments: [] });
-          const combinedConfessions = [
-            ...(afterData || []).reverse().map(formatConfession),
-            targetConf,
-            ...(beforeData || []).map(formatConfession)
-          ];
-          
-          const uniqueConfessions = Array.from(new Map(combinedConfessions.map(c => [c.id, c])).values())
-                                        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-          setConfessions(uniqueConfessions);
-          setHasMore(false);
-        } else {
-          await fetchConfessionsPage({ category: currentCategory });
+        } finally {
+          setLoading(false);
+          lastLoadedContextRef.current = currentContext; // Update ref here
+          console.log("[Effect] Full re-fetch completed. Loading set to false.");
         }
-      } finally {
-        setLoading(false);
-        lastLoadedContextRef.current = { category: currentCategory, paramId: currentParamId };
-        console.log("[Effect] Full re-fetch completed. Loading set to false.");
+      };
+      loadData();
+    } else {
+      // If no full re-fetch is needed, just update the expanded state and context
+      if (expandedConfessionId !== currentParamId) {
+        console.log(`[Effect] No full refetch needed. Updating expandedConfessionId to: ${currentParamId || 'null'}`);
+        setExpandedConfessionId(currentParamId || null);
       }
-    };
-
-    loadData();
-  }, [authLoading, selectedCategory, paramId, paramSlug, fetchConfessionsPage, fetchSingleConfession]);
+      // Always update lastLoadedContextRef to reflect the current state
+      lastLoadedContextRef.current = currentContext; // Update ref here
+    }
+  }, [authLoading, selectedCategory, paramId, paramSlug, fetchConfessionsPage, fetchSingleConfession, confessions]); // Added 'confessions' to dependencies for the `some` check
 
   // Effect to handle infinite scroll (triggered by page state change)
   useEffect(() => {
