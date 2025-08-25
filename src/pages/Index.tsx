@@ -110,6 +110,7 @@ const Index: React.FC = () => {
     { category, oldestCreatedAtForInfiniteScroll }:
     { category: string; oldestCreatedAtForInfiniteScroll?: string }
   ) => {
+    console.log(`[Fetch] Fetching confessions for category: ${category}, oldestCreatedAt: ${oldestCreatedAtForInfiniteScroll || 'none'}`);
     setLoadingMore(true);
     try {
       let query = supabase.from("confessions").select("*").order("created_at", { ascending: false });
@@ -123,6 +124,8 @@ const Index: React.FC = () => {
       
       const { data, error } = await query.limit(CONFESSIONS_PER_PAGE);
       if (error) throw error;
+
+      console.log(`[Fetch] Received ${data.length} confessions from Supabase.`);
 
       const confessionIds = data.map(c => c.id);
       let commentsCountMap = new Map<string, number>();
@@ -138,9 +141,13 @@ const Index: React.FC = () => {
 
       setHasMore(newHasMore);
       setConfessions(prev => {
+        console.log(`[State] setConfessions - Previous length: ${prev.length}`);
         const existingIds = new Set(prev.map(c => c.id));
         const newUniqueConfessions = fetchedData.filter(c => !existingIds.has(c.id));
-        return [...prev, ...newUniqueConfessions];
+        console.log(`[State] setConfessions - New unique confessions added: ${newUniqueConfessions.length}`);
+        const newState = [...prev, ...newUniqueConfessions];
+        console.log(`[State] setConfessions - New state length: ${newState.length}`);
+        return newState;
       });
       return fetchedData;
     } catch (error: any) {
@@ -154,6 +161,7 @@ const Index: React.FC = () => {
 
   // Function to fetch a single confession with its comments
   const fetchSingleConfession = useCallback(async (id: string, slug: string, categoryFromUrl: string) => {
+    console.log(`[Fetch] Fetching single confession: ${id}`);
     try {
       // First, fetch the confession by ID without category filter
       const { data: confessionData, error: confessionError } = await supabase
@@ -208,6 +216,7 @@ const Index: React.FC = () => {
   useEffect(() => {
     const categoryFromUrl = searchParams.get('category') || "Всички";
     if (categoryFromUrl !== selectedCategory) {
+      console.log(`[URL] Category changed from URL: ${selectedCategory} -> ${categoryFromUrl}`);
       setSelectedCategory(categoryFromUrl);
     }
   }, [searchParams, selectedCategory]);
@@ -224,6 +233,7 @@ const Index: React.FC = () => {
 
     // Case 1: Category has changed
     if (lastLoadedContextRef.current?.category !== currentCategory) {
+      console.log(`[Effect] Needs full refetch: Category changed (${lastLoadedContextRef.current?.category} -> ${currentCategory})`);
       needsFullRefetch = true;
     } 
     // Case 2: Navigating to a specific confession (paramId is set)
@@ -231,18 +241,22 @@ const Index: React.FC = () => {
       // If the paramId has changed to a *different* specific confession, OR
       // if the target confession is NOT currently in the list (meaning it needs to be fetched)
       if (lastLoadedContextRef.current?.paramId !== currentParamId && lastLoadedContextRef.current?.paramId !== undefined) {
+        console.log(`[Effect] Needs full refetch: Param ID changed (${lastLoadedContextRef.current?.paramId} -> ${currentParamId})`);
         needsFullRefetch = true;
       } else if (!confessions.some(c => c.id === currentParamId)) {
+        console.log(`[Effect] Needs full refetch: Param ID (${currentParamId}) not in current confessions.`);
         needsFullRefetch = true;
       }
     }
     // Case 3: Collapsing from a specific confession back to the main feed (paramId becomes undefined)
     else if (!currentParamId && lastLoadedContextRef.current?.paramId) {
+      console.log(`[Effect] Needs full refetch: Collapsing from specific confession.`);
       needsFullRefetch = true;
     }
 
     // If no full re-fetch is needed, just update the expanded state and context
     if (!needsFullRefetch) {
+      console.log(`[Effect] No full refetch needed. Updating expandedConfessionId to: ${currentParamId || 'null'}`);
       setExpandedConfessionId(currentParamId || null);
       // Only update lastLoadedContextRef if it's not already reflecting the current state
       // This prevents unnecessary re-runs if only hash changes, for example.
@@ -253,6 +267,7 @@ const Index: React.FC = () => {
     }
 
     // If we reach here, a full re-fetch is needed.
+    console.log("[Effect] Initiating full re-fetch.");
     setLoading(true);
     setConfessions([]); // Clear existing confessions for a fresh load
     setPage(0);
@@ -296,6 +311,7 @@ const Index: React.FC = () => {
       } finally {
         setLoading(false);
         lastLoadedContextRef.current = { category: currentCategory, paramId: currentParamId };
+        console.log("[Effect] Full re-fetch completed. Loading set to false.");
       }
     };
 
@@ -305,6 +321,7 @@ const Index: React.FC = () => {
   // Effect to handle infinite scroll
   useEffect(() => {
     if (page > 0 && hasMoreRef.current && !loadingMore) {
+      console.log(`[Infinite Scroll] Page incremented to ${page}. Initiating fetch for next batch.`);
       const oldestCreatedAt = latestConfessionsRef.current.length > 0 ? latestConfessionsRef.current[latestConfessionsRef.current.length - 1].created_at : undefined;
       fetchConfessionsPage({ category: selectedCategory, oldestCreatedAtForInfiniteScroll: oldestCreatedAt });
     }
@@ -316,6 +333,7 @@ const Index: React.FC = () => {
     if (observer.current) observer.current.disconnect();
     observer.current = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting && hasMoreRef.current) {
+        console.log("[Observer] Last element intersected. Incrementing page.");
         setPage(prev => prev + 1);
       }
     }, { rootMargin: '0px 0px 200px 0px' });
@@ -327,6 +345,7 @@ const Index: React.FC = () => {
     if (!loading && expandedConfessionId) {
       const el = document.getElementById(expandedConfessionId);
       if (el) {
+        console.log(`[Scroll] Scrolling to expanded confession: ${expandedConfessionId}`);
         setTimeout(() => {
           el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 300);
@@ -340,29 +359,40 @@ const Index: React.FC = () => {
       return;
     }
 
+    const currentLength = confessions.length;
+    const prevLength = prevConfessionsLengthRef.current;
+
+    console.log(`[VisibleCount Effect] Current confessions length: ${currentLength}, Previous length: ${prevLength}, Visible count: ${visibleConfessionCount}, Param ID: ${paramId}`);
+
     // If a specific confession is expanded, show all immediately
     if (paramId) {
-      setVisibleConfessionCount(confessions.length);
+      if (visibleConfessionCount !== currentLength) {
+        console.log(`[VisibleCount Effect] Param ID present, setting visibleCount to all (${currentLength}).`);
+        setVisibleConfessionCount(currentLength);
+      }
     }
-    // If we have confessions and the visible count is less than the total confessions,
-    // and we are not currently loading more (meaning a new batch just arrived or it's initial load)
-    else if (!loadingMore && visibleConfessionCount < confessions.length) {
+    // If we have new confessions and haven't started cascading for them yet
+    else if (currentLength > prevLength && visibleConfessionCount < currentLength) {
       // If it's the very first load (page 0) and we haven't started cascading yet
-      if (page === 0 && visibleConfessionCount === 0 && confessions.length > 0) {
+      if (page === 0 && visibleConfessionCount === 0) {
+        console.log("[VisibleCount Effect] Initial load, starting cascade (visibleCount = 1).");
         setVisibleConfessionCount(1); // Start the cascade for the first item
       }
       // If a new batch has been loaded (page > 0) and visibleCount is stuck at the end of the previous batch
-      else if (page > 0 && visibleConfessionCount === prevConfessionsLengthRef.current && confessions.length > prevConfessionsLengthRef.current) {
+      else if (page > 0 && visibleConfessionCount === prevLength) {
+        console.log("[VisibleCount Effect] New batch loaded, kicking off cascade for new items (visibleCount + 1).");
         setVisibleConfessionCount(prev => prev + 1); // Kick off cascade for the first new item in the batch
       }
     }
-    prevConfessionsLengthRef.current = confessions.length; // Update ref for next comparison
+    prevConfessionsLengthRef.current = currentLength; // Update ref for next comparison
   }, [loading, isFormAnimationComplete, paramId, confessions.length, loadingMore, visibleConfessionCount, page]);
 
   const handleAnimationComplete = useCallback(() => {
+    console.log(`[Animation Complete] Confession animation finished. Current visibleCount: ${visibleConfessionCount}, Total confessions: ${confessions.length}, Param ID: ${paramId}`);
     // Continue cascade as long as there are more confessions to show
     // and we are not in a single-confession view (paramId)
     if (!paramId && visibleConfessionCount < confessions.length) {
+      console.log("[Animation Complete] Continuing cascade (visibleCount + 1).");
       setVisibleConfessionCount(prev => prev + 1);
     }
   }, [confessions.length, paramId, visibleConfessionCount]);
@@ -503,7 +533,7 @@ const Index: React.FC = () => {
               onToggleExpand={handleConfessionToggle}
               onSelectCategory={handleSelectCategory}
               shouldOpenCommentsOnLoad={conf.id === expandedConfessionId && location.hash === '#comments'}
-              onAnimationComplete={!paramId ? handleAnimationComplete : undefined} // Always pass if not single view
+              onAnimationComplete={handleAnimationComplete}
               currentCategory={selectedCategory}
             />
           ))}
