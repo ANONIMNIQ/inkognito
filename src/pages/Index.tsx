@@ -260,6 +260,8 @@ const Index: React.FC = () => {
       } else {
         console.log("Last element not intersecting or no more confessions to load.");
       }
+    }, {
+      rootMargin: '0px 0px 200px 0px' // Trigger when 200px from bottom of viewport
     });
     if (node) {
       observer.current.observe(node);
