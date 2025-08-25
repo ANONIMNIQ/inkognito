@@ -224,9 +224,9 @@ const Index: React.FC = () => {
       lastLoadedContextRef.current?.category === currentCategory &&
       lastLoadedContextRef.current?.paramId === currentParamId;
 
-    // If the context hasn't changed, and we're not currently loading, just update expanded state and return.
+    // If the context hasn't changed, just update expanded state and return.
     // This is crucial for smooth expand/collapse of already loaded confessions.
-    if (contextIsSame && !loading) {
+    if (contextIsSame) {
       setExpandedConfessionId(currentParamId || null);
       return;
     }
@@ -278,7 +278,7 @@ const Index: React.FC = () => {
     };
 
     loadData();
-  }, [authLoading, selectedCategory, paramId, paramSlug, fetchConfessionsPage, fetchSingleConfession, loading]);
+  }, [authLoading, selectedCategory, paramId, paramSlug, fetchConfessionsPage, fetchSingleConfession]); // Removed `loading` from dependencies
 
   // Effect to handle infinite scroll
   useEffect(() => {
