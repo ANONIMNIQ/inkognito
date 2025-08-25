@@ -500,6 +500,7 @@ const Index: React.FC = () => {
               onSelectCategory={handleSelectCategory}
               shouldOpenCommentsOnLoad={conf.id === expandedConfessionId && location.hash === '#comments'}
               onAnimationComplete={handleAnimationComplete}
+              currentCategory={selectedCategory} // PASSED: The selected category
             />
           ))}
         </div>

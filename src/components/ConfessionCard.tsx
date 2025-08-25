@@ -56,6 +56,7 @@ interface ConfessionCardProps {
   onSelectCategory: (category: string) => void;
   shouldOpenCommentsOnLoad?: boolean;
   onAnimationComplete?: () => void;
+  currentCategory: string; // ADDED: New prop to pass the current category
 }
 
 const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
@@ -69,6 +70,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   onSelectCategory,
   shouldOpenCommentsOnLoad = false,
   onAnimationComplete,
+  currentCategory, // Destructure the new prop
 }, ref: Ref<HTMLDivElement>) => {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(COMMENTS_PER_PAGE);
@@ -145,7 +147,9 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const handleToggleCommentsLocal = async (forceOpen: boolean = false) => {
     // If the main confession content is not open, navigate to its dedicated page with #comments
     if (!isContentOpen && !forceOpen) {
-      navigate(`/confessions/${confession.id}/${confession.slug}#comments`);
+      // Construct the URL with the current category
+      const categoryParam = currentCategory && currentCategory !== 'Всички' ? `?category=${currentCategory}` : '';
+      navigate(`/confessions/${confession.id}/${confession.slug}${categoryParam}#comments`);
       return; // Exit early, let the navigation and subsequent render handle the rest
     }
 
@@ -187,14 +191,16 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   };
 
   const handleShareConfession = () => {
-    const confessionLink = `${window.location.origin}/confessions/${confession.id}/${confession.slug}`;
+    const categoryParam = currentCategory && currentCategory !== 'Всички' ? `?category=${currentCategory}` : '';
+    const confessionLink = `${window.location.origin}/confessions/${confession.id}/${confession.slug}${categoryParam}`;
     navigator.clipboard.writeText(confessionLink)
       .then(() => toast.success("Link copied to clipboard!"))
       .catch(() => toast.error("Failed to copy link."));
   };
 
   const handleShareComments = () => {
-    const commentsLink = `${window.location.origin}/confessions/${confession.id}/${confession.slug}#comments`;
+    const categoryParam = currentCategory && currentCategory !== 'Всички' ? `?category=${currentCategory}` : '';
+    const commentsLink = `${window.location.origin}/confessions/${confession.id}/${confession.slug}${categoryParam}#comments`;
     navigator.clipboard.writeText(commentsLink)
       .then(() => toast.success("Comments link copied to clipboard!"))
       .catch(() => toast.error("Failed to copy link."));
@@ -290,7 +296,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
             <div className="flex items-center justify-between space-x-4 mb-2">
               <CollapsibleTrigger asChild>
                 <Link
-                  to={`/confessions/${confession.id}/${confession.slug}`}
+                  to={`/confessions/${confession.id}/${confession.slug}${currentCategory && currentCategory !== 'Всички' ? `?category=${currentCategory}` : ''}`}
                   className={cn(
                     "p-0 h-auto text-left text-lg md:text-xl font-semibold hover:no-underline font-serif transition-colors justify-start min-w-0 flex-1",
                     isContentOpen
