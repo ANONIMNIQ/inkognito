@@ -219,9 +219,6 @@ const Index: React.FC = () => {
     const currentCategory = selectedCategory;
     const currentParamId = paramId;
 
-    // Check if the current paramId is already present in the displayed confessions
-    const isConfessionAlreadyDisplayed = currentParamId ? confessions.some(c => c.id === currentParamId) : false;
-
     // Determine if a full re-fetch is necessary
     let needsFullRefetch = false;
 
@@ -233,7 +230,7 @@ const Index: React.FC = () => {
     else if (currentParamId) {
       // If we were previously on a different specific confession, OR
       // if the current specific confession is NOT already displayed in the list.
-      if (lastLoadedContextRef.current?.paramId !== currentParamId && !isConfessionAlreadyDisplayed) {
+      if (lastLoadedContextRef.current?.paramId !== currentParamId || !confessions.some(c => c.id === currentParamId)) {
         needsFullRefetch = true;
       }
     }
@@ -300,7 +297,7 @@ const Index: React.FC = () => {
     };
 
     loadData();
-  }, [authLoading, selectedCategory, paramId, paramSlug, fetchConfessionsPage, fetchSingleConfession, confessions.length]);
+  }, [authLoading, selectedCategory, paramId, paramSlug, fetchConfessionsPage, fetchSingleConfession]); // Removed `confessions.length` from dependencies
 
   // Effect to handle infinite scroll
   useEffect(() => {
