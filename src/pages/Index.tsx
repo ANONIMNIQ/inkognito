@@ -101,10 +101,10 @@ const Index: React.FC = () => {
     if (initialLoad) setLoading(true);
     else setLoadingMore(true);
 
-    try {
-      let allConfessions: Confession[] = [];
-      let newHasMore = true;
+    let allConfessions: Confession[] = []; // Declared here
+    let newHasMore = true; // Declared here
 
+    try {
       if (targetId) { // Detail View Logic
         console.log(`[fetchConfessions] Fetching single confession for ID: ${targetId}`);
         const { data: target, error: targetError } = await supabase.from("confessions").select("*, comments!fk_confession_id(count)").eq("id", targetId).single();
@@ -112,7 +112,7 @@ const Index: React.FC = () => {
         if (target.slug !== targetSlug) {
           console.log(`[fetchConfessions] Redirecting due to slug mismatch: ${targetSlug} vs ${target.slug}`);
           navigate(`/confessions/${target.id}/${target.slug}`, { replace: true });
-          return;
+          return; // Exit early after navigation
         }
 
         const { data: commentsData } = await supabase
@@ -158,6 +158,7 @@ const Index: React.FC = () => {
       toast.error("Error fetching confessions: " + error.message);
       console.error("[fetchConfessions] Error:", error);
       setHasMore(false);
+      allConfessions = []; // Ensure it's an empty array on error
     } finally {
       if (initialLoad) setLoading(false);
       else setLoadingMore(false);
