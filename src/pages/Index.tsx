@@ -193,18 +193,33 @@ const Index: React.FC = () => {
 
   // Effect for infinite scroll on index view
   const lastConfessionElementRef = useCallback(node => {
-    if (loadingMore || paramId) return;
-    if (observer.current) observer.current.disconnect();
+    console.log("lastConfessionElementRef triggered with node:", node);
+    if (loadingMore || paramId) {
+      console.log("Infinite scroll skipped: loadingMore or paramId is active.");
+      return;
+    }
+    if (observer.current) {
+      observer.current.disconnect();
+      console.log("Previous observer disconnected.");
+    }
     observer.current = new IntersectionObserver(entries => {
+      console.log("IntersectionObserver callback triggered. Entries:", entries);
       if (entries[0].isIntersecting && hasMore) {
+        console.log("Last element is intersecting and hasMore is true. Calling setPage.");
         setPage(prev => prev + 1);
+      } else {
+        console.log("Last element not intersecting or no more confessions to load.");
       }
     });
-    if (node) observer.current.observe(node);
+    if (node) {
+      observer.current.observe(node);
+      console.log("New observer observing node:", node);
+    }
   }, [loadingMore, hasMore, paramId]);
 
   useEffect(() => {
     if (page > 0 && !paramId) {
+      console.log(`Page changed to ${page}. Initiating fetchConfessions for more data.`);
       setLoadingMore(true);
       fetchConfessions({ initialLoad: false, category: selectedCategory, currentPage: page });
     }
