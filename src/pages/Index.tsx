@@ -153,18 +153,33 @@ const Index: React.FC = () => {
   }, []);
 
   // Function to fetch a single confession with its comments
-  const fetchSingleConfession = useCallback(async (id: string, slug: string, category: string) => {
+  const fetchSingleConfession = useCallback(async (id: string, slug: string, categoryFromUrl: string) => {
     try {
-      let query = supabase.from("confessions").select("*").eq("id", id);
-      if (category !== "Всички") query = query.eq("category", category);
-      const { data: confessionData, error: confessionError } = await query.single();
+      // First, fetch the confession by ID without category filter
+      const { data: confessionData, error: confessionError } = await supabase
+        .from("confessions")
+        .select("*")
+        .eq("id", id)
+        .single();
 
       if (confessionError || !confessionData) {
-        throw new Error("Confession not found or category mismatch.");
+        throw new Error("Confession not found.");
       }
+
+      // Check slug consistency
       if (confessionData.slug !== slug) {
-        navigate(`/confessions/${confessionData.id}/${confessionData.slug}${location.search}`, { replace: true });
-        return null;
+        // If slug is wrong, navigate to correct slug, preserving category if it matches
+        const newSearch = (categoryFromUrl !== "Всички" && confessionData.category === categoryFromUrl) ? `?category=${categoryFromUrl}` : '';
+        navigate(`/confessions/${confessionData.id}/${confessionData.slug}${newSearch}`, { replace: true });
+        return null; // Indicate that navigation happened
+      }
+
+      // Check category consistency
+      if (categoryFromUrl !== "Всички" && confessionData.category !== categoryFromUrl) {
+        // If category in URL doesn't match actual category, update URL to reflect actual category
+        const newSearch = confessionData.category !== "Всички" ? `?category=${confessionData.category}` : '';
+        navigate(`/confessions/${confessionData.id}/${confessionData.slug}${newSearch}`, { replace: true });
+        return null; // Indicate that navigation happened
       }
 
       const { data: commentsData, error: commentsError } = await supabase.from("comments").select("*").eq("confession_id", id).order("created_at", { ascending: false });
@@ -178,11 +193,11 @@ const Index: React.FC = () => {
       return formattedConfession;
     } catch (error: any) {
       toast.error("Error fetching confession details: " + error.message);
-      navigate(`/${location.search}`, { replace: true });
+      // If any other error (e.g., confession not found), redirect to main page without category
+      navigate(`/`, { replace: true });
       return null;
     }
-  }, [navigate, location.search]);
-
+  }, [navigate]); // Removed location.search from dependencies as it's passed as categoryFromUrl
 
   // Effect to update selectedCategory from URL search params
   useEffect(() => {
@@ -233,24 +248,27 @@ const Index: React.FC = () => {
     const loadData = async () => {
       if (currentParamId && !isConfessionAlreadyInList) { // Only fetch single if it's a direct link AND not already in list
         const targetConf = await fetchSingleConfession(currentParamId, paramSlug!, currentCategory);
-        if (targetConf) {
-          // Fetch confessions before and after the target
-          const { data: beforeData } = await supabase.from("confessions").select("*").lt("created_at", targetConf.created_at).order("created_at", { ascending: false });
-          const { data: afterData } = await supabase.from("confessions").select("*").gt("created_at", targetConf.created_at).order("created_at", { ascending: true });
-
-          const formatConfession = (c: any) => ({ ...c, comment_count: 0, comments: [] });
-          const combinedConfessions = [
-            ...(afterData || []).reverse().map(formatConfession),
-            targetConf,
-            ...(beforeData || []).map(formatConfession)
-          ];
-          
-          const uniqueConfessions = Array.from(new Map(combinedConfessions.map(c => [c.id, c])).values())
-                                        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-          setConfessions(uniqueConfessions);
-          setHasMore((beforeData || []).length === CONFESSIONS_PER_PAGE);
+        if (!targetConf) {
+          // If fetchSingleConfession returned null, it means it handled navigation internally.
+          // We should stop this loadData execution and let the new URL trigger a fresh useEffect.
+          return; 
         }
+        // Fetch confessions before and after the target
+        const { data: beforeData } = await supabase.from("confessions").select("*").lt("created_at", targetConf.created_at).order("created_at", { ascending: false });
+        const { data: afterData } = await supabase.from("confessions").select("*").gt("created_at", targetConf.created_at).order("created_at", { ascending: true });
+
+        const formatConfession = (c: any) => ({ ...c, comment_count: 0, comments: [] });
+        const combinedConfessions = [
+          ...(afterData || []).reverse().map(formatConfession),
+          targetConf,
+          ...(beforeData || []).map(formatConfession)
+        ];
+        
+        const uniqueConfessions = Array.from(new Map(combinedConfessions.map(c => [c.id, c])).values())
+                                      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+        setConfessions(uniqueConfessions);
+        setHasMore((beforeData || []).length === CONFESSIONS_PER_PAGE);
       } else {
         await fetchConfessionsPage({ category: currentCategory });
       }
