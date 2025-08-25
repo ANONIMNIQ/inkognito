@@ -52,7 +52,6 @@ const Index: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("Всички"); // Local UI state, updated from URL
   const [visibleConfessionCount, setVisibleConfessionCount] = useState(0);
   const [isFormAnimationComplete, setIsFormAnimationComplete] = useState(false);
-  const [isInitialLoadForParams, setIsInitialLoadForParams] = useState(true); // New state for initial load
 
   const confessionFormContainerRef = useRef<HTMLDivElement>(null);
   const observer = useRef<IntersectionObserver>();
@@ -63,7 +62,7 @@ const Index: React.FC = () => {
   const latestConfessionsRef = useRef<Confession[]>([]);
   
   // Ref to track the category and paramId that the current `confessions` array was loaded for
-  const lastFetchedIdentifierRef = useRef<{ category: string; paramId: string | undefined } | null>(null);
+  const lastLoadedContextRef = useRef<{ category: string; paramId: string | undefined } | null>(null);
 
   useEffect(() => {
     hasMoreRef.current = hasMore;
@@ -203,7 +202,7 @@ const Index: React.FC = () => {
       navigate(redirectPath, { replace: true }); // Redirect to main page with category
       return null;
     }
-  }, [navigate, searchParams]); // Added searchParams to dependencies
+  }, [navigate, searchParams]);
 
   // Effect to update selectedCategory from URL search params
   useEffect(() => {
@@ -213,73 +212,54 @@ const Index: React.FC = () => {
     }
   }, [searchParams, selectedCategory]);
 
-  // Effect to update expandedConfessionId from URL params
+  // Main data loading effect
   useEffect(() => {
-    setExpandedConfessionId(paramId || null);
-  }, [paramId]);
-
-  // Main data loading effect: triggered by category change or initial mount/paramId change
-  useEffect(() => {
-    if (authLoading) return;
+    if (authLoading) return; // Wait for auth to load
 
     const currentCategory = selectedCategory;
     const currentParamId = paramId;
 
-    // Check if the targeted confession is already in the current list
-    const isConfessionAlreadyInList = currentParamId && confessions.some(c => c.id === currentParamId);
+    // Check if the current context (category + paramId) is the same as the last loaded context
+    const contextIsSame = 
+      lastLoadedContextRef.current?.category === currentCategory &&
+      lastLoadedContextRef.current?.paramId === currentParamId;
 
-    // Determine if a full re-fetch is needed
-    // 1. Initial load (first time component mounts or after a full reset)
-    // 2. Category changed
-    // 3. Expanding to a specific confession ID that is NOT currently in our 'confessions' array
-    let shouldPerformFullRefetch = false;
-
-    if (isInitialLoadForParams) {
-      shouldPerformFullRefetch = true;
-    } else if (lastFetchedIdentifierRef.current?.category !== currentCategory) {
-      shouldPerformFullRefetch = true;
-    } else if (currentParamId && !isConfessionAlreadyInList) {
-      shouldPerformFullRefetch = true;
-    }
-    // If none of the above, it means:
-    // - Not initial load
-    // - Category has NOT changed
-    // - Not expanding to a new confession (either currentParamId is null, or it's already in the list)
-    // In this case, we should NOT perform a full re-fetch.
-    // The UI state (expandedConfessionId) will update, and the existing 'confessions' array is sufficient.
-
-    if (!shouldPerformFullRefetch) {
-      setLoading(false); 
+    // If the context hasn't changed, and we're not currently loading, just update expanded state and return.
+    // This is crucial for smooth expand/collapse of already loaded confessions.
+    if (contextIsSame && !loading) {
+      setExpandedConfessionId(currentParamId || null);
       return;
     }
 
+    // If we reach here, the context has changed, so we need to perform a full re-fetch.
     setLoading(true);
-    setConfessions([]); // Clear for a fresh load
+    setConfessions([]); // Clear existing confessions for a fresh load
     setPage(0);
     setHasMore(true);
     setVisibleConfessionCount(0);
+    setExpandedConfessionId(currentParamId || null); // Update expanded state immediately
 
     const loadData = async () => {
       if (currentParamId) {
+        // Fetch the specific confession and its surroundings
         const targetConf = await fetchSingleConfession(currentParamId, paramSlug!, currentCategory);
         if (!targetConf) {
           setLoading(false);
-          setIsInitialLoadForParams(false); // Mark as not initial load for next render
-          return; // fetchSingleConfession handled navigation, stop this loadData
+          lastLoadedContextRef.current = { category: currentCategory, paramId: currentParamId };
+          return;
         }
 
-        // Fetch surrounding confessions for context, respecting category
         let beforeQuery = supabase.from("confessions").select("*").lt("created_at", targetConf.created_at).order("created_at", { ascending: false });
         if (currentCategory !== "Всички") beforeQuery = beforeQuery.eq("category", currentCategory);
-        const { data: beforeData } = await beforeQuery.limit(CONFESSIONS_PER_PAGE / 2); // Fetch some before
+        const { data: beforeData } = await beforeQuery.limit(CONFESSIONS_PER_PAGE / 2);
 
         let afterQuery = supabase.from("confessions").select("*").gt("created_at", targetConf.created_at).order("created_at", { ascending: true });
         if (currentCategory !== "Всички") afterQuery = afterQuery.eq("category", currentCategory);
-        const { data: afterData } = await afterQuery.limit(CONFESSIONS_PER_PAGE / 2); // Fetch some after
+        const { data: afterData } = await afterQuery.limit(CONFESSIONS_PER_PAGE / 2);
 
         const formatConfession = (c: any) => ({ ...c, comment_count: 0, comments: [] });
         const combinedConfessions = [
-          ...(afterData || []).reverse().map(formatConfession), // Reverse 'after' to maintain descending order
+          ...(afterData || []).reverse().map(formatConfession),
           targetConf,
           ...(beforeData || []).map(formatConfession)
         ];
@@ -288,18 +268,17 @@ const Index: React.FC = () => {
                                       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
         setConfessions(uniqueConfessions);
-        setHasMore(false); // When a specific confession is loaded, we don't do infinite scroll initially
+        setHasMore(false); // No infinite scroll when focused on a single confession
       } else {
-        // If no specific confession, load the main list for the category
+        // Fetch the main list for the current category
         await fetchConfessionsPage({ category: currentCategory });
       }
       setLoading(false);
-      setIsInitialLoadForParams(false); // Mark as not initial load for next render
-      lastFetchedIdentifierRef.current = { category: currentCategory, paramId: currentParamId };
+      lastLoadedContextRef.current = { category: currentCategory, paramId: currentParamId };
     };
 
     loadData();
-  }, [authLoading, selectedCategory, paramId, paramSlug, fetchConfessionsPage, confessions.length, isInitialLoadForParams, fetchSingleConfession]); // Added confessions.length and isInitialLoadForParams to dependencies
+  }, [authLoading, selectedCategory, paramId, paramSlug, fetchConfessionsPage, fetchSingleConfession, loading]);
 
   // Effect to handle infinite scroll
   useEffect(() => {
@@ -423,7 +402,7 @@ const Index: React.FC = () => {
       newPath = `/confessions/${confessionId}/${slug}`;
     } else { // If collapsing this confession
       // Keep the current category in the URL, but remove the confession ID/slug
-      newPath = location.pathname.split('/confessions')[0] || '/'; // This will be '/'
+      newPath = '/'; // Start with root
     }
 
     // Append category if present
