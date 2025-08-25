@@ -67,9 +67,10 @@ const Index: React.FC = () => {
     hasMoreRef.current = hasMore;
   }, [hasMore]);
 
-  useEffect(() => {
-    latestConfessionsRef.current = confessions;
-  }, [confessions]);
+  // Removed this useEffect as latestConfessionsRef will now be updated synchronously
+  // useEffect(() => {
+  //   latestConfessionsRef.current = confessions;
+  // }, [confessions]);
 
   useEffect(() => {
     loadingMoreRef.current = loadingMore; // Keep loadingMoreRef updated
@@ -90,11 +91,16 @@ const Index: React.FC = () => {
                 if (confession.comments.some(c => c.id === newComment.id)) {
                   return confession;
                 }
-                return {
+                const updatedConfession = {
                   ...confession,
                   comment_count: confession.comment_count + 1,
                   comments: [newComment, ...confession.comments],
                 };
+                // Update ref here for real-time comments
+                latestConfessionsRef.current = latestConfessionsRef.current.map(c => 
+                  c.id === updatedConfession.id ? updatedConfession : c
+                );
+                return updatedConfession;
               }
               return confession;
             });
@@ -149,6 +155,7 @@ const Index: React.FC = () => {
         const newUniqueConfessions = fetchedData.filter(c => !existingIds.has(c.id));
         console.log(`[State] setConfessions - New unique confessions added: ${newUniqueConfessions.length}`);
         const newState = [...prev, ...newUniqueConfessions];
+        latestConfessionsRef.current = newState; // Synchronously update ref
         console.log(`[State] setConfessions - New state length: ${newState.length}`);
         return newState;
       });
@@ -294,6 +301,7 @@ const Index: React.FC = () => {
                                           .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
             setConfessions(uniqueConfessions);
+            latestConfessionsRef.current = uniqueConfessions; // Synchronously update ref
             setHasMore(false);
           } else {
             await fetchConfessionsPage({ category: currentCategory });
