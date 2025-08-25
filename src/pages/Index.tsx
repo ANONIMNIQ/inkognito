@@ -114,7 +114,7 @@ const Index: React.FC = () => {
     { initialLoad = false, category = "Всички", targetId, targetSlug, oldestCreatedAtForInfiniteScroll }:
     { initialLoad?: boolean; category?: string; targetId?: string; targetSlug?: string; oldestCreatedAtForInfiniteScroll?: string }
   ) => {
-    console.log(`fetchConfessions called: initialLoad=${initialLoad}, targetId=${targetId}, oldestCreatedAtForInfiniteScroll=${oldestCreatedAtForInfiniteScroll}`);
+    console.log(`fetchConfessions called with: initialLoad=${initialLoad}, targetId=${targetId}, oldestCreatedAtForInfiniteScroll=${oldestCreatedAtForInfiniteScroll}, receivedCategory=${category}`);
     if (initialLoad) {
       setLoading(true);
     } else {
@@ -132,9 +132,15 @@ const Index: React.FC = () => {
       let newHasMore = true;
 
       if (targetId && initialLoad) { // Initial load for detail view
-        console.log(`fetchConfessions: Initial detail view fetch for target confession ${targetId}.`);
-        const { data: target, error: targetError } = await supabase.from("confessions").select("*, comments!fk_confession_id(count)").eq("id", targetId).single();
-        if (targetError || !target) throw new Error("Confession not found.");
+        console.log(`fetchConfessions: Initial detail view fetch for target confession ${targetId}. Applying category: ${category}`);
+        let targetQuery = supabase.from("confessions").select("*, comments!fk_confession_id(count)").eq("id", targetId);
+        if (category !== "Всички") targetQuery = targetQuery.eq("category", category);
+        const { data: target, error: targetError } = await targetQuery.single();
+        
+        if (targetError || !target) {
+          console.error("Confession not found or category mismatch for targetId:", targetId, "Category:", category, "Error:", targetError);
+          throw new Error("Confession not found or category mismatch.");
+        }
         if (target.slug !== targetSlug) {
           navigate(`/confessions/${target.id}/${target.slug}`, { replace: true });
           return;
@@ -156,8 +162,6 @@ const Index: React.FC = () => {
         
         const format = (c: any, comments: any[] = []) => ({ ...c, comment_count: c.comments[0]?.count || 0, comments });
         
-        const targetWithComments = format(target, commentsData || []);
-        
         fetchedData = [
           ...(after || []).reverse().map(c => format(c)), 
           targetWithComments, 
@@ -168,6 +172,7 @@ const Index: React.FC = () => {
 
       } else { // Index View Logic OR subsequent infinite scroll (both index and detail views)
         let query = supabase.from("confessions").select("*").order("created_at", { ascending: false });
+        console.log(`Applying category filter for index/infinite scroll: ${category}`);
         if (category !== "Всички") query = query.eq("category", category);
 
         if (oldestCreatedAtForInfiniteScroll) { // Subsequent load, fetch older than the oldest currently loaded
@@ -230,7 +235,7 @@ const Index: React.FC = () => {
         console.log("fetchConfessions: Infinite scroll load complete - setting loadingMore to false.");
       }
     }
-  }, [navigate, selectedCategory]); // Added selectedCategory to dependencies
+  }, [navigate]); // Removed selectedCategory from dependencies here
 
   // This is the main effect that reacts to URL changes and triggers initial/context-based fetches
   useEffect(() => {
@@ -251,11 +256,14 @@ const Index: React.FC = () => {
       setSelectedCategory(categoryFromUrl); // This updates selectedCategory
       setVisibleConfessionCount(0); // Reset animation chain
 
-      if (paramId) {
-        fetchConfessions({ initialLoad: true, targetId: paramId, targetSlug: paramSlug, category: categoryFromUrl }); // Pass category to detail view fetch
-      } else {
-        fetchConfessions({ initialLoad: true, category: categoryFromUrl }); // No currentPage needed here, fetchConfessions handles range(0, N-1)
-      }
+      // Use a setTimeout to ensure fetchConfessions is called after selectedCategory state update has potentially propagated
+      setTimeout(() => {
+        if (paramId) {
+          fetchConfessions({ initialLoad: true, targetId: paramId, targetSlug: paramSlug, category: categoryFromUrl }); // Pass category to detail view fetch
+        } else {
+          fetchConfessions({ initialLoad: true, category: categoryFromUrl }); // Pass category to index view fetch
+        }
+      }, 0); // Small delay to allow state update to settle
     }
     
     setExpandedConfessionId(paramId || null);
@@ -302,13 +310,13 @@ const Index: React.FC = () => {
 
   useEffect(() => {
     if (page > 0 && hasMoreRef.current) { // Use hasMoreRef.current here too
-      console.log(`Page changed to ${page}. Initiating fetchConfessions for more data. Current hasMore: ${hasMoreRef.current}`);
+      console.log(`Page changed to ${page}. Initiating fetchConfessions for more data. Current hasMore: ${hasMoreRef.current}, current selectedCategory: ${selectedCategory}`);
       const oldestCreatedAt = latestConfessionsRef.current.length > 0 ? latestConfessionsRef.current[latestConfessionsRef.current.length - 1].created_at : undefined;
       fetchConfessions({ initialLoad: false, category: selectedCategory, oldestCreatedAtForInfiniteScroll: oldestCreatedAt });
     } else if (page > 0 && !hasMoreRef.current) {
       console.log(`Page changed to ${page} but hasMore is false. Not fetching.`);
     }
-  }, [page, selectedCategory, fetchConfessions]); // Removed confessions from dependencies here
+  }, [page, selectedCategory, fetchConfessions]); // selectedCategory is still needed here to trigger re-fetch when category changes and page is > 0
 
   // Scroll to expanded confession and potentially comments
   useEffect(() => {
