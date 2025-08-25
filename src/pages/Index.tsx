@@ -299,7 +299,7 @@ const Index: React.FC = () => {
     };
 
     loadData();
-  }, [authLoading, selectedCategory, paramId, paramSlug, fetchConfessionsPage, fetchSingleConfession, confessions.length]); // Added confessions.length back to dependencies for cascade animation logic
+  }, [authLoading, selectedCategory, paramId, paramSlug, fetchConfessionsPage, fetchSingleConfession, confessions.length]);
 
   // Effect to handle infinite scroll
   useEffect(() => {
@@ -435,12 +435,14 @@ const Index: React.FC = () => {
   };
 
   const handleSelectCategory = (category: string) => {
-    const currentPath = paramId ? `/confessions/${paramId}/${paramSlug}` : '/';
+    // When selecting a new category, always navigate to the root path for that category.
+    // This ensures any currently expanded confession is "collapsed" and the feed is reset.
+    let newPath = '/';
     let newSearch = '';
     if (category !== "Всички") {
       newSearch = `?category=${category}`;
     }
-    navigate(`${currentPath}${newSearch}`, { replace: true });
+    navigate(`${newPath}${newSearch}`, { replace: true });
   };
   
   useEffect(() => {
