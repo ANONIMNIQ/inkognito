@@ -258,6 +258,7 @@ const Index: React.FC = () => {
     setPage(0);
     setHasMore(true);
     setVisibleConfessionCount(0);
+    prevConfessionsLengthRef.current = 0; // Reset this too
     setExpandedConfessionId(currentParamId || null); // Update expanded state immediately
 
     const loadData = async () => {
@@ -333,7 +334,7 @@ const Index: React.FC = () => {
     }
   }, [loading, expandedConfessionId, location.hash]);
 
-  // Effect to manage initial visible count and kick off cascade
+  // Effect to manage initial visible count and kick off cascade for new batches
   useEffect(() => {
     if (loading || !isFormAnimationComplete) {
       return;
@@ -343,11 +344,20 @@ const Index: React.FC = () => {
     if (paramId) {
       setVisibleConfessionCount(confessions.length);
     }
-    // Otherwise, if we have confessions and haven't started cascading, start it.
-    else if (confessions.length > 0 && visibleConfessionCount === 0) {
-      setVisibleConfessionCount(1);
+    // If we have confessions and the visible count is less than the total confessions,
+    // and we are not currently loading more (meaning a new batch just arrived or it's initial load)
+    else if (!loadingMore && visibleConfessionCount < confessions.length) {
+      // If it's the very first load (page 0) and we haven't started cascading yet
+      if (page === 0 && visibleConfessionCount === 0 && confessions.length > 0) {
+        setVisibleConfessionCount(1); // Start the cascade for the first item
+      }
+      // If a new batch has been loaded (page > 0) and visibleCount is stuck at the end of the previous batch
+      else if (page > 0 && visibleConfessionCount === prevConfessionsLengthRef.current && confessions.length > prevConfessionsLengthRef.current) {
+        setVisibleConfessionCount(prev => prev + 1); // Kick off cascade for the first new item in the batch
+      }
     }
-  }, [loading, isFormAnimationComplete, paramId, confessions.length, visibleConfessionCount]);
+    prevConfessionsLengthRef.current = confessions.length; // Update ref for next comparison
+  }, [loading, isFormAnimationComplete, paramId, confessions.length, loadingMore, visibleConfessionCount, page]);
 
   const handleAnimationComplete = useCallback(() => {
     // Continue cascade as long as there are more confessions to show
@@ -493,7 +503,7 @@ const Index: React.FC = () => {
               onToggleExpand={handleConfessionToggle}
               onSelectCategory={handleSelectCategory}
               shouldOpenCommentsOnLoad={conf.id === expandedConfessionId && location.hash === '#comments'}
-              onAnimationComplete={handleAnimationComplete}
+              onAnimationComplete={!paramId ? handleAnimationComplete : undefined} // Always pass if not single view
               currentCategory={selectedCategory}
             />
           ))}
