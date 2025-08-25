@@ -42,8 +42,8 @@ const Index: React.FC = () => {
 
   const { loading: authLoading } = useSessionContext();
   const [confessions, setConfessions] = useState<Confession[]>([]);
-  const [loading, setLoading] = useState(true); // Initial load state for the whole page
-  const [loadingMore, setLoadingMore] = useState(false); // State for subsequent infinite scroll loads
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [expandedConfessionId, setExpandedConfessionId] = useState<string | null>(null);
@@ -56,6 +56,7 @@ const Index: React.FC = () => {
   const confessionFormContainerRef = useRef<HTMLDivElement>(null);
   const observer = useRef<IntersectionObserver>();
   const { lockScroll, unlockScroll } = useScrollLock();
+  const initialLoadDone = useRef(false);
 
   const prevConfessionsLengthRef = useRef(0);
   const hasMoreRef = useRef(hasMore);
@@ -68,8 +69,6 @@ const Index: React.FC = () => {
   useEffect(() => {
     latestConfessionsRef.current = confessions;
   }, [confessions]);
-
-  console.log("Index component render: loading =", loading, "loadingMore =", loadingMore, "page =", page, "confessions.length =", confessions.length, "visibleConfessionCount =", visibleConfessionCount);
 
   useEffect(() => {
     const commentsChannel = supabase
@@ -107,31 +106,19 @@ const Index: React.FC = () => {
     { initialLoad = false, category = "Всички", targetId, targetSlug, oldestCreatedAtForInfiniteScroll }:
     { initialLoad?: boolean; category?: string; targetId?: string; targetSlug?: string; oldestCreatedAtForInfiniteScroll?: string }
   ) => {
-    console.log(`fetchConfessions called with: initialLoad=${initialLoad}, targetId=${targetId}, oldestCreatedAtForInfiniteScroll=${oldestCreatedAtForInfiniteScroll}, receivedCategory=${category}`);
-    if (initialLoad) {
-      setLoading(true);
-    } else {
-      setLoadingMore(true);
-    }
-
-    if (!initialLoad) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
+    if (initialLoad) setLoading(true);
+    else setLoadingMore(true);
 
     try {
       let fetchedData: Confession[] = [];
       let newHasMore = true;
 
       if (targetId && initialLoad) {
-        console.log(`fetchConfessions: Initial detail view fetch for target confession ${targetId}. Applying category: ${category}`);
         let targetQuery = supabase.from("confessions").select("*, comments!fk_confession_id(count)").eq("id", targetId);
         if (category !== "Всички") targetQuery = targetQuery.eq("category", category);
         const { data: target, error: targetError } = await targetQuery.single();
         
-        if (targetError || !target) {
-          console.error("Confession not found or category mismatch for targetId:", targetId, "Category:", category, "Error:", targetError);
-          throw new Error("Confession not found or category mismatch.");
-        }
+        if (targetError || !target) throw new Error("Confession not found or category mismatch.");
         if (target.slug !== targetSlug) {
           navigate(`/confessions/${target.id}/${target.slug}`, { replace: true });
           return;
@@ -156,18 +143,13 @@ const Index: React.FC = () => {
           ...(before || []).map(c => format(c))
         ];
         newHasMore = (before || []).length === CONFESSIONS_PER_PAGE;
-        console.log(`fetchConfessions: Detail view initial load fetched ${fetchedData.length} confessions. Has more: ${newHasMore}`);
-
       } else {
         let query = supabase.from("confessions").select("*").order("created_at", { ascending: false });
-        console.log(`Applying category filter for index/infinite scroll: ${category}`);
         if (category !== "Всички") query = query.eq("category", category);
 
         if (oldestCreatedAtForInfiniteScroll) {
-          console.log(`fetchConfessions: Infinite scroll fetching older than ${oldestCreatedAtForInfiniteScroll}.`);
           query = query.lt("created_at", oldestCreatedAtForInfiniteScroll);
         } else {
-          console.log(`fetchConfessions: Index view initial fetch. Range: 0-${CONFESSIONS_PER_PAGE - 1}`);
           query = query.range(0, CONFESSIONS_PER_PAGE - 1);
         }
         
@@ -177,43 +159,29 @@ const Index: React.FC = () => {
         const confessionIds = data.map(c => c.id);
         let commentsCountMap = new Map<string, number>();
         if (confessionIds.length > 0) {
-          const { data: commentsRaw, error: commentsRawError } = await supabase.from('comments').select('confession_id').in('confession_id', confessionIds);
-          if (commentsRawError) {
-            console.error("Error fetching raw comments for counting:", commentsRawError);
-            toast.error("Error fetching comment counts: " + commentsRawError.message);
-          } else {
-            commentsRaw?.forEach(comment => {
-              commentsCountMap.set(comment.confession_id, (commentsCountMap.get(comment.confession_id) || 0) + 1);
-            });
-          }
+          const { data: commentsRaw } = await supabase.from('comments').select('confession_id').in('confession_id', confessionIds);
+          commentsRaw?.forEach(comment => {
+            commentsCountMap.set(comment.confession_id, (commentsCountMap.get(comment.confession_id) || 0) + 1);
+          });
         }
 
         fetchedData = data.map((c: any) => ({ ...c, comment_count: commentsCountMap.get(c.id) || 0, comments: [] }));
         newHasMore = data.length === CONFESSIONS_PER_PAGE;
-        console.log(`fetchConfessions: Subsequent load processed ${fetchedData.length} confessions. Has more: ${newHasMore}`);
       }
 
       setHasMore(newHasMore);
       setConfessions(prev => {
-        if (initialLoad) {
-          return fetchedData;
-        }
+        if (initialLoad) return fetchedData;
         const existingIds = new Set(prev.map(c => c.id));
         const newUniqueConfessions = fetchedData.filter(c => !existingIds.has(c.id));
         return [...prev, ...newUniqueConfessions];
       });
-
     } catch (error: any) {
       toast.error("Error fetching confessions: " + error.message);
       setHasMore(false);
     } finally {
-      if (initialLoad) {
-        setLoading(false);
-        console.log("fetchConfessions: Initial load complete - setting loading to false.");
-      } else {
-        setLoadingMore(false);
-        console.log("fetchConfessions: Infinite scroll load complete - setting loadingMore to false.");
-      }
+      if (initialLoad) setLoading(false);
+      else setLoadingMore(false);
     }
   }, [navigate]);
 
@@ -221,32 +189,30 @@ const Index: React.FC = () => {
     if (authLoading) return;
 
     const categoryFromUrl = searchParams.get('category') || "Всички";
-    
-    console.log("URL change detected. Resetting state and fetching for new context.");
-    setLoading(true);
-    setConfessions([]);
-    setPage(0);
-    setHasMore(true);
-    setSelectedCategory(categoryFromUrl);
+    const isInitialLoad = !initialLoadDone.current;
+    const isCategoryChange = initialLoadDone.current && categoryFromUrl !== selectedCategory;
+
+    if (isInitialLoad || isCategoryChange) {
+      if (isInitialLoad) initialLoadDone.current = true;
+      
+      setLoading(true);
+      setConfessions([]);
+      setPage(0);
+      setHasMore(true);
+      setSelectedCategory(categoryFromUrl);
+      setVisibleConfessionCount(0);
+
+      if (isInitialLoad && paramId) {
+        fetchConfessions({ initialLoad: true, targetId: paramId, targetSlug: paramSlug, category: categoryFromUrl });
+      } else {
+        fetchConfessions({ initialLoad: true, category: categoryFromUrl });
+      }
+    }
+  }, [authLoading, searchParams, selectedCategory, paramId, paramSlug, fetchConfessions]);
+
+  useEffect(() => {
     setExpandedConfessionId(paramId || null);
-    setVisibleConfessionCount(0);
-
-    if (paramId) {
-      fetchConfessions({ initialLoad: true, targetId: paramId, targetSlug: paramSlug, category: categoryFromUrl });
-    } else {
-      fetchConfessions({ initialLoad: true, category: categoryFromUrl });
-    }
-
-    if (searchParams.get('compose') === 'true') {
-      setForceExpandForm(true);
-      setTimeout(() => {
-        confessionFormContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        const newSearchParams = new URLSearchParams(searchParams);
-        newSearchParams.delete('compose');
-        setSearchParams(newSearchParams, { replace: true });
-      }, 100);
-    }
-  }, [authLoading, paramId, paramSlug, searchParams, fetchConfessions]);
+  }, [paramId]);
 
   const lastConfessionElementRef = useCallback(node => {
     if (loading || loadingMore) return;
@@ -261,11 +227,8 @@ const Index: React.FC = () => {
 
   useEffect(() => {
     if (page > 0 && hasMoreRef.current) {
-      console.log(`Page changed to ${page}. Initiating fetchConfessions for more data. Current hasMore: ${hasMoreRef.current}, current selectedCategory: ${selectedCategory}`);
       const oldestCreatedAt = latestConfessionsRef.current.length > 0 ? latestConfessionsRef.current[latestConfessionsRef.current.length - 1].created_at : undefined;
       fetchConfessions({ initialLoad: false, category: selectedCategory, oldestCreatedAtForInfiniteScroll: oldestCreatedAt });
-    } else if (page > 0 && !hasMoreRef.current) {
-      console.log(`Page changed to ${page} but hasMore is false. Not fetching.`);
     }
   }, [page, selectedCategory, fetchConfessions]);
 
@@ -299,9 +262,7 @@ const Index: React.FC = () => {
 
   const handleAnimationComplete = useCallback(() => {
     setVisibleConfessionCount(prev => {
-      if (prev < confessions.length) {
-        return prev + 1;
-      }
+      if (prev < confessions.length) return prev + 1;
       return prev;
     });
   }, [confessions.length]);
@@ -354,10 +315,12 @@ const Index: React.FC = () => {
   };
 
   const handleConfessionToggle = (confessionId: string, slug: string) => {
-    if (expandedConfessionId === confessionId) {
-      navigate('/');
+    const newExpandedId = expandedConfessionId === confessionId ? null : confessionId;
+    const search = location.search;
+    if (newExpandedId) {
+      navigate(`/confessions/${confessionId}/${slug}${search}`, { replace: true });
     } else {
-      navigate(`/confessions/${confessionId}/${slug}`);
+      navigate(`/${search}`, { replace: true });
     }
   };
 
@@ -396,7 +359,7 @@ const Index: React.FC = () => {
       <div ref={confessionFormContainerRef}>
         <ConfessionForm
           onSubmit={handleAddConfession}
-          onFormFocus={() => setExpandedConfessionId(null)}
+          onFormFocus={() => { if (expandedConfessionId) navigate(`/${location.search}`, { replace: true }); }}
           forceExpand={forceExpandForm}
           onFormExpanded={() => setForceExpandForm(false)}
           onAnimationComplete={() => {
