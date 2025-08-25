@@ -97,6 +97,12 @@ const Index: React.FC = () => {
     if (initialLoad) setLoading(true);
     else setLoadingMore(true);
 
+    // --- TEMPORARY: Add artificial delay for testing skeleton loaders ---
+    if (!initialLoad) {
+      await new Promise(resolve => setTimeout(resolve, 1000)); // 1-second delay
+    }
+    // ------------------------------------------------------------------
+
     try {
       let allConfessions: Confession[] = [];
       let newHasMore = true;
