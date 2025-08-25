@@ -57,6 +57,9 @@ const Index: React.FC = () => {
   const observer = useRef<IntersectionObserver>();
   const { lockScroll, unlockScroll } = useScrollLock();
 
+  // Ref to store the previous length of the confessions array
+  const prevConfessionsLengthRef = useRef(0);
+
   // Debugging log for component render
   console.log("Index component render: loading =", loading, "loadingMore =", loadingMore, "page =", page, "confessions.length =", confessions.length, "visibleConfessionCount =", visibleConfessionCount);
 
@@ -294,14 +297,24 @@ const Index: React.FC = () => {
       if (paramId) {
         // If it's a direct link, show all loaded confessions immediately without animation chain
         setVisibleConfessionCount(confessions.length);
-      } else if (confessions.length > 0 && visibleConfessionCount === 0) {
-        // Otherwise, start the animation chain for the first card
-        setVisibleConfessionCount(1);
-      } else if (!loadingMore && confessions.length > visibleConfessionCount) {
-        // If loadingMore just finished and there are new confessions, show them all
-        setVisibleConfessionCount(confessions.length);
+      } else {
+        const currentConfessionsLength = confessions.length;
+        const previousConfessionsLength = prevConfessionsLengthRef.current;
+
+        // Condition 1: Initial load, start cascade from 1
+        if (currentConfessionsLength > 0 && visibleConfessionCount === 0) {
+          setVisibleConfessionCount(1);
+        } 
+        // Condition 2: New batch loaded via infinite scroll, continue cascade
+        // This triggers when `loadingMore` becomes false, `confessions.length` has increased,
+        // and `visibleConfessionCount` is at the end of the *previous* batch.
+        else if (!loadingMore && currentConfessionsLength > previousConfessionsLength && visibleConfessionCount === previousConfessionsLength) {
+          setVisibleConfessionCount(previousConfessionsLength + 1);
+        }
       }
     }
+    // Update the ref with the current confessions length for the next render cycle
+    prevConfessionsLengthRef.current = confessions.length;
   }, [loading, isFormAnimationComplete, paramId, confessions.length, visibleConfessionCount, loadingMore]);
 
   const handleAnimationComplete = useCallback(() => {
