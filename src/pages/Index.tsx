@@ -58,7 +58,7 @@ const Index: React.FC = () => {
   const { lockScroll, unlockScroll } = useScrollLock();
 
   // Debugging log for component render
-  console.log("Index component render: loading =", loading, "loadingMore =", loadingMore, "page =", page, "confessions.length =", confessions.length);
+  console.log("Index component render: loading =", loading, "loadingMore =", loadingMore, "page =", page, "confessions.length =", confessions.length, "visibleConfessionCount =", visibleConfessionCount);
 
   useEffect(() => {
     const commentsChannel = supabase
@@ -450,8 +450,10 @@ const Index: React.FC = () => {
       )}
       {loadingMore && <div className="space-y-6 mt-8"><ConfessionCardSkeleton /><ConfessionCardSkeleton /></div>}
       
-      {/* Invisible trigger for infinite scroll */}
-      {!loading && hasMore && !paramId && <div ref={lastConfessionElementRef} style={{ height: "1px" }} />}
+      {/* Invisible trigger for infinite scroll - now conditionally rendered */}
+      {!loading && !loadingMore && hasMore && !paramId && (visibleConfessionCount === confessions.length) && (
+        <div ref={lastConfessionElementRef} style={{ height: "1px" }} />
+      )}
 
       {!hasMore && confessions.length > 0 && !paramId && <p className="text-center text-gray-500 dark:text-gray-400 mt-8">Това са всички изповеди.</p>}
       <ComposeButton isVisible={isComposeButtonVisible} onClick={handleComposeClick} />
