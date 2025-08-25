@@ -51,7 +51,7 @@ const Index: React.FC = () => {
   const [forceExpandForm, setForceExpandForm] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("Всички");
   const [visibleConfessionCount, setVisibleConfessionCount] = useState(0);
-  const [isFormAnimationComplete, setIsFormAnimationComplete] = useState(false);
+  const [isFormAnimationComplete, setIsFormAnimationComplete] = useState(false); // Kept for form-specific logic if needed elsewhere
 
   const confessionFormContainerRef = useRef<HTMLDivElement>(null);
   const observer = useRef<IntersectionObserver>();
@@ -223,6 +223,7 @@ const Index: React.FC = () => {
       setHasMore(true);
       setSelectedCategory(categoryFromUrl);
       setVisibleConfessionCount(0); // Reset animation chain
+      prevConfessionsLengthRef.current = 0; // Also reset this ref
 
       if (paramId) {
         fetchConfessions({ initialLoad: true, targetId: paramId, targetSlug: paramSlug });
@@ -293,7 +294,8 @@ const Index: React.FC = () => {
 
   // Effect to manage the animation chain and update visible count after new loads
   useEffect(() => {
-    if (!loading && isFormAnimationComplete) {
+    // Start cascade animation once initial loading is done and confessions are available
+    if (!loading && confessions.length > 0) {
       if (paramId) {
         // If it's a direct link, show all loaded confessions immediately without animation chain
         setVisibleConfessionCount(confessions.length);
@@ -301,8 +303,8 @@ const Index: React.FC = () => {
         const currentConfessionsLength = confessions.length;
         const previousConfessionsLength = prevConfessionsLengthRef.current;
 
-        // Condition 1: Initial load, start cascade from 1
-        if (currentConfessionsLength > 0 && visibleConfessionCount === 0) {
+        // Condition 1: Initial load, start cascade from 1 if not already started
+        if (visibleConfessionCount === 0 && currentConfessionsLength > 0) {
           setVisibleConfessionCount(1);
         } 
         // Condition 2: New batch loaded via infinite scroll, continue cascade
@@ -315,7 +317,7 @@ const Index: React.FC = () => {
     }
     // Update the ref with the current confessions length for the next render cycle
     prevConfessionsLengthRef.current = confessions.length;
-  }, [loading, isFormAnimationComplete, paramId, confessions.length, visibleConfessionCount, loadingMore]);
+  }, [loading, paramId, confessions.length, visibleConfessionCount, loadingMore]); // Removed isFormAnimationComplete
 
   const handleAnimationComplete = useCallback(() => {
     setVisibleConfessionCount(prev => {
