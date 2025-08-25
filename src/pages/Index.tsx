@@ -254,7 +254,6 @@ const Index: React.FC = () => {
       setHasMore(true);
       setVisibleConfessionCount(0);
       prevConfessionsLengthRef.current = 0;
-      setConfessions([]);
 
       const loadData = async () => {
         try {
