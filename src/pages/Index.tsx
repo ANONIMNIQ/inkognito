@@ -111,18 +111,17 @@ const Index: React.FC = () => {
     { category: string; oldestCreatedAtForInfiniteScroll?: string }
   ) => {
     console.log(`[Fetch] Fetching confessions for category: ${category}, oldestCreatedAt: ${oldestCreatedAtForInfiniteScroll || 'none'}`);
-    setLoadingMore(true);
     try {
       let query = supabase.from("confessions").select("*").order("created_at", { ascending: false });
       if (category !== "Всички") query = query.eq("category", category);
 
       if (oldestCreatedAtForInfiniteScroll) {
         query = query.lt("created_at", oldestCreatedAtForInfiniteScroll);
-      } else {
-        query = query.range(0, CONFESSIONS_PER_PAGE - 1);
       }
+      // Always apply limit, range is handled by oldestCreatedAtForInfiniteScroll or initial load
+      query = query.limit(CONFESSIONS_PER_PAGE);
       
-      const { data, error } = await query.limit(CONFESSIONS_PER_PAGE);
+      const { data, error } = await query;
       if (error) throw error;
 
       console.log(`[Fetch] Received ${data.length} confessions from Supabase.`);
@@ -155,7 +154,7 @@ const Index: React.FC = () => {
       setHasMore(false);
       return [];
     } finally {
-      setLoadingMore(false);
+      // setLoadingMore(false) is handled by the calling useEffect
     }
   }, []);
 
@@ -221,7 +220,7 @@ const Index: React.FC = () => {
     }
   }, [searchParams, selectedCategory]);
 
-  // Main data loading effect
+  // Main data loading effect (for initial load or category/paramId changes)
   useEffect(() => {
     if (authLoading) return; // Wait for auth to load
 
@@ -281,8 +280,6 @@ const Index: React.FC = () => {
         if (currentParamId) {
           const targetConf = await fetchSingleConfession(currentParamId, paramSlug!, currentCategory);
           if (!targetConf) {
-            // If targetConf is null, it means navigation already happened due to slug/category mismatch or not found.
-            // So, we just set loading to false and update context, no need to proceed with surrounding fetches.
             return; 
           }
           let beforeQuery = supabase.from("confessions").select("*").lt("created_at", targetConf.created_at).order("created_at", { ascending: false });
@@ -306,22 +303,25 @@ const Index: React.FC = () => {
           setConfessions(uniqueConfessions);
           setHasMore(false);
         } else {
+          setLoadingMore(true); // Set loadingMore for initial fetch
           await fetchConfessionsPage({ category: currentCategory });
         }
       } finally {
         setLoading(false);
+        setLoadingMore(false); // Reset loadingMore after initial fetch
         lastLoadedContextRef.current = { category: currentCategory, paramId: currentParamId };
         console.log("[Effect] Full re-fetch completed. Loading set to false.");
       }
     };
 
     loadData();
-  }, [authLoading, selectedCategory, paramId, paramSlug, fetchConfessionsPage, fetchSingleConfession]); // Removed confessions.length from dependencies
+  }, [authLoading, selectedCategory, paramId, paramSlug, fetchConfessionsPage, fetchSingleConfession]);
 
-  // Effect to handle infinite scroll
+  // Effect to handle infinite scroll (triggered by page state change)
   useEffect(() => {
     if (page > 0 && hasMoreRef.current && !loadingMore) {
       console.log(`[Infinite Scroll] Page incremented to ${page}. Initiating fetch for next batch.`);
+      setLoadingMore(true); // Set loadingMore here for subsequent fetches
       const oldestCreatedAt = latestConfessionsRef.current.length > 0 ? latestConfessionsRef.current[latestConfessionsRef.current.length - 1].created_at : undefined;
       fetchConfessionsPage({ category: selectedCategory, oldestCreatedAtForInfiniteScroll: oldestCreatedAt });
     }
@@ -329,16 +329,16 @@ const Index: React.FC = () => {
 
   // Intersection Observer for infinite scroll
   const lastConfessionElementRef = useCallback(node => {
-    if (loading || loadingMore) return;
     if (observer.current) observer.current.disconnect();
     observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMoreRef.current) {
+      // Only increment page if intersecting, has more, and NOT currently loading more
+      if (entries[0].isIntersecting && hasMoreRef.current && !loadingMore) {
         console.log("[Observer] Last element intersected. Incrementing page.");
         setPage(prev => prev + 1);
       }
     }, { rootMargin: '0px 0px 200px 0px' });
     if (node) observer.current.observe(node);
-  }, [loading, loadingMore]);
+  }, [loadingMore]); // Dependency on loadingMore to ensure the callback has the latest value
 
   // Effect to scroll to expanded confession
   useEffect(() => {
