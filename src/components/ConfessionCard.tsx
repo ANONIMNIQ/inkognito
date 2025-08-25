@@ -55,8 +55,6 @@ interface ConfessionCardProps {
   onToggleExpand: (confessionId: string, slug: string) => void;
   onSelectCategory: (category: string) => void;
   shouldOpenCommentsOnLoad?: boolean;
-  onAnimationComplete?: () => void;
-  animationDelay?: number; // New prop
 }
 
 const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
@@ -69,8 +67,6 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   onToggleExpand,
   onSelectCategory,
   shouldOpenCommentsOnLoad = false,
-  onAnimationComplete,
-  animationDelay = 0, // Default to 0
 }, ref: Ref<HTMLDivElement>) => {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(COMMENTS_PER_PAGE);
@@ -220,14 +216,12 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
     >
       <div className={cn("flex items-start", isMobile ? "space-x-0" : "space-x-3")}>
         {!isMobile && (
-          <div className="opacity-0 animate-fade-in" style={{ animationDelay: `${animationDelay}ms` }}>
+          <div className="opacity-0 animate-fade-in">
             <GenderAvatar gender={confession.gender} className="h-10 w-10 flex-shrink-0 mt-2" />
           </div>
         )}
         <div 
           className={cn("flex-1 p-4 rounded-xl shadow-md relative min-w-0 opacity-0 animate-fade-zoom-in", bubbleBackgroundColor, isMobile ? "ml-0" : "")}
-          style={{ animationDelay: `${animationDelay}ms` }}
-          onAnimationEnd={onAnimationComplete}
         >
           <div
             className={cn(

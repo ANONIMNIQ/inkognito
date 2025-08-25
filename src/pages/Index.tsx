@@ -51,7 +51,6 @@ const Index: React.FC = () => {
   const [forceExpandForm, setForceExpandForm] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("Всички"); // State for category filter
   const [visibleConfessionCount, setVisibleConfessionCount] = useState(0);
-  // Removed isFormAnimationComplete as it's not directly needed for the main confession list animation
 
   const confessionFormContainerRef = useRef<HTMLDivElement>(null);
   const observer = useRef<IntersectionObserver>();
@@ -148,7 +147,7 @@ const Index: React.FC = () => {
 
         allConfessions = data.map((c: any) => ({ ...c, comment_count: c.comments[0]?.count || 0, comments: [] }));
         newHasMore = data.length === CONFESSIONS_PER_PAGE;
-        console.log(`[fetchConfessions] Fetched ${data.length} confessions. Has more: ${newHasMore}`);
+        console.log(`[fetchConfessions] Fetched ${data.length} confessions for page ${currentPage}. Has more: ${newHasMore}`);
       }
 
       setHasMore(newHasMore);
@@ -159,6 +158,7 @@ const Index: React.FC = () => {
           // Filter out any confessions that are already in the 'prev' array to prevent duplicates
           const existingIds = new Set(prev.map(c => c.id));
           const uniqueNewConfessions = allConfessions.filter(c => !existingIds.has(c.id));
+          console.log(`[fetchConfessions] Appending ${uniqueNewConfessions.length} new confessions. Total: ${prev.length + uniqueNewConfessions.length}`);
           return [...prev, ...uniqueNewConfessions];
         }
       });
@@ -171,7 +171,8 @@ const Index: React.FC = () => {
     } finally {
       if (initialLoad) setLoading(false);
       else setLoadingMore(false);
-      console.log(`[fetchConfessions] Finished. Current confessions count: ${confessions.length}`);
+      // Note: confessions.length here might not reflect the *latest* state due to async updates
+      console.log(`[fetchConfessions] Finished. Has more: ${newHasMore}`);
     }
   }, [navigate]); // Only navigate is a dependency
 
@@ -256,41 +257,16 @@ const Index: React.FC = () => {
   // Effect to manage the animation chain for initial load and infinite scroll
   useEffect(() => {
     console.log("Animation useEffect triggered. Loading:", loading, "paramId:", paramId, "loadingMore:", loadingMore, "confessions.length:", confessions.length, "visibleConfessionCount:", visibleConfessionCount);
-    if (!loading && confessions.length > 0) {
-      if (paramId) {
-        // Direct link: show all instantly
-        if (visibleConfessionCount !== confessions.length) {
-          console.log("[useEffect: Animation] Direct link, showing all loaded confessions immediately.");
-          setVisibleConfessionCount(confessions.length);
-        }
-      } else if (!loadingMore) {
-        // Initial load (not detail view, not loading more): start cascade if not started
-        if (visibleConfessionCount === 0) {
-          console.log("[useEffect: Animation] Starting cascade for first confession.");
-          setVisibleConfessionCount(1);
-        }
-        // The handleAnimationComplete callback will handle incrementing visibleConfessionCount
-      } else if (loadingMore && confessions.length > visibleConfessionCount) {
-        // Infinite scroll: show new items instantly
-        console.log("[useEffect: Animation] Infinite scroll: showing new confessions instantly.");
-        setVisibleConfessionCount(confessions.length);
-      }
+    if (!loading && !paramId && !loadingMore && confessions.length > 0 && visibleConfessionCount < confessions.length) {
+      const timer = setTimeout(() => {
+        setVisibleConfessionCount(prev => prev + 1);
+      }, 100); // Delay for each card to appear
+      return () => clearTimeout(timer);
+    } else if (!loading && !paramId && !loadingMore && confessions.length > 0 && visibleConfessionCount === 0) {
+        // This handles the very first time confessions are loaded and the cascade needs to start
+        setVisibleConfessionCount(1);
     }
   }, [loading, paramId, loadingMore, confessions.length, visibleConfessionCount]);
-
-  const handleAnimationComplete = useCallback(() => {
-    console.log("[handleAnimationComplete] Called. Current visibleConfessionCount:", visibleConfessionCount, "Confessions length:", confessions.length);
-    if (!paramId && !loadingMore) { // Only increment if not in detail view and not loading more (infinite scroll)
-      setVisibleConfessionCount(prev => {
-        if (prev < confessions.length) {
-          console.log(`[handleAnimationComplete] Incrementing visible confessions from ${prev} to ${prev + 1}`);
-          return prev + 1;
-        }
-        console.log("[handleAnimationComplete] All initial confessions visible. Not incrementing.");
-        return prev;
-      });
-    }
-  }, [confessions.length, paramId, loadingMore, visibleConfessionCount]); // Added visibleConfessionCount to dependencies
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string, slug: string, email?: string) => {
     console.log("[handleAddConfession] Attempting to add new confession.");
@@ -410,7 +386,6 @@ const Index: React.FC = () => {
           onFormFocus={() => setExpandedConfessionId(null)}
           forceExpand={forceExpandForm}
           onFormExpanded={() => setForceExpandForm(false)}
-          // Removed onAnimationComplete from ConfessionForm as it's not directly tied to the list animation anymore
         />
       </div>
 
@@ -434,8 +409,6 @@ const Index: React.FC = () => {
               onToggleExpand={handleConfessionToggle}
               onSelectCategory={handleSelectCategory}
               shouldOpenCommentsOnLoad={conf.id === expandedConfessionId && location.hash === '#comments'}
-              animationDelay={!paramId && !loadingMore ? index * 100 : 0}
-              onAnimationComplete={!paramId && !loadingMore && index === visibleConfessionCount - 1 ? handleAnimationComplete : undefined}
             />
           ))}
         </div>
