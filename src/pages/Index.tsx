@@ -111,7 +111,7 @@ const Index: React.FC = () => {
     { category, oldestCreatedAtForInfiniteScroll, replace = false }:
     { category: string; oldestCreatedAtForInfiniteScroll?: string; replace?: boolean }
   ) => {
-    console.log(`[Fetch] Fetching confessions for category: ${category}, oldestCreatedAt: ${oldestCreatedAtForInfiniteScroll || 'none'}, replace: ${replace}`);
+    console.log(`[Fetch] Fetching confessions for category: ${category}, oldestCreatedAt: ${oldestCreatedAtForInfiniteScroll || 'none'}, replace flag: ${replace}`);
     setLoadingMore(true);
     try {
       let query = supabase.from("confessions").select("*").order("created_at", { ascending: false });
@@ -139,18 +139,19 @@ const Index: React.FC = () => {
 
       setHasMore(newHasMore);
       setConfessions(prev => {
+        console.log(`[State] setConfessions callback. Current 'replace' flag: ${replace}. Previous state length: ${prev.length}. Fetched data length: ${fetchedData.length}.`);
         if (replace) {
-          console.log(`[State] Replacing confessions with ${fetchedData.length} new items.`);
+          console.log(`[State] Replacing confessions with ${fetchedData.length} new items for category: ${category}.`);
           latestConfessionsRef.current = fetchedData;
           return fetchedData;
         }
         
-        console.log(`[State] Appending confessions. Previous length: ${prev.length}`);
+        console.log(`[State] Appending confessions. Previous length: ${prev.length} for category: ${category}.`);
         const existingIds = new Set(prev.map(c => c.id));
         const newUniqueConfessions = fetchedData.filter(c => !existingIds.has(c.id));
         const newState = [...prev, ...newUniqueConfessions];
         latestConfessionsRef.current = newState;
-        console.log(`[State] New state length: ${newState.length}`);
+        console.log(`[State] New state length: ${newState.length} for category: ${category}.`);
         return newState;
       });
       return fetchedData;
@@ -486,7 +487,7 @@ const Index: React.FC = () => {
           <ConfessionCardSkeleton />
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-6" key={selectedCategory}> {/* Added key prop here */}
           {confessions.slice(0, visibleConfessionCount).map((conf) => (
             <ConfessionCard
               key={conf.id}
