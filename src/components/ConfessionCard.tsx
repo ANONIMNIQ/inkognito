@@ -302,23 +302,22 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                   className={cn(
                     "h-auto text-left font-semibold hover:no-underline font-serif transition-colors justify-start min-w-0 flex-1",
                     isContentOpen
-                      ? cn("p-0 text-lg md:text-xl", textColor)
-                      : cn( // Collapsed state, Link itself is just a container
-                          "text-lg md:text-xl", // Keep text size for Link
+                      ? cn("p-0 text-lg md:text-xl", textColor) // Expanded state
+                      : cn( // Collapsed state
+                          "text-lg md:text-xl",
                           linkColor,
                           "hover:text-gray-800 dark:hover:text-gray-200",
+                          "relative group" // Keep group and relative on Link, but remove overflow-hidden, px, py, rounded-md
                         )
                   )}
                 >
                   {!isContentOpen ? (
-                    <span className="relative inline-block group overflow-hidden px-2 py-1 rounded-md"> {/* New wrapper with padding and rounded corners */}
-                      <span className="relative z-10 block truncate">
-                        {confession.title}
-                      </span>
+                    <span className="inline-block relative z-10 truncate px-2 py-1 rounded-md"> {/* Apply truncate, padding, rounded-md here */}
+                      {confession.title}
                       <span className="absolute inset-0 bg-yellow-100 dark:bg-yellow-900 rounded-md transition-transform duration-300 ease-out origin-left scale-x-0 group-hover:scale-x-100" />
                     </span>
                   ) : (
-                    <span className={cn("block w-full whitespace-pre-wrap p-0", textColor)}> {/* p-0 for consistency */}
+                    <span className={cn("block w-full whitespace-pre-wrap p-0", textColor)}>
                       {confession.title}
                     </span>
                   )}
