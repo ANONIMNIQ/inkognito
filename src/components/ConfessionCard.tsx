@@ -307,14 +307,15 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                           "text-lg md:text-xl",
                           linkColor,
                           "hover:text-gray-800 dark:hover:text-gray-200",
-                          "relative group" // Keep group and relative on Link, but remove overflow-hidden, px, py, rounded-md
                         )
                   )}
                 >
                   {!isContentOpen ? (
-                    <span className="inline-block relative z-10 truncate px-2 py-1 rounded-md"> {/* Apply truncate, padding, rounded-md here */}
-                      {confession.title}
-                      <span className="absolute inset-0 bg-yellow-100 dark:bg-yellow-900 rounded-md transition-transform duration-300 ease-out origin-left scale-x-0 group-hover:scale-x-100" />
+                    <span className="inline-block relative group overflow-hidden px-2 py-1 rounded-md"> {/* New wrapper with padding and rounded corners */}
+                      <span className="relative z-[2] block truncate"> {/* Text on top */}
+                        {confession.title}
+                      </span>
+                      <span className="absolute inset-0 bg-yellow-100 dark:bg-yellow-900 rounded-md transition-transform duration-300 ease-out origin-left scale-x-0 group-hover:scale-x-100 z-[1]" /> {/* Highlight behind */}
                     </span>
                   ) : (
                     <span className={cn("block w-full whitespace-pre-wrap p-0", textColor)}>
