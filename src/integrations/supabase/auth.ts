@@ -34,7 +34,7 @@ export const useSession = () => {
         .single();
 
       if (profileError && profileError.code !== 'PGRST116') { // PGRST116 means no rows found
-        console.error("fetchUserProfile: Error fetching profile:", profileError);
+        // console.error("fetchUserProfile: Error fetching profile:", profileError);
         toast.error("Failed to load user profile: " + profileError.message);
         setProfile(null);
         return null;
@@ -46,7 +46,7 @@ export const useSession = () => {
         return null;
       }
     } catch (e) {
-      console.error("fetchUserProfile: Unexpected error:", e);
+      // console.error("fetchUserProfile: Unexpected error:", e);
       toast.error("An unexpected error occurred while fetching user profile.");
       setProfile(null);
       return null;
@@ -67,7 +67,7 @@ export const useSession = () => {
         }
 
         if (initialSessionError) {
-          console.error("useSession: Error getting initial session:", initialSessionError);
+          // console.error("useSession: Error getting initial session:", initialSessionError);
           setSession(null);
           setUser(null);
           setProfile(null); // Ensure profile is cleared on session error
@@ -82,7 +82,7 @@ export const useSession = () => {
           }
         }
       } catch (e) {
-        console.error("useSession: Unexpected error during initial session fetch:", e);
+        // console.error("useSession: Unexpected error during initial session fetch:", e);
         if (isMounted) {
           toast.error("An unexpected error occurred during initial session load.");
         }

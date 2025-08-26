@@ -126,7 +126,7 @@ const Index: React.FC = () => {
       if (error) throw error;
 
       if (fetchId !== currentFetchId.current) {
-        console.log(`[Fetch] Ignoring stale fetch results for ID: ${fetchId}. Current is: ${currentFetchId.current}`);
+        // console.log(`[Fetch] Ignoring stale fetch results for ID: ${fetchId}. Current is: ${currentFetchId.current}`);
         return [];
       }
 
@@ -195,7 +195,7 @@ const Index: React.FC = () => {
       }
 
       const { data: commentsData, error: commentsError } = await supabase.from("comments").select("*").eq("confession_id", id).order("created_at", { ascending: false });
-      if (commentsError) console.error("Error fetching comments for single confession:", commentsError);
+      if (commentsError) /* console.error("Error fetching comments for single confession:", commentsError); */
 
       if (fetchId !== currentFetchId.current) {
         return null;
@@ -250,7 +250,7 @@ const Index: React.FC = () => {
     if (needsFullRefetch) {
       currentFetchId.current++;
       const fetchId = currentFetchId.current;
-      console.log(`[Effect] Initiating full re-fetch (ID: ${fetchId}). Reason: ${isCategoryChanged ? 'Category Changed' : isNavigatingToNewConfession ? 'Navigating to New Confession' : 'Returning to List'}`);
+      // console.log(`[Effect] Initiating full re-fetch (ID: ${fetchId}). Reason: ${isCategoryChanged ? 'Category Changed' : isNavigatingToNewConfession ? 'Navigating to New Confession' : 'Returning to List'}`);
       
       setLoading(true);
       setPage(0);
@@ -391,7 +391,7 @@ const Index: React.FC = () => {
         toast.success("Confession posted!");
         supabase.functions.invoke('generate-ai-comment', { body: { confessionId: newConfession.id, confessionContent: content } })
           .then(({ error: invokeError }) => {
-            if (invokeError) console.error("Error invoking AI comment function:", invokeError.message);
+            if (invokeError) /* console.error("Error invoking AI comment function:", invokeError.message); */
           });
         navigate(`/confessions/${newConfession.id}/${newConfession.slug}`);
       } else {
@@ -446,11 +446,7 @@ const Index: React.FC = () => {
     let newPath = '/';
 
     if (!isCurrentlyExpanded) {
-      // If expanding, navigate to the specific confession URL
       newPath = `/confessions/${confessionId}/${slug}`;
-    } else {
-      // If collapsing, navigate to the base path for the current category
-      newPath = '/'; // Start with base path
     }
     
     if (currentCategoryParam && currentCategoryParam !== "Всички") {

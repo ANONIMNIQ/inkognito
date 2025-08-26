@@ -59,10 +59,10 @@ const CommentCard: React.FC<CommentCardProps> = ({ comment, isEditing = false, e
             value={editedContent}
             onChange={(e) => onContentChange(e.target.value)}
             rows={2}
-            className={cn("resize-none font-serif text-sm pl-1", textColor, "border-gray-300 dark:border-gray-700")}
+            className={cn("resize-none font-serif text-base md:text-sm pl-1", textColor, "border-gray-300 dark:border-gray-700")}
           />
         ) : (
-          <p className={cn("font-serif text-sm md:text-sm pl-1", textColor)}>{comment.content}</p>
+          <p className={cn("font-serif text-base md:text-sm pl-1", textColor)}>{comment.content}</p>
         )}
         <div className="flex justify-between items-center mt-1 pl-1">
           <p className={cn("text-xs text-gray-500 dark:text-gray-400")}>
