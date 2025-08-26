@@ -195,7 +195,7 @@ const Index: React.FC = () => {
       }
 
       const { data: commentsData, error: commentsError } = await supabase.from("comments").select("*").eq("confession_id", id).order("created_at", { ascending: false });
-      if (commentsError) /* console.error("Error fetching comments for single confession:", commentsError); */
+      if (commentsError) { /* console.error("Error fetching comments for single confession:", commentsError); */ }
 
       if (fetchId !== currentFetchId.current) {
         return null;
@@ -390,9 +390,7 @@ const Index: React.FC = () => {
       if (newConfession) {
         toast.success("Confession posted!");
         supabase.functions.invoke('generate-ai-comment', { body: { confessionId: newConfession.id, confessionContent: content } })
-          .then(({ error: invokeError }) => {
-            if (invokeError) /* console.error("Error invoking AI comment function:", invokeError.message); */
-          });
+          .then(() => { /* No action needed for invokeError */ }); // Fixed: Removed empty if statement
         navigate(`/confessions/${newConfession.id}/${newConfession.slug}`);
       } else {
         toast.error("Error: No confession data returned after posting.");
