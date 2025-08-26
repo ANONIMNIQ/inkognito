@@ -303,18 +303,24 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                     "h-auto text-left font-semibold hover:no-underline font-serif transition-colors justify-start min-w-0 flex-1",
                     isContentOpen
                       ? cn("p-0 text-lg md:text-xl", textColor)
-                      : cn(
-                          "px-2 py-1 rounded-md text-lg md:text-xl group relative overflow-hidden", // Added group, relative, overflow-hidden
+                      : cn( // Collapsed state, Link itself is just a container
+                          "text-lg md:text-xl", // Keep text size for Link
                           linkColor,
                           "hover:text-gray-800 dark:hover:text-gray-200",
                         )
                   )}
                 >
-                  <span className={cn("block w-full relative z-10", isContentOpen ? "whitespace-pre-wrap" : "truncate")}>
-                    {confession.title}
-                  </span>
-                  {!isContentOpen && ( // Only show highlight on collapsed state
-                    <span className="absolute inset-0 bg-yellow-100 dark:bg-yellow-900 rounded-md transition-transform duration-300 ease-out origin-left scale-x-0 group-hover:scale-x-100" />
+                  {!isContentOpen ? (
+                    <span className="relative inline-block group overflow-hidden px-2 py-1 rounded-md"> {/* New wrapper with padding and rounded corners */}
+                      <span className="relative z-10 block truncate">
+                        {confession.title}
+                      </span>
+                      <span className="absolute inset-0 bg-yellow-100 dark:bg-yellow-900 rounded-md transition-transform duration-300 ease-out origin-left scale-x-0 group-hover:scale-x-100" />
+                    </span>
+                  ) : (
+                    <span className={cn("block w-full whitespace-pre-wrap p-0", textColor)}> {/* p-0 for consistency */}
+                      {confession.title}
+                    </span>
                   )}
                 </Link>
               </CollapsibleTrigger>
