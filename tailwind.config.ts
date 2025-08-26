@@ -120,11 +120,6 @@ export default {
             transform: "translateY(0)",
           },
         },
-        "hover-highlight-yellow": {
-          "0%": { backgroundColor: "transparent" },
-          "50%": { backgroundColor: "hsl(48 96% 92%)" }, // A light yellow
-          "100%": { backgroundColor: "transparent" },
-        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -132,7 +127,6 @@ export default {
         "fade-in": "fade-in 0.3s ease-out forwards",
         "fade-zoom-in": "fade-zoom-in 0.4s ease-out forwards",
         "slide-fade-in-top": "slide-fade-in-top 0.3s ease-out forwards",
-        "hover-highlight-yellow": "hover-highlight-yellow 0.8s ease-in-out",
       },
     },
   },

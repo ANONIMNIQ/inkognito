@@ -304,16 +304,18 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                     isContentOpen
                       ? cn("p-0 text-lg md:text-xl", textColor)
                       : cn(
-                          "px-2 py-1 rounded-md text-lg md:text-xl", // Added padding and rounded corners for highlight
+                          "px-2 py-1 rounded-md text-lg md:text-xl group relative overflow-hidden", // Added group, relative, overflow-hidden
                           linkColor,
                           "hover:text-gray-800 dark:hover:text-gray-200",
-                          "hover:animate-hover-highlight-yellow" // Apply animation on hover
                         )
                   )}
                 >
-                  <span className={cn("block w-full", isContentOpen ? "whitespace-pre-wrap" : "truncate")}>
+                  <span className={cn("block w-full relative z-10", isContentOpen ? "whitespace-pre-wrap" : "truncate")}>
                     {confession.title}
                   </span>
+                  {!isContentOpen && ( // Only show highlight on collapsed state
+                    <span className="absolute inset-0 bg-yellow-100 dark:bg-yellow-900 rounded-md transition-transform duration-300 ease-out origin-left scale-x-0 group-hover:scale-x-100" />
+                  )}
                 </Link>
               </CollapsibleTrigger>
               <CollapsibleTrigger asChild>
