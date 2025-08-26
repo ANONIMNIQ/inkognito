@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, forwardRef, Ref, useCallback } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, MessageCircle, Heart, Share2 } from "lucide-react"; // Removed Bot icon
+import { ChevronDown, ChevronUp, MessageCircle, Heart, Share2 } from "lucide-react";
 import GenderAvatar from "./GenderAvatar";
 import CommentCard from "./CommentCard";
 import CommentForm from "./CommentForm";
@@ -20,7 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { supabase } from "@/integrations/supabase/client"; // Import supabase client
+import { supabase } from "@/integrations/supabase/client";
 
 const COMMENTS_PER_PAGE = 5;
 
@@ -56,7 +56,7 @@ interface ConfessionCardProps {
   onSelectCategory: (category: string) => void;
   shouldOpenCommentsOnLoad?: boolean;
   onAnimationComplete?: () => void;
-  currentCategory: string; // ADDED: New prop to pass the current category
+  currentCategory: string;
 }
 
 const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
@@ -70,7 +70,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   onSelectCategory,
   shouldOpenCommentsOnLoad = false,
   onAnimationComplete,
-  currentCategory, // Destructure the new prop
+  currentCategory,
 }, ref: Ref<HTMLDivElement>) => {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(COMMENTS_PER_PAGE);
@@ -270,26 +270,28 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
               <Heart className="h-3.5 w-3.5" />
               <span className="text-xs font-medium ml-1">{confession.likes}</span>
             </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="link"
-                  className="flex items-center p-0 h-auto text-gray-400 hover:text-black dark:text-gray-500 dark:hover:text-white transition-colors hover:no-underline"
-                  aria-label="Сподели"
-                >
-                  <Share2 className="h-3.5 w-3.5" />
-                  <span className="text-xs font-medium ml-1">Сподели</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleShareConfession}>
-                  Сподели линк към историята
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleShareComments}>
-                  Сподели линк към коментарите
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {!isMobile && ( // Conditionally render sharing options
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="link"
+                    className="flex items-center p-0 h-auto text-gray-400 hover:text-black dark:text-gray-500 dark:hover:text-white transition-colors hover:no-underline"
+                    aria-label="Сподели"
+                  >
+                    <Share2 className="h-3.5 w-3.5" />
+                    <span className="text-xs font-medium ml-1">Сподели</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleShareConfession}>
+                    Сподели линк към историята
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleShareComments}>
+                    Сподели линк към коментарите
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
 
           <Collapsible open={isContentOpen} onOpenChange={() => onToggleExpand(confession.id, confession.slug)}>
@@ -298,10 +300,15 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                 <Link
                   to={`/confessions/${confession.id}/${confession.slug}${currentCategory && currentCategory !== 'Всички' ? `?category=${currentCategory}` : ''}`}
                   className={cn(
-                    "p-0 h-auto text-left text-lg md:text-xl font-semibold hover:no-underline font-serif transition-colors justify-start min-w-0 flex-1",
+                    "h-auto text-left font-semibold hover:no-underline font-serif transition-colors justify-start min-w-0 flex-1",
                     isContentOpen
-                      ? textColor
-                      : [linkColor, "hover:text-gray-800 dark:hover:text-gray-200"]
+                      ? cn("p-0 text-lg md:text-xl", textColor)
+                      : cn(
+                          "px-2 py-1 rounded-md text-lg md:text-xl", // Added padding and rounded corners for highlight
+                          linkColor,
+                          "hover:text-gray-800 dark:hover:text-gray-200",
+                          "hover:animate-hover-highlight-yellow" // Apply animation on hover
+                        )
                   )}
                 >
                   <span className={cn("block w-full", isContentOpen ? "whitespace-pre-wrap" : "truncate")}>
@@ -364,7 +371,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                         comment={comment} 
                         animationDelay={(index + 1) * 100} 
                         hideAvatarOnMobile={true} 
-                        commentNumber={confession.comments.length - index} // Calculate comment number backwards
+                        commentNumber={confession.comments.length - index}
                       />
                     ))}
                   </div>
