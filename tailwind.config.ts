@@ -158,8 +158,8 @@ export default {
         "fade-zoom-in": "fade-zoom-in 0.4s ease-out forwards",
         "slide-fade-in-top": "slide-fade-in-top 0.3s ease-out forwards",
         "slide-fade-out-top": "slide-fade-out-top 0.3s ease-out forwards",
-        "slide-fade-in-left": "slide-fade-in-left 0.2s ease-out forwards",
-        "slide-fade-out-left": "slide-fade-out-left 0.2s ease-out forwards",
+        "slide-fade-in-left": "slide-fade-in-left 0.3s ease-out forwards", // Slower opening
+        "slide-fade-out-left": "slide-fade-out-left 0.2s ease-out forwards", // Faster closing
       },
     },
   },
