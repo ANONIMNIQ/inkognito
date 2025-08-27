@@ -55,7 +55,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = () => {
     setTimeout(() => {
       setIsOpen(false);
       setIsClosing(false);
-    }, ANIMATION_DURATION + 200); // Add a small buffer for cascade
+    }, ANIMATION_DURATION); // No extra buffer for all-at-once close
   };
 
   if (isMobile) {
@@ -75,7 +75,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = () => {
         onClick={handleToggleMenu}
         variant="secondary"
         className={cn(
-          "fixed top-8 left-8 z-50 h-14 w-14 rounded-full bg-white/50 dark:bg-gray-800/50 backdrop-blur-lg shadow-lg transition-all duration-300 ease-in-out",
+          "fixed top-8 left-8 z-50 h-14 w-14 rounded-full bg-gray-900/50 dark:bg-gray-800/50 backdrop-blur-lg shadow-lg transition-all duration-300 ease-in-out",
           "hover:scale-110 active:scale-95"
         )}
         aria-label={isOpen ? "Close menu" : "Open menu"}
@@ -97,14 +97,17 @@ const FloatingMenu: React.FC<FloatingMenuProps> = () => {
               key={item.label}
               variant="secondary"
               className={cn(
-                "w-auto justify-start rounded-full bg-gray-900 px-4 py-2 text-white transition-colors hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-300", // Darker buttons
+                "w-auto justify-start rounded-full px-4 py-2 transition-colors",
+                "bg-gray-900/50 text-white hover:bg-gray-700/50", // Light mode
+                "dark:bg-gray-800/50 dark:text-gray-200 dark:hover:bg-gray-700/50", // Dark mode
+                "backdrop-blur-lg shadow-lg", // Translucency and shadow
                 isClosing
-                  ? "animate-slide-fade-out-top opacity-0"
-                  : "animate-slide-fade-in-top opacity-0"
+                  ? "animate-slide-fade-out-top" // No opacity-0 here, animation handles it
+                  : "animate-slide-fade-in-top opacity-0" // opacity-0 for initial state before fade-in
               )}
               style={{
                 animationDelay: isClosing
-                  ? `${(menuItems.length - 1 - index) * 100}ms` // Reverse delay for closing
+                  ? `0ms` // No cascade for closing, all at once
                   : `${item.delay}ms`,
                 animationDuration: `${ANIMATION_DURATION}ms`,
               }}
