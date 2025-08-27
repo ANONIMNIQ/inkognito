@@ -300,7 +300,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                 <Link
                   to={`/confessions/${confession.id}/${confession.slug}${currentCategory && currentCategory !== 'Всички' ? `?category=${currentCategory}` : ''}`}
                   className={cn(
-                    "h-auto text-left font-semibold hover:no-underline font-serif transition-colors justify-start min-w-0 flex-1",
+                    "h-auto text-left font-semibold hover:no-underline font-serif transition-colors justify-start min-w-0 flex-1", // Link is flex-1 to take space
                     isContentOpen
                       ? cn("p-0 text-lg md:text-xl", textColor) // Expanded state
                       : cn( // Collapsed state
@@ -312,13 +312,9 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                   )}
                 >
                   {!isContentOpen ? (
-                    <span className="relative inline-block flex-1 min-w-0"> {/* This is the key wrapper for sizing */}
-                      {/* Highlight behind the text, absolute to this wrapper span */}
-                      <span className="absolute inset-0 bg-yellow-100 dark:bg-yellow-900 rounded-md transition-transform duration-300 ease-out origin-left scale-x-0 group-hover:scale-x-100 z-[1]" />
-                      {/* Text content, relative z-[2] to be above highlight, block to truncate */}
-                      <span className="relative z-[2] block truncate px-2 py-1">
-                        {confession.title}
-                      </span>
+                    // This span will now be the actual text container and the relative parent for the highlight
+                    <span className="relative z-[2] inline-block truncate px-2 py-1 before:absolute before:inset-0 before:bg-yellow-100 before:dark:bg-yellow-900 before:rounded-md before:transition-transform before:duration-300 before:ease-out before:origin-left before:scale-x-0 group-hover:before:scale-x-100 before:z-[1]">
+                      {confession.title}
                     </span>
                   ) : (
                     <span className={cn("block w-full whitespace-pre-wrap p-0", textColor)}>
@@ -377,11 +373,11 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                   </div>
                   <div ref={commentsListRef} className="space-y-3">
                     {confession.comments.slice(0, visibleCommentsCount).map((comment, index) => (
-                      <CommentCard 
-                        key={comment.id} 
-                        comment={comment} 
-                        animationDelay={(index + 1) * 100} 
-                        hideAvatarOnMobile={true} 
+                      <CommentCard
+                        key={comment.id}
+                        comment={comment}
+                        animationDelay={(index + 1) * 100}
+                        hideAvatarOnMobile={true}
                         commentNumber={confession.comments.length - index}
                       />
                     ))}
