@@ -9,32 +9,23 @@ interface FloatingMenuProps {}
 const FloatingMenu: React.FC<FloatingMenuProps> = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null); // For hover delay
+  const menuRef = useRef<HTMLDivElement>(null); // Ref for the sub-menu container
+  const buttonRef = useRef<HTMLButtonElement>(null); // Ref for the main toggle button
   const isMobile = useIsMobile();
 
   const ANIMATION_DURATION_OPEN = 300; // Slower opening animation
   const ANIMATION_DURATION_CLOSE = 200; // Faster closing animation
-  const HOVER_CLOSE_DELAY = 200; // Delay before closing on mouse leave
 
-  const clearHoverTimeout = () => {
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-      hoverTimeoutRef.current = null;
-    }
-  };
-
+  // Function to open the menu (used by click and hover)
   const openMenu = () => {
-    clearHoverTimeout();
     if (!isOpen) {
       setIsOpen(true);
       setIsClosing(false);
     }
   };
 
+  // Function to close the menu (used by click and outside click)
   const closeMenu = () => {
-    clearHoverTimeout();
     if (isOpen && !isClosing) {
       setIsClosing(true);
       setTimeout(() => {
@@ -44,13 +35,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = () => {
     }
   };
 
-  const startCloseTimer = () => {
-    clearHoverTimeout();
-    hoverTimeoutRef.current = setTimeout(() => {
-      closeMenu();
-    }, HOVER_CLOSE_DELAY);
-  };
-
+  // Handles click on the main button (toggle open/close)
   const handleToggleClick = () => {
     if (isOpen) {
       closeMenu();
@@ -59,18 +44,19 @@ const FloatingMenu: React.FC<FloatingMenuProps> = () => {
     }
   };
 
-  // Handle click outside to close menu (still useful if opened by click)
+  // Handle click outside to close menu
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // Check if the click is outside both the main button and the menu items
       if (
+        isOpen &&
+        !isClosing &&
         menuRef.current &&
         !menuRef.current.contains(event.target as Node) &&
         buttonRef.current &&
         !buttonRef.current.contains(event.target as Node)
       ) {
-        if (isOpen && !isClosing) {
-          closeMenu();
-        }
+        closeMenu();
       }
     };
 
@@ -83,7 +69,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = () => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isOpen, isClosing]);
+  }, [isOpen, isClosing]); // Dependencies for useEffect
 
   if (isMobile) {
     return null; // Don't render on mobile
@@ -101,7 +87,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = () => {
         ref={buttonRef}
         onClick={handleToggleClick}
         onMouseEnter={openMenu} // Open on hover
-        onMouseLeave={startCloseTimer} // Start close timer on leave
+        // No onMouseLeave here, menu stays open after hover
         variant="secondary"
         className={cn(
           "fixed top-8 left-8 z-50 h-10 w-10 rounded-full bg-gray-900/50 dark:bg-gray-800/50 backdrop-blur-lg shadow-lg transition-all duration-300 ease-in-out",
@@ -117,11 +103,10 @@ const FloatingMenu: React.FC<FloatingMenuProps> = () => {
         )}
       </Button>
 
-      {(isOpen || isClosing) && (
+      {(isOpen || isClosing) && ( // Render menu if open or closing
         <div
           ref={menuRef}
-          onMouseEnter={openMenu} // Keep open on hover over menu items
-          onMouseLeave={startCloseTimer} // Start close timer on leave
+          // No onMouseEnter/onMouseLeave here, menu stays open once activated
           className="fixed top-20 left-8 z-40 flex flex-col space-y-1.5"
         >
           {menuItems.map((item) => (
@@ -129,7 +114,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = () => {
               key={item.label}
               variant="secondary"
               className={cn(
-                "w-auto justify-start rounded-full px-3 py-1 text-xs transition-colors", // Adjusted padding and text size for smaller, content-aware buttons
+                "inline-flex w-auto justify-center items-center rounded-full px-2 py-0.5 text-xs transition-colors", // Added inline-flex, adjusted padding
                 "bg-gray-900/50 text-white hover:bg-gray-700/50",
                 "dark:bg-gray-800/50 dark:text-gray-200 dark:hover:bg-gray-700/50",
                 "backdrop-blur-lg shadow-lg",
