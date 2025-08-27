@@ -13,7 +13,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = () => {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const isMobile = useIsMobile();
 
-  const ANIMATION_DURATION = 300; // Match Tailwind animation duration
+  const ANIMATION_DURATION = 200; // Faster animation duration
 
   // Close menu when clicking outside or on the X button
   useEffect(() => {
@@ -64,8 +64,8 @@ const FloatingMenu: React.FC<FloatingMenuProps> = () => {
 
   const menuItems = [
     { label: "ЗА НАС", delay: 0 },
-    { label: "ПОВЕРИТЕЛНОСТ", delay: 100 },
-    { label: "ПРАВИЛА И УСЛОВИЯ", delay: 200 },
+    { label: "ПОВЕРИТЕЛНОСТ", delay: 50 }, // Reduced delay for opening cascade
+    { label: "ПРАВИЛА И УСЛОВИЯ", delay: 100 },
   ];
 
   return (
@@ -75,35 +75,36 @@ const FloatingMenu: React.FC<FloatingMenuProps> = () => {
         onClick={handleToggleMenu}
         variant="secondary"
         className={cn(
-          "fixed top-8 left-8 z-50 h-14 w-14 rounded-full bg-gray-900/50 dark:bg-gray-800/50 backdrop-blur-lg shadow-lg transition-all duration-300 ease-in-out",
-          "hover:scale-110 active:scale-95"
+          "fixed top-8 left-8 z-50 h-10 w-10 rounded-full bg-gray-900/50 dark:bg-gray-800/50 backdrop-blur-lg shadow-lg transition-all duration-300 ease-in-out",
+          "hover:scale-110 active:scale-95",
+          "text-white dark:text-gray-200 hover:bg-gray-700/50 dark:hover:bg-gray-700/50" // White icons, hover state
         )}
         aria-label={isOpen ? "Close menu" : "Open menu"}
       >
         {isOpen ? (
-          <X className="h-6 w-6 transition-transform duration-300" />
+          <X className="h-5 w-5 transition-transform duration-300" />
         ) : (
-          <Menu className="h-6 w-6 transition-transform duration-300" />
+          <Menu className="h-5 w-5 transition-transform duration-300" />
         )}
       </Button>
 
       {(isOpen || isClosing) && ( // Render menu if open or closing
         <div
           ref={menuRef}
-          className="fixed top-24 left-8 z-40 flex flex-col space-y-2"
+          className="fixed top-20 left-8 z-40 flex flex-col space-y-2" // Adjusted top position for smaller button
         >
-          {menuItems.map((item, index) => (
+          {menuItems.map((item) => (
             <Button
               key={item.label}
               variant="secondary"
               className={cn(
-                "w-auto justify-start rounded-full px-4 py-2 transition-colors",
+                "w-auto justify-start rounded-full px-3 py-1.5 text-sm transition-colors", // Smaller buttons, text size
                 "bg-gray-900/50 text-white hover:bg-gray-700/50", // Light mode
                 "dark:bg-gray-800/50 dark:text-gray-200 dark:hover:bg-gray-700/50", // Dark mode
                 "backdrop-blur-lg shadow-lg", // Translucency and shadow
                 isClosing
-                  ? "animate-slide-fade-out-top" // No opacity-0 here, animation handles it
-                  : "animate-slide-fade-in-top opacity-0" // opacity-0 for initial state before fade-in
+                  ? "animate-slide-fade-out-left opacity-0"
+                  : "animate-slide-fade-in-left opacity-0"
               )}
               style={{
                 animationDelay: isClosing
