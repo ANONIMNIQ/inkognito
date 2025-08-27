@@ -307,16 +307,17 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                           "text-lg md:text-xl",
                           linkColor,
                           "hover:text-gray-800 dark:hover:text-gray-200",
+                          "relative group flex items-center overflow-hidden" // Make Link a flex container, add overflow-hidden
                         )
                   )}
                 >
                   {!isContentOpen ? (
-                    <span className="inline-block relative group overflow-hidden px-2 py-1 rounded-md"> {/* New wrapper with padding and rounded corners */}
-                      <span className="relative z-[2] block truncate"> {/* Text on top */}
+                    <>
+                      <span className="relative z-[2] block flex-1 truncate px-2 py-1 rounded-md"> {/* Text on top, now flex-1 and block */}
                         {confession.title}
                       </span>
                       <span className="absolute inset-0 bg-yellow-100 dark:bg-yellow-900 rounded-md transition-transform duration-300 ease-out origin-left scale-x-0 group-hover:scale-x-100 z-[1]" /> {/* Highlight behind */}
-                    </span>
+                    </>
                   ) : (
                     <span className={cn("block w-full whitespace-pre-wrap p-0", textColor)}>
                       {confession.title}
