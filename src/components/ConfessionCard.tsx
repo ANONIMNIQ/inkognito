@@ -307,16 +307,14 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                           "text-lg md:text-xl",
                           linkColor,
                           "hover:text-gray-800 dark:hover:text-gray-200",
-                          "relative group flex items-center overflow-hidden" // Make Link a flex container, add overflow-hidden
+                          "relative group" // Link is relative parent for the highlight container
                         )
                   )}
                 >
                   {!isContentOpen ? (
-                    <span className="relative inline-block truncate px-2 py-1 rounded-md"> {/* Parent for both text and highlight */}
-                      <span className="relative z-[2] block"> {/* Text element with higher z-index */}
-                        {confession.title}
-                      </span>
-                      <span className="absolute inset-0 bg-yellow-100 dark:bg-yellow-900 rounded-md transition-transform duration-300 ease-out origin-left scale-x-0 group-hover:scale-x-100 z-[1]" /> {/* Highlight behind */}
+                    <span className="relative inline-block truncate px-2 py-1 rounded-md z-[2]"> {/* This span is the text container, it truncates, and is relative for its highlight */}
+                      {confession.title}
+                      <span className="absolute inset-0 bg-yellow-100 dark:bg-yellow-900 rounded-md transition-transform duration-300 ease-out origin-left scale-x-0 group-hover:scale-x-100 z-[1]" /> {/* Highlight behind text */}
                     </span>
                   ) : (
                     <span className={cn("block w-full whitespace-pre-wrap p-0", textColor)}>
