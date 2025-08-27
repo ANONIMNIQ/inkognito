@@ -10,6 +10,7 @@ import { useScrollLock } from "@/hooks/use-scroll-lock";
 import CategoryFilter from "@/components/CategoryFilter";
 import { cn } from "@/lib/utils";
 import { useNavigate, useParams, useSearchParams, useLocation } from "react-router-dom";
+import FloatingMenu from "@/components/FloatingMenu"; // Import the new component
 
 interface Comment {
   id: string;
@@ -188,7 +189,7 @@ const Index: React.FC = () => {
         return null;
       }
 
-      if (categoryFromUrl !== "Всички" && confessionData.category !== currentCategory) { // Changed confessionData.category === categoryFromUrl to currentCategory
+      if (categoryFromUrl !== "Всички" && confessionData.category !== selectedCategory) { // Changed confessionData.category === categoryFromUrl to currentCategory
         const newSearch = confessionData.category !== "Всички" ? `?category=${confessionData.category}` : '';
         navigate(`/confessions/${confessionData.id}/${confessionData.slug}${newSearch}`, { replace: true });
         return null;
@@ -481,6 +482,7 @@ const Index: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4 max-w-3xl">
+      <FloatingMenu /> {/* Add the FloatingMenu component here */}
       <div className="flex justify-center mb-8 opacity-0 animate-fade-zoom-in">
         <svg xmlns="http://www.w3.org/2000/svg" version="1.1" preserveAspectRatio="none" x="0px" y="0px" viewBox="0 0 481 134"
           className={cn("w-64 sm:w-72 md:w-80 lg:w-96 h-auto fill-gray-900 dark:fill-white transition-colors duration-300")}>
