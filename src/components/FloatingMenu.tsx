@@ -8,11 +8,14 @@ interface FloatingMenuProps {}
 
 const FloatingMenu: React.FC<FloatingMenuProps> = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false); // New state for closing animation
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const isMobile = useIsMobile();
 
-  // Close menu when clicking outside
+  const ANIMATION_DURATION = 300; // Match Tailwind animation duration
+
+  // Close menu when clicking outside or on the X button
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -21,7 +24,9 @@ const FloatingMenu: React.FC<FloatingMenuProps> = () => {
         buttonRef.current &&
         !buttonRef.current.contains(event.target as Node)
       ) {
-        setIsOpen(false);
+        if (isOpen && !isClosing) { // Only trigger close if currently open and not already closing
+          handleCloseMenu();
+        }
       }
     };
 
@@ -34,7 +39,24 @@ const FloatingMenu: React.FC<FloatingMenuProps> = () => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isOpen]);
+  }, [isOpen, isClosing]);
+
+  const handleToggleMenu = () => {
+    if (isOpen) {
+      handleCloseMenu();
+    } else {
+      setIsOpen(true);
+      setIsClosing(false);
+    }
+  };
+
+  const handleCloseMenu = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsOpen(false);
+      setIsClosing(false);
+    }, ANIMATION_DURATION + 200); // Add a small buffer for cascade
+  };
 
   if (isMobile) {
     return null; // Don't render on mobile
@@ -50,7 +72,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = () => {
     <>
       <Button
         ref={buttonRef}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggleMenu}
         variant="secondary"
         className={cn(
           "fixed top-8 left-8 z-50 h-14 w-14 rounded-full bg-white/50 dark:bg-gray-800/50 backdrop-blur-lg shadow-lg transition-all duration-300 ease-in-out",
@@ -65,7 +87,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = () => {
         )}
       </Button>
 
-      {isOpen && (
+      {(isOpen || isClosing) && ( // Render menu if open or closing
         <div
           ref={menuRef}
           className="fixed top-24 left-8 z-40 flex flex-col space-y-2"
@@ -75,10 +97,17 @@ const FloatingMenu: React.FC<FloatingMenuProps> = () => {
               key={item.label}
               variant="secondary"
               className={cn(
-                "w-auto justify-start rounded-full bg-white/50 dark:bg-gray-800/50 backdrop-blur-lg shadow-lg",
-                "opacity-0 animate-slide-fade-in-top"
+                "w-auto justify-start rounded-full bg-gray-900 px-4 py-2 text-white transition-colors hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-300", // Darker buttons
+                isClosing
+                  ? "animate-slide-fade-out-top opacity-0"
+                  : "animate-slide-fade-in-top opacity-0"
               )}
-              style={{ animationDelay: `${item.delay}ms` }}
+              style={{
+                animationDelay: isClosing
+                  ? `${(menuItems.length - 1 - index) * 100}ms` // Reverse delay for closing
+                  : `${item.delay}ms`,
+                animationDuration: `${ANIMATION_DURATION}ms`,
+              }}
             >
               {item.label}
             </Button>
