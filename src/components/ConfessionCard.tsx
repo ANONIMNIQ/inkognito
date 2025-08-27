@@ -312,14 +312,14 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                   )}
                 >
                   {!isContentOpen ? (
-                    <>
-                      {/* Highlight behind the text, absolute to the Link */}
+                    <span className="relative inline-block flex-1 min-w-0"> {/* This is the key wrapper for sizing */}
+                      {/* Highlight behind the text, absolute to this wrapper span */}
                       <span className="absolute inset-0 bg-yellow-100 dark:bg-yellow-900 rounded-md transition-transform duration-300 ease-out origin-left scale-x-0 group-hover:scale-x-100 z-[1]" />
-                      {/* Text content, relative z-[2] to be above highlight, flex-1 to truncate */}
-                      <span className="relative z-[2] flex-1 truncate px-2 py-1">
+                      {/* Text content, relative z-[2] to be above highlight, block to truncate */}
+                      <span className="relative z-[2] block truncate px-2 py-1">
                         {confession.title}
                       </span>
-                    </>
+                    </span>
                   ) : (
                     <span className={cn("block w-full whitespace-pre-wrap p-0", textColor)}>
                       {confession.title}
