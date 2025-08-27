@@ -114,7 +114,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = () => {
               key={item.label}
               variant="secondary"
               className={cn(
-                "inline-flex w-fit justify-start items-center rounded-full px-1 py-0.5 text-[0.7rem] transition-colors min-w-0", // Adjusted padding to px-1 py-0.5 and font size to text-[0.7rem]
+                "inline-flex w-fit justify-start items-center rounded-full px-2 py-0.5 text-[0.7rem] transition-colors min-w-0", // Adjusted padding to px-2 py-0.5
                 "bg-gray-900/50 text-white hover:bg-gray-700/50",
                 "dark:bg-gray-800/50 dark:text-gray-200 dark:hover:bg-gray-700/50",
                 "backdrop-blur-lg shadow-lg",
