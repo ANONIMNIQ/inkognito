@@ -52,8 +52,12 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onSel
             className={cn(
               "rounded-full px-3 py-1.5 text-xs transition-colors h-auto",
               selectedCategory === category
-                ? cn(bg, text, darkBg, darkText, hoverBg, darkHoverBg) // Active state with hover effect
-                : "border border-gray-300 text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700" // Inactive state
+                ? cn(bg, text, darkBg, darkText, hoverBg, darkHoverBg) // Active state with its own hover effect
+                : cn(
+                    "border border-gray-300 text-gray-700 dark:border-gray-700 dark:text-gray-300",
+                    hoverBg, // Apply colored hover background
+                    darkHoverBg // Apply colored dark hover background
+                  )
             )}
           >
             {category}

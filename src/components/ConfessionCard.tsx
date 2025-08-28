@@ -318,12 +318,12 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                   )}
                 >
                   {!isContentOpen ? (
-                    <span className={cn(
-                      "relative inline-block truncate px-2 py-1",
-                      "before:absolute before:inset-0 before:rounded-md before:transition-transform before:duration-300 before:ease-out before:origin-left before:scale-x-0 group-hover:before:scale-x-100 before:z-[1]",
-                      `before:${bg}`,
-                      `before:${darkBg}`
-                    )}>
+                    <span className="relative inline-block truncate px-2 py-1">
+                      <span className={cn(
+                        "absolute inset-0 rounded-md transition-transform duration-300 ease-out origin-left scale-x-0 group-hover:scale-x-100 z-[1]",
+                        bg,
+                        darkBg
+                      )} />
                       <span className="relative z-[3]">{confession.title}</span>
                     </span>
                   ) : (
