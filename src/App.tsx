@@ -89,18 +89,27 @@ const AppRoutesAndModals: React.FC = () => {
     // Wait for the drawer's closing animation to complete (300ms is the duration from InfoDrawerContent)
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    // Log the action taken
+    const historyLength = window.history.length;
+    // Heuristic: If history length is 1, or if it's 2 and there's no React Router state, assume direct access.
+    // React Router typically adds a 'key' to location.state for internal navigations.
+    const isDirectAccess = (historyLength <= 1) || (historyLength === 2 && !location.state);
+
     await logToSupabase("Closing info page.", {
       fromPath: location.pathname,
       toPath: newPath,
-      historyLength: window.history.length, // Still log for context
-      actionTaken: `navigate(${newPath}, { replace: true })` // Explicitly state the action
+      historyLength: historyLength,
+      locationState: location.state, // Log location.state for debugging
+      isDirectAccessDetected: isDirectAccess,
+      actionTaken: isDirectAccess ? `navigate(${newPath}, { replace: true })` : "navigate(-1)"
     });
 
-    // Always navigate to the main page, replacing the current history entry.
-    // This ensures the tab stays open and the main page is displayed,
-    // regardless of how the info page was accessed.
-    navigate(newPath, { replace: true });
+    if (isDirectAccess) {
+      // If directly accessed, navigate to the main page and replace the history entry
+      navigate(newPath, { replace: true });
+    } else {
+      // If internally navigated, go back one step in history
+      navigate(-1);
+    }
   };
 
   return (
@@ -133,7 +142,7 @@ const AppRoutesAndModals: React.FC = () => {
         />
         {/* These routes now just ensure the Index page is rendered behind the drawer */}
         <Route path="/about-us" element={<AdminRedirectWrapper><Index isInfoPageOpen={isAnyInfoPageVisuallyOpen} /></AdminRedirectWrapper>} />
-        <Route path="/privacy-policy" element={<AdminRedirectWrapper><Index isInfoPageOpen={isAnyInfoPageVisuallyOpen} /></AdminRedirectWrapper>} />
+        <Route path="/privacy-policy" element={<AdminRedirectWrapper><Index isInfoPageType={isAnyInfoPageVisuallyOpen} /></AdminRedirectWrapper>} />
         <Route path="/terms-and-conditions" element={<AdminRedirectWrapper><Index isInfoPageOpen={isAnyInfoPageVisuallyOpen} /></AdminRedirectWrapper>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
