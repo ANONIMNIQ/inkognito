@@ -89,15 +89,16 @@ const AppRoutesAndModals: React.FC = () => {
     // Wait for the drawer's closing animation to complete (300ms is the duration from InfoDrawerContent)
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    // Now, attempt to log to Supabase
+    const historyLength = window.history.length; // Get history length *after* animation wait
     await logToSupabase("Closing info page.", {
       fromPath: location.pathname,
       toPath: newPath,
-      historyLength: window.history.length,
+      historyLength: historyLength,
+      actionTaken: historyLength > 1 ? "navigate(-1)" : `navigate(${newPath}, { replace: true })` // Log the specific action
     });
 
     // After logging, decide on navigation
-    if (window.history.length > 1) {
+    if (historyLength > 1) {
       // Standard case: navigate back
       navigate(-1);
     } else {
