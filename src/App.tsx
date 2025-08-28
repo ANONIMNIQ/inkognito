@@ -79,31 +79,33 @@ const AppRoutesAndModals: React.FC = () => {
 
   const handleCloseInfoPage = () => {
     console.log("handleCloseInfoPage called.");
-    console.log("Current location:", location.pathname + location.search);
-    console.log("Current history length:", window.history.length);
+    console.log("Current location BEFORE close logic:", location.pathname + location.search);
+    console.log("Current history length BEFORE close logic:", window.history.length);
 
-    // Always trigger the visual closing of the drawer
-    setIsInfoDrawerOpen(false);
-    setCurrentInfoPageType(null);
+    const currentCategoryParam = new URLSearchParams(location.search).get('category');
+    const newPath = currentCategoryParam && currentCategoryParam !== "Всички" ? `/?category=${currentCategoryParam}` : '/';
+    console.log("Calculated newPath:", newPath);
 
-    // Delay the actual navigation to allow the drawer closing animation to play
-    setTimeout(() => {
-      const currentCategoryParam = new URLSearchParams(location.search).get('category');
-      const newPath = currentCategoryParam && currentCategoryParam !== "Всички" ? `/?category=${currentCategoryParam}` : '/';
-      console.log("Calculated newPath:", newPath);
-
-      if (window.history.length > 1) {
+    if (window.history.length > 1) {
+      // Standard case: there's a previous page, so close drawer and navigate back
+      setIsInfoDrawerOpen(false);
+      setCurrentInfoPageType(null);
+      setTimeout(() => {
         console.log("History length > 1. Attempting navigate(-1).");
         navigate(-1);
-      } else {
-        // This is the critical path where the tab might close.
-        // Force a full page reload to the main page using window.open with _self.
-        // This is the most aggressive form of navigation and should prevent tab closure.
-        console.log("History length is 1. Attempting window.open('_self') to:", newPath);
-        window.open(newPath, '_self'); 
-      }
-      console.log("Navigation attempt made."); // This log should appear before tab closes
-    }, 300); // Match the drawer's closing animation duration
+      }, 300); // Match drawer closing animation duration
+    } else {
+      // Edge case: landed directly on info page, no history to go back to.
+      // Immediately replace the current history entry with the home page,
+      // then close the drawer. This should make the browser think it's on the home page.
+      console.log("History length is 1. Replacing current history entry with:", newPath);
+      navigate(newPath, { replace: true }); // Replace current URL with home page
+      
+      // Now, visually close the drawer. It will animate closed over the new home page content.
+      setIsInfoDrawerOpen(false);
+      setCurrentInfoPageType(null);
+      console.log("Drawer close animation triggered after history replacement.");
+    }
   };
 
   return (
