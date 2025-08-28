@@ -43,11 +43,16 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onSel
   return (
     <div className="w-full max-w-2xl mx-auto mb-6 flex flex-wrap justify-center gap-1">
       {categories.map((category) => {
-        const { bg, text, darkBg, darkText, hoverBg, darkHoverBg, hoverText, darkHoverText } = getCategoryColors(category);
-        
-        // Generate classes to force the hover state to be the same as the base state for the selected button
-        const hoverBgForSelected = bg.replace('bg-', 'hover:bg-');
-        const darkHoverBgForSelected = darkBg.replace('dark:bg-', 'dark:hover:bg-');
+        const { bg, text, darkBg, darkText, hoverBg, darkHoverBg } = getCategoryColors(category);
+        const isSelected = selectedCategory === category;
+
+        // Extract the base color class from the hover color class (e.g., "hover:bg-red-100" -> "bg-red-100")
+        const lightBg = hoverBg.replace('hover:', '');
+        const darkLightBg = darkHoverBg.replace('dark:hover:', 'dark:');
+
+        // Create the hover classes that apply the solid color
+        const hoverSolidBg = bg.replace('bg-', 'hover:bg-');
+        const darkHoverSolidBg = darkBg.replace('dark:bg-', 'dark:hover:bg-');
 
         return (
           <Button
@@ -55,11 +60,17 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onSel
             variant="ghost"
             onClick={() => onSelectCategory(category)}
             className={cn(
-              "rounded-full px-3 py-1.5 text-xs transition-colors h-auto border-transparent",
-              bg, text, darkBg, darkText,
-              selectedCategory === category
-                ? `${hoverBgForSelected} ${darkHoverBgForSelected}` // If active, lock the hover color
-                : cn(hoverBg, darkHoverBg, hoverText, darkHoverText) // If inactive, apply hover effects
+              "rounded-full px-3 py-1.5 text-xs h-auto border-transparent transition-colors",
+              // Set base colors
+              isSelected ? bg : lightBg,
+              isSelected ? darkBg : darkLightBg,
+              text,
+              darkText,
+              // Always set the hover color to be the solid color.
+              // For the selected button, this overrides the default and prevents any visual change.
+              // For the inactive button, this creates the desired "light -> solid" effect.
+              hoverSolidBg,
+              darkHoverSolidBg
             )}
           >
             {category}
