@@ -40,7 +40,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onSel
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto mb-6 flex flex-wrap justify-center gap-1">
+    <div className="w-full max-w-2xl mx-auto mb-6 flex flex-wrap justify-center items-start gap-2">
       {categories.map((category) => {
         const { bg, lightBg, text, darkBg, darkLightBg, darkText, hoverBg, darkHoverBg } = getCategoryColors(category);
         const isSelected = selectedCategory === category;
@@ -52,16 +52,24 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onSel
             tabIndex={0}
             onClick={() => onSelectCategory(category)}
             onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onSelectCategory(category)}
-            className={cn(
-              "cursor-pointer rounded-full px-3 py-1.5 text-xs h-auto border-transparent transition-colors shadow",
-              text,
-              darkText,
-              isSelected
-                ? [bg, darkBg] // Selected: solid, no hover change
-                : [lightBg, darkLightBg, hoverBg, darkHoverBg] // Inactive: light, solid on hover
-            )}
+            className="flex flex-col items-center cursor-pointer"
           >
-            {category}
+            <div
+              className={cn(
+                "rounded-full px-3 py-1.5 text-xs h-auto border-transparent transition-colors shadow",
+                text,
+                darkText,
+                isSelected
+                  ? [bg, darkBg] // Selected: solid, no hover change
+                  : [lightBg, darkLightBg, hoverBg, darkHoverBg] // Inactive: light, solid on hover
+              )}
+            >
+              {category}
+            </div>
+            <div className={cn(
+              "w-1.5 h-1.5 rounded-full mt-1 transition-opacity duration-300",
+              isSelected ? "opacity-100 bg-gray-900 dark:bg-white" : "opacity-0"
+            )}></div>
           </div>
         );
       })}
