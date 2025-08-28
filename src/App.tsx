@@ -83,21 +83,20 @@ const AppRoutesAndModals: React.FC = () => {
     setIsInfoDrawerOpen(false);
     setCurrentInfoPageType(null);
 
-    // Delay the actual URL update to allow the drawer closing animation to play
+    // Delay the actual navigation to allow the drawer closing animation to play
     setTimeout(() => {
+      const currentCategoryParam = new URLSearchParams(location.search).get('category');
+      const newPath = currentCategoryParam && currentCategoryParam !== "Всички" ? `/?category=${currentCategoryParam}` : '/';
+
       if (window.history.length > 1) {
         console.log("History length > 1. Navigating back.");
         navigate(-1);
       } else {
         // This is the critical path where the tab might close.
-        // Instead of navigating, we directly replace the URL state to '/'
-        // without adding to history or triggering a full navigation that might close the tab.
-        console.log("History length is 1. Using window.history.replaceState to update URL.");
-        // Preserve category if it was present in the original URL
-        const currentCategoryParam = new URLSearchParams(location.search).get('category');
-        const newPath = currentCategoryParam && currentCategoryParam !== "Всички" ? `/?category=${currentCategoryParam}` : '/';
-        window.history.replaceState(null, '', newPath);
-        // The Index component is already rendered underneath, so no further navigation is needed.
+        // Force a full page reload to the main page. This will be less smooth
+        // but should prevent the tab from closing.
+        console.log("History length is 1. Forcing full page reload to:", newPath);
+        window.location.href = newPath; // This will cause a full refresh
       }
     }, 300); // Match the drawer's closing animation duration
   };
