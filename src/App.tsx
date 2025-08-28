@@ -58,7 +58,7 @@ const AppRoutesAndModals: React.FC = () => {
   };
 
   const handleCloseInfoPage = () => {
-    navigate('/', { replace: true }); // Navigate back to main page
+    navigate(-1); // Navigate back to the previous page in history
   };
 
   return (
