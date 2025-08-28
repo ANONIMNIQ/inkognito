@@ -43,7 +43,12 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onSel
   return (
     <div className="w-full max-w-2xl mx-auto mb-6 flex flex-wrap justify-center gap-1">
       {categories.map((category) => {
-        const { bg, text, darkBg, darkText, hoverBg, darkHoverBg } = getCategoryColors(category);
+        const { bg, text, darkBg, darkText, hoverBg, darkHoverBg, hoverText, darkHoverText } = getCategoryColors(category);
+        
+        // Generate classes to force the hover state to be the same as the base state for the selected button
+        const hoverBgForSelected = bg.replace('bg-', 'hover:bg-');
+        const darkHoverBgForSelected = darkBg.replace('dark:bg-', 'dark:hover:bg-');
+
         return (
           <Button
             key={category}
@@ -51,10 +56,10 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onSel
             onClick={() => onSelectCategory(category)}
             className={cn(
               "rounded-full px-3 py-1.5 text-xs transition-colors h-auto border-transparent",
-              bg, text, darkBg, darkText, // Base solid colors for all buttons
+              bg, text, darkBg, darkText,
               selectedCategory === category
-                ? "" // If active, do nothing more (no hover effect)
-                : cn(hoverBg, darkHoverBg) // If inactive, add the lighter hover effect
+                ? `${hoverBgForSelected} ${darkHoverBgForSelected}` // If active, lock the hover color
+                : cn(hoverBg, darkHoverBg, hoverText, darkHoverText) // If inactive, apply hover effects
             )}
           >
             {category}
