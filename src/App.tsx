@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/AdminLogin";
@@ -38,14 +38,26 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 };
 
 const App = () => {
-  const [activeInfoPage, setActiveInfoPage] = useState<InfoPageType>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  const handleMenuItemClick = (page: InfoPageType) => {
-    setActiveInfoPage(page);
+  const getActiveInfoPage = (pathname: string): InfoPageType => {
+    if (pathname === '/about-us') return 'about';
+    if (pathname === '/privacy-policy') return 'privacy';
+    if (pathname === '/terms-and-conditions') return 'terms';
+    return null;
+  };
+
+  const activeInfoPage = getActiveInfoPage(location.pathname);
+
+  const handleMenuItemClick = (pageKey: InfoPageType) => {
+    if (pageKey === 'about') navigate('/about-us');
+    else if (pageKey === 'privacy') navigate('/privacy-policy');
+    else if (pageKey === 'terms') navigate('/terms-and-conditions');
   };
 
   const handleCloseInfoPage = () => {
-    setActiveInfoPage(null);
+    navigate('/', { replace: true }); // Navigate back to main page
   };
 
   return (
@@ -82,6 +94,10 @@ const App = () => {
                   </AdminRedirectWrapper>
                 }
               />
+              {/* New routes for info pages */}
+              <Route path="/about-us" element={<AdminRedirectWrapper><Index /></AdminRedirectWrapper>} />
+              <Route path="/privacy-policy" element={<AdminRedirectWrapper><Index /></AdminRedirectWrapper>} />
+              <Route path="/terms-and-conditions" element={<AdminRedirectWrapper><Index /></AdminRedirectWrapper>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
