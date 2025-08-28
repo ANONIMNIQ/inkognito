@@ -83,15 +83,17 @@ const AppRoutesAndModals: React.FC = () => {
     setIsInfoDrawerOpen(false);
     setCurrentInfoPageType(null);
 
-    // If there's history, go back. Otherwise, force a full reload to the home page.
-    // This is to prevent the browser from closing the tab when there's no back history.
-    if (window.history.length > 1) {
-      console.log("History length > 1. Navigating back.");
-      navigate(-1);
-    } else {
-      console.log("History length is 1. Performing full page reload to '/' to prevent tab closure.");
-      window.location.href = '/'; // Force a full page reload to the root
-    }
+    // Delay the actual navigation to allow the drawer closing animation to play
+    setTimeout(() => {
+      if (window.history.length > 1) {
+        console.log("History length > 1. Navigating back.");
+        navigate(-1);
+      } else {
+        console.log("History length is 1. Using window.open('/', '_self') to prevent tab closure.");
+        // This forces a navigation within the same tab, which should prevent it from closing.
+        window.open('/', '_self');
+      }
+    }, 300); // Match the drawer's closing animation duration (or slightly more)
   };
 
   return (
