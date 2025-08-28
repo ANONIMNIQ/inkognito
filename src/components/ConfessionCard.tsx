@@ -5,8 +5,8 @@ import { ChevronDown, ChevronUp, MessageCircle, Heart, Share2 } from "lucide-rea
 import GenderAvatar from "./GenderAvatar";
 import CommentCard from "./CommentCard";
 import CommentForm from "./CommentForm";
-import { format } from "date-fns";
-import bg from "date-fns/locale/bg"; // Changed import
+import { format } from "date-fns/format"; // Explicit import for format
+import { bg } from "date-fns/locale"; // Named import for locale
 import { cn } from "@/lib/utils";
 import TypingText from "./TypingText";
 import CommentCardSkeleton from "./CommentCardSkeleton";

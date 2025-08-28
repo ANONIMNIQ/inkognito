@@ -1,7 +1,7 @@
 import React from "react";
 import GenderAvatar from "./GenderAvatar";
-import { formatDistanceToNow } from "date-fns";
-import bg from "date-fns/locale/bg"; // Changed import
+import { formatDistanceToNow } from "date-fns/formatDistanceToNow"; // Explicit import for formatDistanceToNow
+import { bg } from "date-fns/locale"; // Named import for locale
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { useIsMobile } from "@/hooks/use-mobile"; // Import useIsMobile
