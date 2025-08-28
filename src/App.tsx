@@ -68,6 +68,15 @@ const AppRoutesAndModals: React.FC = () => {
     }
   }, [location.pathname]);
 
+  // Check localStorage for debug messages on load
+  useEffect(() => {
+    const debugMessage = localStorage.getItem('infoPageCloseDebug');
+    if (debugMessage) {
+      console.log("Info Page Close Debug (from localStorage):", debugMessage);
+      localStorage.removeItem('infoPageCloseDebug'); // Clear it after reading
+    }
+  }, []);
+
   // This prop is passed to Index to inform it if an info page is visually open
   const isAnyInfoPageVisuallyOpen = isInfoDrawerOpen;
 
@@ -96,10 +105,10 @@ const AppRoutesAndModals: React.FC = () => {
       }, 300); // Match drawer closing animation duration
     } else {
       // Edge case: landed directly on info page, no history to go back to.
-      // Immediately replace the current history entry with the home page,
-      // then close the drawer. This should make the browser think it's on the home page.
-      console.log("History length is 1. Replacing current history entry with:", newPath);
-      navigate(newPath, { replace: true }); // Replace current URL with home page
+      // In this scenario, we will NOT navigate. We will just close the drawer
+      // and let the main content show through. The URL will remain the info page URL.
+      console.log("History length is 1. NOT navigating. Only closing drawer. URL will remain:", location.pathname);
+      localStorage.setItem('infoPageCloseDebug', `Closed info page from direct access. URL: ${location.pathname}. No navigation performed.`);
       
       // Now, visually close the drawer. It will animate closed over the new home page content.
       setIsInfoDrawerOpen(false);
@@ -146,7 +155,7 @@ const AppRoutesAndModals: React.FC = () => {
 
       <AboutUsPage isOpen={isInfoDrawerOpen && currentInfoPageType === 'about'} onClose={handleCloseInfoPage} />
       <PrivacyPolicyPage isOpen={isInfoDrawerOpen && currentInfoPageType === 'privacy'} onClose={handleCloseInfoPage} />
-      <TermsAndConditionsPage isOpen={isInfoDrawerOpen && currentInfoPageType === 'terms'} onClose={handleCloseInfoPage} />
+      TermsAndConditionsPage isOpen={isInfoDrawerOpen && currentInfoPageType === 'terms'} onClose={handleCloseInfoPage} />
       <CookieConsentBanner /> {/* Render the cookie consent banner */}
     </>
   );
