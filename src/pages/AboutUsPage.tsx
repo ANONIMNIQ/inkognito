@@ -4,12 +4,11 @@ import InfoDrawerContent from "@/components/InfoDrawerContent";
 interface AboutUsPageProps {
   isOpen: boolean;
   onClose: () => void;
-  onDrawerCloseComplete?: () => void; // New prop
 }
 
-const AboutUsPage: React.FC<AboutUsPageProps> = ({ isOpen, onClose, onDrawerCloseComplete }) => {
+const AboutUsPage: React.FC<AboutUsPageProps> = ({ isOpen, onClose }) => {
   return (
-    <InfoDrawerContent title="ЗА НАС" isOpen={isOpen} onClose={onClose} onDrawerCloseComplete={onDrawerCloseComplete}>
+    <InfoDrawerContent title="ЗА НАС" isOpen={isOpen} onClose={onClose}>
       <p>
         Добре дошли в Инкогнито Online – мястото, където можеш да споделиш своите най-съкровени тайни, мисли и преживявания, без да се притесняваш от осъждане. Ние вярваме, че всеки има нужда от пространство, където да бъде напълно откровен, без да разкрива своята самоличност.
       </p>

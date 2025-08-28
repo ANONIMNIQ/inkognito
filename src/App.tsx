@@ -80,12 +80,9 @@ const AppRoutesAndModals: React.FC = () => {
     // This is called when the user *initiates* the close (e.g., clicks X or outside).
     // It starts the drawer's closing animation.
     setIsInfoDrawerOpen(false);
-    setCurrentInfoPageType(null); // Clear the type immediately to ensure correct rendering if another info page is opened quickly
-  };
+    setCurrentInfoPageType(null); // Clear the type immediately
 
-  const handleDrawerCloseComplete = () => {
-    // This is called *after* the drawer's closing animation has finished.
-    // Now we can safely manipulate history if needed.
+    // Now, handle history based on the current state
     const infoPagePaths = ['/about-us', '/privacy-policy', '/terms-and-conditions'];
     const isCurrentlyOnInfoPagePath = infoPagePaths.includes(location.pathname);
 
@@ -94,10 +91,15 @@ const AppRoutesAndModals: React.FC = () => {
       navigate(-1);
     } else if (isCurrentlyOnInfoPagePath) {
       // If it's a direct access to an info page and no other history,
-      // silently update the URL to the home page.
-      window.history.replaceState({}, '', '/');
+      // we do NOT navigate or replace history.
+      // The drawer will visually close, and the Index page will be visible.
+      // The URL in the address bar will remain the info page URL.
+      // This is the only way to reliably prevent tab closure in some browsers.
+      // No action needed here for history.
+    } else {
+      // Fallback for any other unexpected history state, just navigate to home (push)
+      navigate('/');
     }
-    // If not on an info page path (e.g., already navigated away), do nothing.
   };
 
   return (
@@ -136,9 +138,9 @@ const AppRoutesAndModals: React.FC = () => {
       </Routes>
       <FloatingMenu onMenuItemClick={handleMenuItemClick} />
 
-      <AboutUsPage isOpen={isInfoDrawerOpen && currentInfoPageType === 'about'} onClose={handleCloseInfoPage} onDrawerCloseComplete={handleDrawerCloseComplete} />
-      <PrivacyPolicyPage isOpen={isInfoDrawerOpen && currentInfoPageType === 'privacy'} onClose={handleCloseInfoPage} onDrawerCloseComplete={handleDrawerCloseComplete} />
-      <TermsAndConditionsPage isOpen={isInfoDrawerOpen && currentInfoPageType === 'terms'} onClose={handleCloseInfoPage} onDrawerCloseComplete={handleDrawerCloseComplete} />
+      <AboutUsPage isOpen={isInfoDrawerOpen && currentInfoPageType === 'about'} onClose={handleCloseInfoPage} />
+      <PrivacyPolicyPage isOpen={isInfoDrawerOpen && currentInfoPageType === 'privacy'} onClose={handleCloseInfoPage} />
+      <TermsAndConditionsPage isOpen={isInfoDrawerOpen && currentInfoPageType === 'terms'} onClose={handleCloseInfoPage} />
     </>
   );
 };
