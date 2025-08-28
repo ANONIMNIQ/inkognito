@@ -89,10 +89,10 @@ const AppRoutesAndModals: React.FC = () => {
       console.log("History length > 1. Navigating back.");
       navigate(-1);
     } else {
-      console.log("History length is 1. Not navigating back, just closing drawer visually.");
-      // The drawer will close, the main page will be visible,
-      // and the URL in the address bar will remain the info page URL.
-      // This is the only way to reliably prevent the tab from closing in some browsers.
+      console.log("History length is 1. Replacing current URL with '/' to prevent tab closure.");
+      // If there's no history to go back to, replace the current URL with the home page.
+      // This should prevent the tab from closing and show the main content.
+      navigate('/', { replace: true });
     }
   };
 
