@@ -67,11 +67,17 @@ export default {
         },
         // Custom category colors
         'category-love-sex': '#f9caca',
+        'category-love-sex-hover': '#fde7e7',
         'category-education': '#fff2c8',
+        'category-education-hover': '#fff8e1',
         'category-family': '#d1f6f4',
+        'category-family-hover': '#e8fbf9',
         'category-sport-health': '#c5f2cd',
+        'category-sport-health-hover': '#e1f9e4',
         'category-teen': '#eadbf6',
-        'category-neutral': '#e0e0e0', // For 'Други' and 'Всички'
+        'category-teen-hover': '#f4eef9',
+        'category-neutral': '#e0e0e0',
+        'category-neutral-hover': '#ebebeb',
       },
       borderRadius: {
         lg: "var(--radius)",

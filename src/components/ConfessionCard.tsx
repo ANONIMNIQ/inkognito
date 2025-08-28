@@ -318,9 +318,13 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                   )}
                 >
                   {!isContentOpen ? (
-                    // This span now directly contains the text and the pseudo-element for the highlight
-                    <span className={cn("relative inline-block truncate px-2 py-1 before:absolute before:inset-0 before:rounded-md before:transition-transform before:duration-300 before:ease-out before:origin-left before:scale-x-0 group-hover:before:scale-x-100 before:z-[1]", bg, darkBg)}>
-                      <span className="relative z-[3]">{confession.title}</span> {/* New inner span with higher z-index */}
+                    <span className={cn(
+                      "relative inline-block truncate px-2 py-1",
+                      "before:absolute before:inset-0 before:rounded-md before:transition-transform before:duration-300 before:ease-out before:origin-left before:scale-x-0 group-hover:before:scale-x-100 before:z-[1]",
+                      `before:${bg}`,
+                      `before:${darkBg}`
+                    )}>
+                      <span className="relative z-[3]">{confession.title}</span>
                     </span>
                   ) : (
                     <span className={cn("block w-full whitespace-pre-wrap p-0", textColor)}>
