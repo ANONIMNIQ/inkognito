@@ -82,24 +82,27 @@ const AppRoutesAndModals: React.FC = () => {
     const currentCategoryParam = new URLSearchParams(location.search).get('category');
     const newPath = currentCategoryParam && currentCategoryParam !== "Всички" ? `/?category=${currentCategoryParam}` : '/';
 
+    // First, trigger the drawer closing animation
+    setIsInfoDrawerOpen(false);
+    setCurrentInfoPageType(null);
+
+    // Wait for the drawer's closing animation to complete (300ms is the duration from InfoDrawerContent)
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    // Now, attempt to log to Supabase
+    await logToSupabase("Closing info page.", {
+      fromPath: location.pathname,
+      toPath: newPath,
+      historyLength: window.history.length,
+    });
+
+    // After logging, decide on navigation
     if (window.history.length > 1) {
-      // Standard case: there's a previous page, so close drawer and navigate back
-      setIsInfoDrawerOpen(false);
-      setCurrentInfoPageType(null);
-      setTimeout(() => {
-        navigate(-1);
-      }, 300); // Match drawer closing animation duration
+      // Standard case: navigate back
+      navigate(-1);
     } else {
-      // Edge case: landed directly on info page, no history to go back to.
-      // Log to Supabase before the full page reload.
-      await logToSupabase("Closing info page from direct access, performing window.location.replace.", {
-        fromPath: location.pathname,
-        toPath: newPath,
-        historyLength: window.history.length,
-      });
-      // Add a small delay to give the log request time to complete
-      await new Promise(resolve => setTimeout(resolve, 100)); 
-      window.location.replace(newPath); // This will cause a full page reload
+      // Edge case: landed directly on info page, navigate to newPath and replace history
+      navigate(newPath, { replace: true });
     }
   };
 
