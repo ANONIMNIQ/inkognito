@@ -27,8 +27,8 @@ const InfoDrawerContent: React.FC<InfoDrawerContentProps> = ({ title, children, 
         <div className="flex-1 overflow-auto p-4">
           <DrawerHeader className="flex justify-between items-center px-0 pt-0 pb-4">
             <DrawerTitle className="text-2xl font-bold text-white">{title}</DrawerTitle>
-            {/* Replaced DrawerClose with a standard Button */}
-            <Button variant="ghost" size="icon" onClick={onClose} className="text-gray-400 hover:text-white">
+            {/* Removed hover:text-white to eliminate hover state */}
+            <Button variant="ghost" size="icon" onClick={onClose} className="text-gray-400">
               <X className="h-6 w-6" />
               <span className="sr-only">Close</span>
             </Button>
