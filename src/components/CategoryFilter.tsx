@@ -1,5 +1,4 @@
 import React from "react";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -47,24 +46,27 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onSel
         const isSelected = selectedCategory === category;
 
         return (
-          <Button
+          <div
             key={category}
+            role="button"
+            tabIndex={0}
             onClick={() => onSelectCategory(category)}
+            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onSelectCategory(category)}
             className={cn(
-              "rounded-full px-3 py-1.5 text-xs h-auto border-transparent transition-colors",
+              "cursor-pointer rounded-full px-3 py-1.5 text-xs h-auto border-transparent transition-colors",
               // Base text colors
               text,
               darkText,
-              // Conditional background and hover
-              isSelected
-                ? // Selected: solid bg, no change on hover
-                  `${bg} ${darkBg} ${bg.replace('bg-', 'hover:bg-')} ${darkBg.replace('dark:bg-', 'dark:hover:bg-')}`
-                : // Inactive: light bg, solid on hover
-                  `${lightBg} ${darkLightBg} ${bg.replace('bg-', 'hover:bg-')} ${darkBg.replace('dark:bg-', 'dark:hover:bg-')}`
+              // Conditional background
+              isSelected ? bg : lightBg,
+              isSelected ? darkBg : darkLightBg,
+              // Hover state (always solid)
+              bg.replace('bg-', 'hover:bg-'),
+              darkBg.replace('dark:bg-', 'dark:hover:bg-')
             )}
           >
             {category}
-          </Button>
+          </div>
         );
       })}
     </div>
