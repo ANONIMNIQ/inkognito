@@ -49,24 +49,30 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onSel
         // Create hover classes that apply the solid color
         const hoverSolidBg = bg.replace('bg-', 'hover:bg-');
         const darkHoverSolidBg = darkBg.replace('dark:bg-', 'dark:hover:bg-');
+        
+        // Create hover text classes to prevent ghost variant from changing text color
+        const hoverText = text.replace('text-', 'hover:text-');
+        const darkHoverText = darkText.replace('dark:text-', 'dark:hover:text-');
 
         return (
           <Button
             key={category}
+            variant="ghost" // Use ghost variant to remove default bg, but we must override its hover effects
             onClick={() => onSelectCategory(category)}
             className={cn(
               "rounded-full px-3 py-1.5 text-xs h-auto border-transparent transition-colors",
-              // Set text colors
+              // Set base text color
               text,
               darkText,
-              // Set background colors based on state
+              // Set base background color
               isSelected ? bg : lightBg,
               isSelected ? darkBg : darkLightBg,
-              // Set hover colors
-              // If selected, this will override hover to be the same as solid, preventing change.
-              // If not selected, this will apply the solid color on hover.
-              hoverSolidBg,
-              darkHoverSolidBg
+              // Set hover state
+              isSelected 
+                ? // For selected, ensure hover state is identical to base state
+                  `${hoverSolidBg} ${darkHoverSolidBg} ${hoverText} ${darkHoverText}`
+                : // For inactive, set hover to solid color
+                  `${hoverSolidBg} ${darkHoverSolidBg}`
             )}
           >
             {category}
