@@ -15,7 +15,7 @@ serve(async (req) => {
     const { confession_id, comment_content } = await req.json()
 
     if (!confession_id || !comment_content) {
-      // console.error("Validation Error: confession_id and comment_content are required.");
+      // console.error("Validation Error: confession_id and comment_content are required."); // Removed console.error
       throw new Error("confession_id and comment_content are required.")
     }
 
@@ -31,7 +31,7 @@ serve(async (req) => {
       .single()
 
     if (confessionError) {
-      // console.error("Supabase Error fetching confession:", confessionError);
+      // console.error("Supabase Error fetching confession:", confessionError); // Removed console.error
       throw confessionError
     }
     
@@ -44,7 +44,7 @@ serve(async (req) => {
 
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
     if (!RESEND_API_KEY) {
-      // console.error("Configuration Error: RESEND_API_KEY is not set.");
+      // console.error("Configuration Error: RESEND_API_KEY is not set."); // Removed console.error
       throw new Error('RESEND_API_KEY is not set in Supabase secrets.')
     }
 
@@ -89,7 +89,7 @@ serve(async (req) => {
 
     if (!resendResponse.ok) {
       const errorBody = await resendResponse.text();
-      // console.error(`Resend API Error: Status ${resendResponse.status}, Body: ${errorBody}`);
+      // console.error(`Resend API Error: Status ${resendResponse.status}, Body: ${errorBody}`); // Removed console.error
       throw new Error(`Failed to send email: ${resendResponse.status} ${errorBody}`);
     }
 
@@ -98,7 +98,7 @@ serve(async (req) => {
       status: 200,
     })
   } catch (error) {
-    // console.error('Error in send-comment-notification Edge Function:', error)
+    // console.error('Error in send-comment-notification Edge Function:', error) // Removed console.error
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,

@@ -16,7 +16,7 @@ import AboutUsPage from "./pages/AboutUsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsAndConditionsPage from "./pages/TermsAndConditionsPage";
 import CookieConsentBanner from "@/components/CookieConsentBanner";
-import { logToSupabase } from "@/utils/logger"; // Import the new logger
+// Removed: import { logToSupabase } from "@/utils/logger";
 
 const queryClient = new QueryClient();
 
@@ -94,14 +94,7 @@ const AppRoutesAndModals: React.FC = () => {
     // React Router typically adds a 'key' to location.state for internal navigations.
     const isDirectAccess = (historyLength <= 1) || (historyLength === 2 && !location.state);
 
-    await logToSupabase("Closing info page.", {
-      fromPath: location.pathname,
-      toPath: newPath,
-      historyLength: historyLength,
-      locationState: location.state, // Log location.state for debugging
-      isDirectAccessDetected: isDirectAccess,
-      actionTaken: isDirectAccess ? `navigate(${newPath}, { replace: true })` : "navigate(-1)"
-    });
+    // Removed: logToSupabase("Closing info page.", { ... });
 
     if (isDirectAccess) {
       // If directly accessed, navigate to the main page and replace the history entry
@@ -142,7 +135,7 @@ const AppRoutesAndModals: React.FC = () => {
         />
         {/* These routes now just ensure the Index page is rendered behind the drawer */}
         <Route path="/about-us" element={<AdminRedirectWrapper><Index isInfoPageOpen={isAnyInfoPageVisuallyOpen} /></AdminRedirectWrapper>} />
-        <Route path="/privacy-policy" element={<AdminRedirectWrapper><Index isInfoPageType={isAnyInfoPageVisuallyOpen} /></AdminRedirectWrapper>} />
+        <Route path="/privacy-policy" element={<AdminRedirectWrapper><Index isInfoPageOpen={isAnyInfoPageVisuallyOpen} /></AdminRedirectWrapper>} />
         <Route path="/terms-and-conditions" element={<AdminRedirectWrapper><Index isInfoPageOpen={isAnyInfoPageVisuallyOpen} /></AdminRedirectWrapper>} />
         <Route path="*" element={<NotFound />} />
       </Routes>

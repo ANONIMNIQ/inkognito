@@ -8,7 +8,7 @@ const NotFound = () => {
     // console.error(
     //   "404 Error: User attempted to access non-existent route:",
     //   location.pathname,
-    // );
+    // ); // Removed console.error
   }, [location.pathname]);
 
   return (

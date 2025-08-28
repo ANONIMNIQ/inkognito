@@ -31,7 +31,7 @@ serve(async (req) => {
       throw new Error('Empty request body received.');
     }
   } catch (jsonParseError) {
-    // console.error("Error parsing incoming request JSON:", jsonParseError, "Raw body received:", rawRequestBody);
+    // console.error("Error parsing incoming request JSON:", jsonParseError, "Raw body received:", rawRequestBody); // Removed console.error
     return new Response(JSON.stringify({ error: 'Invalid JSON in request body', rawBody: rawRequestBody }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
@@ -39,7 +39,7 @@ serve(async (req) => {
   }
 
   if (!confessionContent || !confessionId) {
-    // console.error("Validation Error: Confession content and ID are required.");
+    // console.error("Validation Error: Confession content and ID are required."); // Removed console.error
     return new Response(JSON.stringify({ error: 'Confession content and ID are required' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
@@ -49,7 +49,7 @@ serve(async (req) => {
   const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY');
 
   if (!GOOGLE_API_KEY) {
-    // console.error("Configuration Error: GOOGLE_API_KEY not set in Supabase secrets.");
+    // console.error("Configuration Error: GOOGLE_API_KEY not set in Supabase secrets."); // Removed console.error
     return new Response(JSON.stringify({ error: 'GOOGLE_API_KEY not set in Supabase secrets.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
@@ -81,7 +81,7 @@ serve(async (req) => {
   const responseText = await response.text();
 
   if (!response.ok) {
-    // console.error(`Google Gemini API error: Status ${response.status}, Body: ${responseText}`);
+    // console.error(`Google Gemini API error: Status ${response.status}, Body: ${responseText}`); // Removed console.error
     return new Response(JSON.stringify({
       error: `Failed to get AI comment from Google Gemini API. Status: ${response.status}. Details: ${responseText.substring(0, 200)}...`
     }), {
@@ -94,7 +94,7 @@ serve(async (req) => {
   try {
     data = JSON.parse(responseText);
   } catch (jsonError) {
-    // console.error("Failed to parse Google Gemini API response as JSON:", jsonError);
+    // console.error("Failed to parse Google Gemini API response as JSON:", jsonError); // Removed console.error
     return new Response(JSON.stringify({
       error: `Failed to parse AI comment response. Raw body: ${responseText.substring(0, 200)}...`
     }), {
@@ -120,7 +120,7 @@ serve(async (req) => {
     });
 
   if (insertError) {
-    // console.error("Error inserting AI comment into database:", insertError);
+    // console.error("Error inserting AI comment into database:", insertError); // Removed console.error
     return new Response(JSON.stringify({ error: 'Failed to insert AI comment into database: ' + insertError.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
