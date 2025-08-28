@@ -253,7 +253,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
             onClick={() => onSelectCategory(confession.category)}
             onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onSelectCategory(confession.category)}
             className={cn(
-              "cursor-pointer absolute top-2 right-2 h-auto px-2 py-0.5 text-xs font-medium rounded-full shadow-sm transition-colors",
+              "cursor-pointer absolute top-2 right-2 h-auto px-2 py-0.5 text-xs font-medium rounded-full shadow transition-colors",
               // Base colors (solid)
               bg,
               text,

@@ -53,7 +53,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onSel
             onClick={() => onSelectCategory(category)}
             onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onSelectCategory(category)}
             className={cn(
-              "cursor-pointer rounded-full px-3 py-1.5 text-xs h-auto border-transparent transition-colors",
+              "cursor-pointer rounded-full px-3 py-1.5 text-xs h-auto border-transparent transition-colors shadow",
               text,
               darkText,
               isSelected
