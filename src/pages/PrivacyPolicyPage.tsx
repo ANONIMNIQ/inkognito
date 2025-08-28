@@ -4,11 +4,12 @@ import InfoDrawerContent from "@/components/InfoDrawerContent";
 interface PrivacyPolicyPageProps {
   isOpen: boolean;
   onClose: () => void;
+  onDrawerCloseComplete?: () => void; // New prop
 }
 
-const PrivacyPolicyPage: React.FC<PrivacyPolicyPageProps> = ({ isOpen, onClose }) => {
+const PrivacyPolicyPage: React.FC<PrivacyPolicyPageProps> = ({ isOpen, onClose, onDrawerCloseComplete }) => {
   return (
-    <InfoDrawerContent title="ПОВЕРИТЕЛНОСТ" isOpen={isOpen} onClose={onClose}>
+    <InfoDrawerContent title="ПОВЕРИТЕЛНОСТ" isOpen={isOpen} onClose={onClose} onDrawerCloseComplete={onDrawerCloseComplete}>
       <p>
         В Инкогнито Online, поверителността на нашите потребители е от първостепенно значение. Тази политика за поверителност описва как събираме, използваме и защитаваме вашата информация.
       </p>

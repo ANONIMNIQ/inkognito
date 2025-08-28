@@ -14,12 +14,13 @@ interface InfoDrawerContentProps {
   title: string;
   children: React.ReactNode;
   isOpen: boolean;
-  onClose: () => void;
+  onClose: () => void; // Called when user initiates close (e.g., clicks X or outside)
+  onDrawerCloseComplete?: () => void; // New prop: Called when the drawer animation is fully closed
 }
 
-const InfoDrawerContent: React.FC<InfoDrawerContentProps> = ({ title, children, isOpen, onClose }) => {
+const InfoDrawerContent: React.FC<InfoDrawerContentProps> = ({ title, children, isOpen, onClose, onDrawerCloseComplete }) => {
   return (
-    <Drawer open={isOpen} onOpenChange={onClose}>
+    <Drawer open={isOpen} onOpenChange={onClose} onClose={onDrawerCloseComplete}> {/* Pass onClose to vaul's Drawer */}
       <DrawerContent className={cn(
         "fixed inset-x-0 bottom-0 mt-0 flex h-full flex-col rounded-t-[10px] bg-gray-900 dark:bg-gray-900 text-white z-50",
         "max-w-3xl mx-auto" // Constrain width for better readability on large screens

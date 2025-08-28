@@ -4,11 +4,12 @@ import InfoDrawerContent from "@/components/InfoDrawerContent";
 interface TermsAndConditionsPageProps {
   isOpen: boolean;
   onClose: () => void;
+  onDrawerCloseComplete?: () => void; // New prop
 }
 
-const TermsAndConditionsPage: React.FC<TermsAndConditionsPageProps> = ({ isOpen, onClose }) => {
+const TermsAndConditionsPage: React.FC<TermsAndConditionsPageProps> = ({ isOpen, onClose, onDrawerCloseComplete }) => {
   return (
-    <InfoDrawerContent title="ПРАВИЛА И УСЛОВИЯ" isOpen={isOpen} onClose={onClose}>
+    <InfoDrawerContent title="ПРАВИЛА И УСЛОВИЯ" isOpen={isOpen} onClose={onClose} onDrawerCloseComplete={onDrawerCloseComplete}>
       <p>
         Добре дошли в Инкогнито Online. Моля, прочетете внимателно следните правила и условия, преди да използвате нашия уебсайт. Използвайки Инкогнито Online, вие се съгласявате да спазвате тези условия.
       </p>
