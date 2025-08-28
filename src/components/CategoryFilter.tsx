@@ -43,36 +43,24 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onSel
   return (
     <div className="w-full max-w-2xl mx-auto mb-6 flex flex-wrap justify-center gap-1">
       {categories.map((category) => {
-        const { bg, text, darkBg, darkText, lightBg, darkLightBg } = getCategoryColors(category);
+        const { bg, lightBg, text, darkBg, darkLightBg, darkText } = getCategoryColors(category);
         const isSelected = selectedCategory === category;
-
-        // Create hover classes that apply the solid color
-        const hoverSolidBg = bg.replace('bg-', 'hover:bg-');
-        const darkHoverSolidBg = darkBg.replace('dark:bg-', 'dark:hover:bg-');
-        
-        // Create hover text classes to prevent ghost variant from changing text color
-        const hoverText = text.replace('text-', 'hover:text-');
-        const darkHoverText = darkText.replace('dark:text-', 'dark:hover:text-');
 
         return (
           <Button
             key={category}
-            variant="ghost" // Use ghost variant to remove default bg, but we must override its hover effects
             onClick={() => onSelectCategory(category)}
             className={cn(
               "rounded-full px-3 py-1.5 text-xs h-auto border-transparent transition-colors",
-              // Set base text color
+              // Base text colors
               text,
               darkText,
-              // Set base background color
-              isSelected ? bg : lightBg,
-              isSelected ? darkBg : darkLightBg,
-              // Set hover state
-              isSelected 
-                ? // For selected, ensure hover state is identical to base state
-                  `${hoverSolidBg} ${darkHoverSolidBg} ${hoverText} ${darkHoverText}`
-                : // For inactive, set hover to solid color
-                  `${hoverSolidBg} ${darkHoverSolidBg}`
+              // Conditional background and hover
+              isSelected
+                ? // Selected: solid bg, no change on hover
+                  `${bg} ${darkBg} ${bg.replace('bg-', 'hover:bg-')} ${darkBg.replace('dark:bg-', 'dark:hover:bg-')}`
+                : // Inactive: light bg, solid on hover
+                  `${lightBg} ${darkLightBg} ${bg.replace('bg-', 'hover:bg-')} ${darkBg.replace('dark:bg-', 'dark:hover:bg-')}`
             )}
           >
             {category}
