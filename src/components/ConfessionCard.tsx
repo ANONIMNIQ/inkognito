@@ -23,6 +23,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { getCategoryColors } from "@/lib/category-colors"; // Import the new utility
 
+console.log("ConfessionCard: bg locale object:", bg); // Diagnostic log
+
 const COMMENTS_PER_PAGE = 5;
 
 interface Comment {

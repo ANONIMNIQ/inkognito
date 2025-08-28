@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { useIsMobile } from "@/hooks/use-mobile"; // Import useIsMobile
 
+console.log("CommentCard: bg locale object:", bg); // Diagnostic log
+
 interface CommentCardProps {
   comment: {
     id: string;
