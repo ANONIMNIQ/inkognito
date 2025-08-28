@@ -15,7 +15,8 @@ import FloatingMenu, { InfoPageType } from "@/components/FloatingMenu";
 import AboutUsPage from "./pages/AboutUsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsAndConditionsPage from "./pages/TermsAndConditionsPage";
-import CookieConsentBanner from "@/components/CookieConsentBanner"; // Import the new component
+import CookieConsentBanner from "@/components/CookieConsentBanner";
+import { logToSupabase } from "@/utils/logger"; // Import the new logger
 
 const queryClient = new QueryClient();
 
@@ -68,15 +69,6 @@ const AppRoutesAndModals: React.FC = () => {
     }
   }, [location.pathname]);
 
-  // Check localStorage for debug messages on load
-  useEffect(() => {
-    const debugMessage = localStorage.getItem('infoPageCloseDebug');
-    if (debugMessage) {
-      console.log("Info Page Close Debug (from localStorage):", debugMessage);
-      localStorage.removeItem('infoPageCloseDebug'); // Clear it after reading
-    }
-  }, []);
-
   // This prop is passed to Index to inform it if an info page is visually open
   const isAnyInfoPageVisuallyOpen = isInfoDrawerOpen;
 
@@ -87,31 +79,26 @@ const AppRoutesAndModals: React.FC = () => {
   };
 
   const handleCloseInfoPage = () => {
-    console.log("handleCloseInfoPage called.");
-    console.log("Current location BEFORE close logic:", location.pathname + location.search);
-    console.log("Current history length BEFORE close logic:", window.history.length);
-
     const currentCategoryParam = new URLSearchParams(location.search).get('category');
     const newPath = currentCategoryParam && currentCategoryParam !== "Всички" ? `/?category=${currentCategoryParam}` : '/';
-    console.log("Calculated newPath:", newPath);
 
     if (window.history.length > 1) {
       // Standard case: there's a previous page, so close drawer and navigate back
       setIsInfoDrawerOpen(false);
       setCurrentInfoPageType(null);
       setTimeout(() => {
-        console.log("History length > 1. Attempting navigate(-1).");
         navigate(-1);
       }, 300); // Match drawer closing animation duration
     } else {
       // Edge case: landed directly on info page, no history to go back to.
-      // We must perform a full page reload using window.location.replace to prevent the tab from closing.
-      localStorage.setItem('infoPageCloseDebug', `Closed info page from direct access. URL: ${location.pathname}. Attempting window.location.replace to ${newPath}.`);
-      console.log("History length is 1. Attempting window.location.replace to:", newPath);
+      // Log to Supabase before the full page reload.
+      logToSupabase("Closing info page from direct access, performing window.location.replace.", {
+        fromPath: location.pathname,
+        toPath: newPath,
+        historyLength: window.history.length,
+      });
       window.location.replace(newPath); // This will cause a full page reload
-      // No need to set drawer state here, as the page will reload and handle its own state.
     }
-    console.log("handleCloseInfoPage: End of function reached."); // This log might not be seen if replace happens immediately
   };
 
   return (
@@ -153,7 +140,7 @@ const AppRoutesAndModals: React.FC = () => {
       <AboutUsPage isOpen={isInfoDrawerOpen && currentInfoPageType === 'about'} onClose={handleCloseInfoPage} />
       <PrivacyPolicyPage isOpen={isInfoDrawerOpen && currentInfoPageType === 'privacy'} onClose={handleCloseInfoPage} />
       <TermsAndConditionsPage isOpen={isInfoDrawerOpen && currentInfoPageType === 'terms'} onClose={handleCloseInfoPage} />
-      <CookieConsentBanner /> {/* Render the cookie consent banner */}
+      <CookieConsentBanner />
     </>
   );
 };
