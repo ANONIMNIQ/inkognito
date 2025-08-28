@@ -93,10 +93,10 @@ const AppRoutesAndModals: React.FC = () => {
         navigate(-1);
       } else {
         // This is the critical path where the tab might close.
-        // Force a full page reload to the main page. This will be less smooth
-        // but should prevent the tab from closing.
-        console.log("History length is 1. Forcing full page reload to:", newPath);
-        window.location.href = newPath; // This will cause a full refresh
+        // Force a full page reload to the main page using window.open with _self.
+        // This is the most aggressive form of navigation and should prevent tab closure.
+        console.log("History length is 1. Forcing full page reload with window.open('_self') to:", newPath);
+        window.open(newPath, '_self'); 
       }
     }, 300); // Match the drawer's closing animation duration
   };
