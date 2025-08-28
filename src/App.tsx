@@ -9,12 +9,13 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import { SessionProvider, useSessionContext } from "@/components/SessionProvider";
 import { isAdmin } from "@/integrations/supabase/auth";
-import React, { useState, useEffect } from "react"; // Import useState and useEffect
+import React, { useState, useEffect } from "react";
 import AdminRedirectWrapper from "@/components/AdminRedirectWrapper";
 import FloatingMenu, { InfoPageType } from "@/components/FloatingMenu";
 import AboutUsPage from "./pages/AboutUsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsAndConditionsPage from "./pages/TermsAndConditionsPage";
+import CookieConsentBanner from "@/components/CookieConsentBanner"; // Import the new component
 
 const queryClient = new QueryClient();
 
@@ -82,11 +83,11 @@ const AppRoutesAndModals: React.FC = () => {
     setCurrentInfoPageType(null);
 
     // Only manipulate history if there's a previous page to go back to.
-    // If history.length is 1, we explicitly do NOT touch history.
+    // If window.history.length is 1, we explicitly do NOT touch history.
     if (window.history.length > 1) {
       navigate(-1);
     }
-    // If window.history.length === 1, we do nothing else.
+    // If window.history.length <= 1, we do nothing with history.
     // The drawer will close, the main page will be visible,
     // and the URL in the address bar will remain the info page URL.
     // This is the only way to reliably prevent the tab from closing in some browsers.
@@ -131,6 +132,7 @@ const AppRoutesAndModals: React.FC = () => {
       <AboutUsPage isOpen={isInfoDrawerOpen && currentInfoPageType === 'about'} onClose={handleCloseInfoPage} />
       <PrivacyPolicyPage isOpen={isInfoDrawerOpen && currentInfoPageType === 'privacy'} onClose={handleCloseInfoPage} />
       <TermsAndConditionsPage isOpen={isInfoDrawerOpen && currentInfoPageType === 'terms'} onClose={handleCloseInfoPage} />
+      <CookieConsentBanner /> {/* Render the cookie consent banner */}
     </>
   );
 };
