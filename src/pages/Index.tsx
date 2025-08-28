@@ -492,7 +492,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
     <div className="container mx-auto p-4 max-w-3xl">
       {/* FloatingMenu is now rendered in App.tsx */}
       <div className="flex justify-center mb-8 opacity-0 animate-fade-zoom-in">
-        <svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="none" x="0px" y="0px" viewBox="0 0 481 134"
+        <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 481 134"
           className={cn("w-64 sm:w-72 md:w-80 lg:w-96 h-auto fill-gray-900 dark:fill-white transition-colors duration-300")}>
           <defs>
             <g id="Layer0_0_FILL">
@@ -500,7 +500,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
             </g>
           </defs>
           <g transform="matrix( 1, 0, 0, 1, 0,0) ">
-            <use xlink:href="#Layer0_0_FILL"/>
+            <use href="#Layer0_0_FILL"/>
           </g>
         </svg>
       </div>
