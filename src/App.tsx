@@ -77,29 +77,19 @@ const AppRoutesAndModals: React.FC = () => {
   };
 
   const handleCloseInfoPage = () => {
-    // This is called when the user *initiates* the close (e.g., clicks X or outside).
-    // It starts the drawer's closing animation.
+    // Always trigger the visual closing of the drawer
     setIsInfoDrawerOpen(false);
-    setCurrentInfoPageType(null); // Clear the type immediately
+    setCurrentInfoPageType(null);
 
-    // Now, handle history based on the current state
-    const infoPagePaths = ['/about-us', '/privacy-policy', '/terms-and-conditions'];
-    const isCurrentlyOnInfoPagePath = infoPagePaths.includes(location.pathname);
-
+    // Only manipulate history if there's a previous page to go back to.
+    // If history.length is 1, we explicitly do NOT touch history.
     if (window.history.length > 1) {
-      // If there's history, go back to the previous page
       navigate(-1);
-    } else if (isCurrentlyOnInfoPagePath) {
-      // If it's a direct access to an info page and no other history,
-      // we do NOT navigate or replace history.
-      // The drawer will visually close, and the Index page will be visible.
-      // The URL in the address bar will remain the info page URL.
-      // This is the only way to reliably prevent tab closure in some browsers.
-      // No action needed here for history.
-    } else {
-      // Fallback for any other unexpected history state, just navigate to home (push)
-      navigate('/');
     }
+    // If window.history.length === 1, we do nothing else.
+    // The drawer will close, the main page will be visible,
+    // and the URL in the address bar will remain the info page URL.
+    // This is the only way to reliably prevent the tab from closing in some browsers.
   };
 
   return (
