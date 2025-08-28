@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Cookie } from "lucide-react"; // Import the Cookie icon
 
 const COOKIE_CONSENT_KEY = "cookie_consent_accepted";
 
@@ -37,7 +38,8 @@ const CookieConsentBanner: React.FC = () => {
       "flex flex-col md:flex-row items-center justify-between gap-4",
       "animate-slide-fade-in-top" // Use a subtle animation for appearance
     )}>
-      <p className="text-sm text-center md:text-left flex-1">
+      <p className="text-sm text-center md:text-left flex-1 flex items-center justify-center md:justify-start gap-2">
+        <Cookie className="h-5 w-5 flex-shrink-0" /> {/* Cookie icon added here */}
         Този уебсайт използва бисквитки, за да осигури най-доброто потребителско изживяване. Продължавайки да използвате сайта, вие се съгласявате с нашата политика за бисквитки.
       </p>
       <div className="flex gap-2 flex-shrink-0">

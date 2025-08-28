@@ -83,16 +83,14 @@ const AppRoutesAndModals: React.FC = () => {
     setIsInfoDrawerOpen(false);
     setCurrentInfoPageType(null);
 
-    // Only manipulate history if there's a previous page to go back to.
-    // If window.history.length is 1, we explicitly do NOT touch history.
+    // If there's history, go back. Otherwise, force a full reload to the home page.
+    // This is to prevent the browser from closing the tab when there's no back history.
     if (window.history.length > 1) {
       console.log("History length > 1. Navigating back.");
       navigate(-1);
     } else {
-      console.log("History length is 1. Replacing current URL with '/' to prevent tab closure.");
-      // If there's no history to go back to, replace the current URL with the home page.
-      // This should prevent the tab from closing and show the main content.
-      navigate('/', { replace: true });
+      console.log("History length is 1. Performing full page reload to '/' to prevent tab closure.");
+      window.location.href = '/'; // Force a full page reload to the root
     }
   };
 
