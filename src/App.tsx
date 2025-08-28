@@ -59,7 +59,12 @@ const AppRoutesAndModals: React.FC = () => {
   };
 
   const handleCloseInfoPage = () => {
-    navigate(-1); // Navigate back to the previous page in history
+    // Check if there's a previous entry in the history stack
+    if (window.history.length > 1) {
+      navigate(-1); // Go back to the previous page
+    } else {
+      navigate('/', { replace: true }); // If no history, go to the home page and replace the current entry
+    }
   };
 
   return (
