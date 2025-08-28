@@ -60,9 +60,10 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onSel
               // Conditional background
               isSelected ? bg : lightBg,
               isSelected ? darkBg : darkLightBg,
-              // Hover state (always solid)
-              bg.replace('bg-', 'hover:bg-'),
-              darkBg.replace('dark:bg-', 'dark:hover:bg-')
+              // Hover state (always solid for inactive, no change for active)
+              isSelected
+                ? '' // No extra hover class for selected, it stays solid
+                : `${bg.replace('bg-', 'hover:bg-')} ${darkBg.replace('dark:bg-', 'dark:hover:bg-')}`
             )}
           >
             {category}
