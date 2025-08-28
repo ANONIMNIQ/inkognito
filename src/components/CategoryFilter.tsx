@@ -66,10 +66,19 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onSel
             >
               {category}
             </div>
-            <div className={cn(
-              "w-1.5 h-1.5 rounded-full mt-1 transition-opacity duration-300",
-              isSelected ? "opacity-100 bg-gray-900 dark:bg-white" : "opacity-0"
-            )}></div>
+            <div className="h-3 flex items-center justify-center pt-1"> {/* Container for the arrow */}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className={cn(
+                  "w-2.5 h-2.5 text-gray-900 dark:text-white transition-all duration-300",
+                  isSelected ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"
+                )}
+              >
+                <path d="M12 8l6 6H6l6-6z" />
+              </svg>
+            </div>
           </div>
         );
       })}
