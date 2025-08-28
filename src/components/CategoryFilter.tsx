@@ -43,35 +43,30 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onSel
   return (
     <div className="w-full max-w-2xl mx-auto mb-6 flex flex-wrap justify-center gap-1">
       {categories.map((category) => {
-        const { bg, text, darkBg, darkText, hoverBg, darkHoverBg } = getCategoryColors(category);
+        const { bg, text, darkBg, darkText, lightBg, darkLightBg } = getCategoryColors(category);
         const isSelected = selectedCategory === category;
 
-        // Light colors for inactive state
-        const lightBg = hoverBg.replace('hover:', '');
-        const darkLightBg = darkHoverBg.replace('dark:hover:', 'dark:');
-
-        // Solid colors for hover/selected state
+        // Create hover classes that apply the solid color
         const hoverSolidBg = bg.replace('bg-', 'hover:bg-');
         const darkHoverSolidBg = darkBg.replace('dark:bg-', 'dark:hover:bg-');
-        
-        // Text colors for hover state (to override ghost variant's text color change)
-        const hoverText = text.replace('text-', 'hover:text-');
-        const darkHoverText = darkText.replace('dark:text-', 'dark:hover:text-');
 
         return (
           <Button
             key={category}
-            variant="ghost"
             onClick={() => onSelectCategory(category)}
             className={cn(
               "rounded-full px-3 py-1.5 text-xs h-auto border-transparent transition-colors",
+              // Set text colors
               text,
               darkText,
-              isSelected
-                ? // Selected state: solid, no change on hover
-                  `${bg} ${darkBg} ${hoverSolidBg} ${darkHoverSolidBg} ${hoverText} ${darkHoverText}`
-                : // Inactive state: light, solid on hover
-                  `${lightBg} ${darkLightBg} ${hoverSolidBg} ${darkHoverSolidBg}`
+              // Set background colors based on state
+              isSelected ? bg : lightBg,
+              isSelected ? darkBg : darkLightBg,
+              // Set hover colors
+              // If selected, this will override hover to be the same as solid, preventing change.
+              // If not selected, this will apply the solid color on hover.
+              hoverSolidBg,
+              darkHoverSolidBg
             )}
           >
             {category}
