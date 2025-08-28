@@ -55,12 +55,19 @@ const AppRoutesAndModals: React.FC = () => {
     return null;
   };
 
-  // Effect to sync the drawer's state with the URL
+  // Effect to sync the drawer's state with the URL and manage history for direct access
   useEffect(() => {
     const pageType = getInfoPageTypeFromPathname(location.pathname);
     if (pageType) {
       setIsInfoDrawerOpen(true);
       setCurrentInfoPageType(pageType);
+
+      // If an info page is accessed directly and there's only one history entry,
+      // push a dummy state to ensure `navigate(-1)` works later without closing the tab.
+      if (window.history.length === 1) {
+        console.log("Info page accessed directly, pushing dummy history state.");
+        window.history.pushState(null, '', location.pathname); // Push current path again
+      }
     } else {
       // If the URL is not an info page, ensure the drawer is closed
       setIsInfoDrawerOpen(false);
@@ -79,21 +86,25 @@ const AppRoutesAndModals: React.FC = () => {
 
   const handleCloseInfoPage = () => {
     console.log("handleCloseInfoPage called. Current history length:", window.history.length);
-    // Always trigger the visual closing of the drawer
+    // Trigger the visual closing of the drawer immediately
     setIsInfoDrawerOpen(false);
     setCurrentInfoPageType(null);
 
     // Delay the actual navigation to allow the drawer closing animation to play
     setTimeout(() => {
+      // After the drawer animation, navigate back.
+      // Because we pushed a dummy state if history.length was 1,
+      // history.length should now always be at least 2 when closing an info page.
       if (window.history.length > 1) {
         console.log("History length > 1. Navigating back.");
         navigate(-1);
       } else {
-        console.log("History length is 1. Using window.open('/', '_self') to prevent tab closure.");
-        // This forces a navigation within the same tab, which should prevent it from closing.
-        window.open('/', '_self');
+        // This fallback should ideally not be hit if the pushState logic works.
+        // If it is hit, it means something went wrong with history manipulation.
+        console.log("Fallback: History length is 1. Navigating to /.");
+        navigate('/', { replace: true });
       }
-    }, 300); // Match the drawer's closing animation duration (or slightly more)
+    }, 300); // Match the drawer's closing animation duration
   };
 
   return (
