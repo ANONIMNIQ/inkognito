@@ -59,11 +59,12 @@ const AppRoutesAndModals: React.FC = () => {
   };
 
   const handleCloseInfoPage = () => {
-    // Check if there's a previous entry in the history stack
+    // If there's more than one entry in history, go back.
+    // Otherwise, navigate to the home page (pushing a new entry) to prevent tab closure.
     if (window.history.length > 1) {
-      navigate(-1); // Go back to the previous page
+      navigate(-1);
     } else {
-      navigate('/', { replace: true }); // If no history, go to the home page and replace the current entry
+      navigate('/'); // Push to home, do not replace, to prevent tab closure on direct access
     }
   };
 
