@@ -49,7 +49,7 @@ const CookieConsentBanner: React.FC = () => {
         </Button>
         <Button
           onClick={handleDecline}
-          variant="outline"
+          variant="ghost" // Changed to ghost variant
           className="border-gray-400 text-gray-200 hover:bg-gray-700 dark:border-gray-400 dark:text-gray-200 dark:hover:bg-gray-700 rounded-full px-4 py-2 text-sm"
         >
           Отказвам
