@@ -9,7 +9,7 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import { SessionProvider, useSessionContext } from "@/components/SessionProvider";
 import { isAdmin } from "@/integrations/supabase/auth";
-import React from "react";
+import React, { useState, useEffect } from "react"; // Import useState and useEffect
 import AdminRedirectWrapper from "@/components/AdminRedirectWrapper";
 import FloatingMenu, { InfoPageType } from "@/components/FloatingMenu";
 import AboutUsPage from "./pages/AboutUsPage";
@@ -42,15 +42,33 @@ const AppRoutesAndModals: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const getActiveInfoPage = (pathname: string): InfoPageType => {
+  // State to control the drawer's open/close animation
+  const [isInfoDrawerOpen, setIsInfoDrawerOpen] = useState(false);
+  // State to store which specific info page is currently open
+  const [currentInfoPageType, setCurrentInfoPageType] = useState<InfoPageType>(null);
+
+  const getInfoPageTypeFromPathname = (pathname: string): InfoPageType => {
     if (pathname === '/about-us') return 'about';
     if (pathname === '/privacy-policy') return 'privacy';
     if (pathname === '/terms-and-conditions') return 'terms';
     return null;
   };
 
-  const activeInfoPage = getActiveInfoPage(location.pathname);
-  const isInfoPageOpen = activeInfoPage !== null; // Determine if any info page is open
+  // Effect to sync the drawer's state with the URL
+  useEffect(() => {
+    const pageType = getInfoPageTypeFromPathname(location.pathname);
+    if (pageType) {
+      setIsInfoDrawerOpen(true);
+      setCurrentInfoPageType(pageType);
+    } else {
+      // If the URL is not an info page, ensure the drawer is closed
+      setIsInfoDrawerOpen(false);
+      setCurrentInfoPageType(null);
+    }
+  }, [location.pathname]);
+
+  // This prop is passed to Index to inform it if an info page is visually open
+  const isAnyInfoPageVisuallyOpen = isInfoDrawerOpen;
 
   const handleMenuItemClick = (pageKey: InfoPageType) => {
     if (pageKey === 'about') navigate('/about-us');
@@ -59,20 +77,17 @@ const AppRoutesAndModals: React.FC = () => {
   };
 
   const handleCloseInfoPage = () => {
-    const infoPagePaths = ['/about-us', '/privacy-policy', '/terms-and-conditions'];
-    const isCurrentlyOnInfoPagePath = infoPagePaths.includes(location.pathname);
-
+    // If there's more than one entry in history, go back normally.
     if (window.history.length > 1) {
-      // If there's history, go back to the previous page
       navigate(-1);
-    } else if (isCurrentlyOnInfoPagePath) {
-      // If it's a direct access to an info page and no other history,
-      // perform a hard redirect to the home page to ensure the tab doesn't close.
-      // This bypasses React Router for this specific edge case.
-      window.location.replace('/');
     } else {
-      // Fallback for any other unexpected history state, just navigate to home (push)
-      navigate('/');
+      // If it's a direct access (only one history entry),
+      // we close the drawer visually and silently update the URL.
+      // This prevents the tab from closing and reveals the main page.
+      setIsInfoDrawerOpen(false);
+      setCurrentInfoPageType(null);
+      // Silently update the URL to '/' without triggering a full navigation
+      window.history.replaceState({}, '', '/');
     }
   };
 
@@ -83,7 +98,7 @@ const AppRoutesAndModals: React.FC = () => {
           path="/"
           element={
             <AdminRedirectWrapper>
-              <Index isInfoPageOpen={isInfoPageOpen} />
+              <Index isInfoPageOpen={isAnyInfoPageVisuallyOpen} />
             </AdminRedirectWrapper>
           }
         />
@@ -100,20 +115,21 @@ const AppRoutesAndModals: React.FC = () => {
           path="/confessions/:id/:slug"
           element={
             <AdminRedirectWrapper>
-              <Index isInfoPageOpen={isInfoPageOpen} />
+              <Index isInfoPageOpen={isAnyInfoPageVisuallyOpen} />
             </AdminRedirectWrapper>
           }
         />
-        <Route path="/about-us" element={<AdminRedirectWrapper><Index isInfoPageOpen={isInfoPageOpen} /></AdminRedirectWrapper>} />
-        <Route path="/privacy-policy" element={<AdminRedirectWrapper><Index isInfoPageOpen={isInfoPageOpen} /></AdminRedirectWrapper>} />
-        <Route path="/terms-and-conditions" element={<AdminRedirectWrapper><Index isInfoPageOpen={isInfoPageOpen} /></AdminRedirectWrapper>} />
+        {/* These routes now just ensure the Index page is rendered behind the drawer */}
+        <Route path="/about-us" element={<AdminRedirectWrapper><Index isInfoPageOpen={isAnyInfoPageVisuallyOpen} /></AdminRedirectWrapper>} />
+        <Route path="/privacy-policy" element={<AdminRedirectWrapper><Index isInfoPageOpen={isAnyInfoPageVisuallyOpen} /></AdminRedirectWrapper>} />
+        <Route path="/terms-and-conditions" element={<AdminRedirectWrapper><Index isInfoPageOpen={isAnyInfoPageVisuallyOpen} /></AdminRedirectWrapper>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <FloatingMenu onMenuItemClick={handleMenuItemClick} />
 
-      <AboutUsPage isOpen={activeInfoPage === 'about'} onClose={handleCloseInfoPage} />
-      <PrivacyPolicyPage isOpen={activeInfoPage === 'privacy'} onClose={handleCloseInfoPage} />
-      <TermsAndConditionsPage isOpen={activeInfoPage === 'terms'} onClose={handleCloseInfoPage} />
+      <AboutUsPage isOpen={isInfoDrawerOpen && currentInfoPageType === 'about'} onClose={handleCloseInfoPage} />
+      <PrivacyPolicyPage isOpen={isInfoDrawerOpen && currentInfoPageType === 'privacy'} onClose={handleCloseInfoPage} />
+      <TermsAndConditionsPage isOpen={isInfoDrawerOpen && currentInfoPageType === 'terms'} onClose={handleCloseInfoPage} />
     </>
   );
 };
