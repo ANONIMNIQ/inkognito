@@ -9,10 +9,10 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import { SessionProvider, useSessionContext } from "@/components/SessionProvider";
 import { isAdmin } from "@/integrations/supabase/auth";
-import React, { useState } from "react";
+import React from "react";
 import AdminRedirectWrapper from "@/components/AdminRedirectWrapper";
-import FloatingMenu, { InfoPageType } from "@/components/FloatingMenu"; // Import InfoPageType
-import AboutUsPage from "./pages/AboutUsPage"; // Import new info pages
+import FloatingMenu, { InfoPageType } from "@/components/FloatingMenu";
+import AboutUsPage from "./pages/AboutUsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsAndConditionsPage from "./pages/TermsAndConditionsPage";
 
@@ -37,7 +37,8 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <>{children}</>;
 };
 
-const App = () => {
+// New component to encapsulate routing and modal logic
+const AppRoutesAndModals: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -61,54 +62,56 @@ const App = () => {
   };
 
   return (
+    <>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <AdminRedirectWrapper>
+              <Index />
+            </AdminRedirectWrapper>
+          }
+        />
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/confessions/:id/:slug"
+          element={
+            <AdminRedirectWrapper>
+              <Index />
+            </AdminRedirectWrapper>
+          }
+        />
+        <Route path="/about-us" element={<AdminRedirectWrapper><Index /></AdminRedirectWrapper>} />
+        <Route path="/privacy-policy" element={<AdminRedirectWrapper><Index /></AdminRedirectWrapper>} />
+        <Route path="/terms-and-conditions" element={<AdminRedirectWrapper><Index /></AdminRedirectWrapper>} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <FloatingMenu onMenuItemClick={handleMenuItemClick} />
+
+      <AboutUsPage isOpen={activeInfoPage === 'about'} onClose={handleCloseInfoPage} />
+      <PrivacyPolicyPage isOpen={activeInfoPage === 'privacy'} onClose={handleCloseInfoPage} />
+      <TermsAndConditionsPage isOpen={activeInfoPage === 'terms'} onClose={handleCloseInfoPage} />
+    </>
+  );
+};
+
+const App = () => {
+  return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
           <SessionProvider>
-            <Routes>
-              <Route
-                path="/"
-                element={
-                  <AdminRedirectWrapper>
-                    <Index />
-                  </AdminRedirectWrapper>
-                }
-              />
-              <Route path="/admin/login" element={<AdminLogin />} />
-              <Route
-                path="/admin/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              {/* Both routes now have the same structure to prevent re-mounting */}
-              <Route
-                path="/confessions/:id/:slug"
-                element={
-                  <AdminRedirectWrapper>
-                    <Index />
-                  </AdminRedirectWrapper>
-                }
-              />
-              {/* New routes for info pages */}
-              <Route path="/about-us" element={<AdminRedirectWrapper><Index /></AdminRedirectWrapper>} />
-              <Route path="/privacy-policy" element={<AdminRedirectWrapper><Index /></AdminRedirectWrapper>} />
-              <Route path="/terms-and-conditions" element={<AdminRedirectWrapper><Index /></AdminRedirectWrapper>} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            {/* Render FloatingMenu outside Routes so it's always visible */}
-            <FloatingMenu onMenuItemClick={handleMenuItemClick} />
-
-            {/* Render the InfoDrawerContent components conditionally */}
-            <AboutUsPage isOpen={activeInfoPage === 'about'} onClose={handleCloseInfoPage} />
-            <PrivacyPolicyPage isOpen={activeInfoPage === 'privacy'} onClose={handleCloseInfoPage} />
-            <TermsAndConditionsPage isOpen={activeInfoPage === 'terms'} onClose={handleCloseInfoPage} />
-
+            <AppRoutesAndModals />
           </SessionProvider>
         </BrowserRouter>
       </TooltipProvider>
