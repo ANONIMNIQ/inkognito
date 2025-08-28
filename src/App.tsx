@@ -78,7 +78,7 @@ const AppRoutesAndModals: React.FC = () => {
     else if (pageKey === 'terms') navigate('/terms-and-conditions');
   };
 
-  const handleCloseInfoPage = () => {
+  const handleCloseInfoPage = async () => { // Made async to use await
     const currentCategoryParam = new URLSearchParams(location.search).get('category');
     const newPath = currentCategoryParam && currentCategoryParam !== "Всички" ? `/?category=${currentCategoryParam}` : '/';
 
@@ -92,11 +92,13 @@ const AppRoutesAndModals: React.FC = () => {
     } else {
       // Edge case: landed directly on info page, no history to go back to.
       // Log to Supabase before the full page reload.
-      logToSupabase("Closing info page from direct access, performing window.location.replace.", {
+      await logToSupabase("Closing info page from direct access, performing window.location.replace.", {
         fromPath: location.pathname,
         toPath: newPath,
         historyLength: window.history.length,
       });
+      // Add a small delay to give the log request time to complete
+      await new Promise(resolve => setTimeout(resolve, 100)); 
       window.location.replace(newPath); // This will cause a full page reload
     }
   };
