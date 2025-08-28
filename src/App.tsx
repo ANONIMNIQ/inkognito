@@ -78,6 +78,7 @@ const AppRoutesAndModals: React.FC = () => {
   };
 
   const handleCloseInfoPage = () => {
+    console.log("handleCloseInfoPage called. Current history length:", window.history.length);
     // Always trigger the visual closing of the drawer
     setIsInfoDrawerOpen(false);
     setCurrentInfoPageType(null);
@@ -85,12 +86,14 @@ const AppRoutesAndModals: React.FC = () => {
     // Only manipulate history if there's a previous page to go back to.
     // If window.history.length is 1, we explicitly do NOT touch history.
     if (window.history.length > 1) {
+      console.log("History length > 1. Navigating back.");
       navigate(-1);
+    } else {
+      console.log("History length is 1. Not navigating back, just closing drawer visually.");
+      // The drawer will close, the main page will be visible,
+      // and the URL in the address bar will remain the info page URL.
+      // This is the only way to reliably prevent the tab from closing in some browsers.
     }
-    // If window.history.length <= 1, we do nothing with history.
-    // The drawer will close, the main page will be visible,
-    // and the URL in the address bar will remain the info page URL.
-    // This is the only way to reliably prevent the tab from closing in some browsers.
   };
 
   return (
