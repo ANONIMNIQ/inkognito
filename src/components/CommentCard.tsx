@@ -1,12 +1,10 @@
 import React from "react";
 import GenderAvatar from "./GenderAvatar";
-import { formatDistanceToNow } from "date-fns/formatDistanceToNow"; // Explicit import for formatDistanceToNow
-import bg from "date-fns/locale/bg"; // Corrected import for locale
+import { formatDistanceToNow } from "date-fns/formatDistanceToNow";
+import { default as bgLocale } from "date-fns/locale/bg";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
-import { useIsMobile } from "@/hooks/use-mobile"; // Import useIsMobile
-
-console.log("CommentCard: bg locale object:", bg); // Diagnostic log
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface CommentCardProps {
   comment: {
@@ -19,12 +17,12 @@ interface CommentCardProps {
   editedContent?: string;
   onContentChange?: (content: string) => void;
   animationDelay?: number;
-  hideAvatarOnMobile?: boolean; // New prop
-  commentNumber?: number; // New prop for comment number
+  hideAvatarOnMobile?: boolean;
+  commentNumber?: number;
 }
 
 const CommentCard: React.FC<CommentCardProps> = ({ comment, isEditing = false, editedContent, onContentChange, animationDelay = 0, hideAvatarOnMobile = false, commentNumber }) => {
-  const isMobile = useIsMobile(); // Use the hook
+  const isMobile = useIsMobile();
 
   const bubbleBackgroundColor =
     comment.gender === "male"
@@ -32,7 +30,7 @@ const CommentCard: React.FC<CommentCardProps> = ({ comment, isEditing = false, e
       : comment.gender === "female"
       ? "bg-pink-50 dark:bg-pink-900"
       : comment.gender === "ai"
-      ? "bg-purple-50 dark:bg-purple-900" // Purple color for AI comments
+      ? "bg-purple-50 dark:bg-purple-900"
       : "bg-gray-100 dark:bg-gray-700";
 
   const textColor = "text-gray-800 dark:text-gray-200";
@@ -46,13 +44,13 @@ const CommentCard: React.FC<CommentCardProps> = ({ comment, isEditing = false, e
         <div
           className={cn(
             "absolute top-3 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent",
-            showAvatar ? "-left-2" : "left-2", // Adjust arrow position if avatar is hidden
+            showAvatar ? "-left-2" : "left-2",
             comment.gender === "male"
               ? "border-r-blue-50 dark:border-r-blue-900"
               : comment.gender === "female"
               ? "border-r-pink-50 dark:border-r-pink-900"
               : comment.gender === "ai"
-              ? "border-r-purple-50 dark:border-r-purple-900" // Purple border for AI comments
+              ? "border-r-purple-50 dark:border-r-purple-900"
               : "border-r-gray-100 dark:border-r-gray-700"
           )}
         ></div>
@@ -68,7 +66,7 @@ const CommentCard: React.FC<CommentCardProps> = ({ comment, isEditing = false, e
         )}
         <div className="flex justify-between items-center mt-1 pl-1">
           <p className={cn("text-xs text-gray-500 dark:text-gray-400")}>
-            {formatDistanceToNow(comment.timestamp, { addSuffix: true, locale: bg })}
+            {formatDistanceToNow(comment.timestamp, { addSuffix: true, locale: bgLocale })}
           </p>
           {commentNumber && (
             <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">
