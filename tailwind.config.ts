@@ -65,6 +65,13 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // Custom category colors
+        'category-love-sex': '#f9caca',
+        'category-education': '#fff2c8',
+        'category-family': '#d1f6f4',
+        'category-sport-health': '#c5f2cd',
+        'category-teen': '#eadbf6',
+        'category-neutral': '#e0e0e0', // For 'Други' and 'Всички'
       },
       borderRadius: {
         lg: "var(--radius)",

@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
+import { getCategoryColors } from "@/lib/category-colors"; // Import the new utility
 
 const COMMENTS_PER_PAGE = 5;
 
@@ -216,6 +217,8 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const textColor = "text-gray-800 dark:text-gray-200";
   const linkColor = "text-gray-500 dark:text-gray-400";
 
+  const { bg, text, darkBg, darkText } = getCategoryColors(confession.category);
+
   return (
     <div
       id={confession.id}
@@ -247,7 +250,10 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
           <Button
             variant="ghost"
             size="sm"
-            className="absolute top-2 right-2 h-auto px-2 py-0.5 text-xs font-medium text-gray-700 dark:text-gray-300 rounded-full bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+            className={cn(
+              "absolute top-2 right-2 h-auto px-2 py-0.5 text-xs font-medium rounded-full shadow-sm transition-colors",
+              bg, text, darkBg, darkText, "hover:opacity-80" // Apply category colors
+            )}
             onClick={() => onSelectCategory(confession.category)}
           >
             {confession.category}
@@ -313,7 +319,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
                 >
                   {!isContentOpen ? (
                     // This span now directly contains the text and the pseudo-element for the highlight
-                    <span className="relative inline-block truncate px-2 py-1 before:absolute before:inset-0 before:bg-yellow-100 before:dark:bg-yellow-900 before:rounded-md before:transition-transform before:duration-300 before:ease-out before:origin-left before:scale-x-0 group-hover:before:scale-x-100 before:z-[1]">
+                    <span className={cn("relative inline-block truncate px-2 py-1 before:absolute before:inset-0 before:rounded-md before:transition-transform before:duration-300 before:ease-out before:origin-left before:scale-x-0 group-hover:before:scale-x-100 before:z-[1]", bg, darkBg)}>
                       <span className="relative z-[3]">{confession.title}</span> {/* New inner span with higher z-index */}
                     </span>
                   ) : (

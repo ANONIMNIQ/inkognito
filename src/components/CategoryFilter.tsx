@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { getCategoryColors } from "@/lib/category-colors"; // Import the new utility
 
 export const categories = ["Всички", "Любов и Секс", "Образование", "Семейство", "Спорт и Здраве", "Тийн", "Други"];
 
@@ -41,21 +42,24 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onSel
 
   return (
     <div className="w-full max-w-2xl mx-auto mb-6 flex flex-wrap justify-center gap-1">
-      {categories.map((category) => (
-        <Button
-          key={category}
-          variant={selectedCategory === category ? "default" : "outline"}
-          onClick={() => onSelectCategory(category)}
-          className={cn(
-            "rounded-full px-3 py-1.5 text-xs transition-colors h-auto", // Adjusted padding and text size
-            selectedCategory === category
-              ? "bg-gray-900 text-white hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-300"
-              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
-          )}
-        >
-          {category}
-        </Button>
-      ))}
+      {categories.map((category) => {
+        const { bg, text, darkBg, darkText } = getCategoryColors(category);
+        return (
+          <Button
+            key={category}
+            variant={selectedCategory === category ? "default" : "outline"}
+            onClick={() => onSelectCategory(category)}
+            className={cn(
+              "rounded-full px-3 py-1.5 text-xs transition-colors h-auto",
+              selectedCategory === category
+                ? cn(bg, text, darkBg, darkText, "hover:opacity-80") // Use custom colors for selected
+                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
+            )}
+          >
+            {category}
+          </Button>
+        );
+      })}
     </div>
   );
 };
