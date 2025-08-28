@@ -78,7 +78,7 @@ const AppRoutesAndModals: React.FC = () => {
     else if (pageKey === 'terms') navigate('/terms-and-conditions');
   };
 
-  const handleCloseInfoPage = async () => { // Made async to use await
+  const handleCloseInfoPage = async () => {
     const currentCategoryParam = new URLSearchParams(location.search).get('category');
     const newPath = currentCategoryParam && currentCategoryParam !== "Всички" ? `/?category=${currentCategoryParam}` : '/';
 
@@ -102,6 +102,7 @@ const AppRoutesAndModals: React.FC = () => {
       navigate(-1);
     } else {
       // Edge case: landed directly on info page, navigate to newPath and replace history
+      // This will perform a soft navigation without a full page reload.
       navigate(newPath, { replace: true });
     }
   };
