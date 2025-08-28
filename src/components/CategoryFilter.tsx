@@ -46,13 +46,17 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onSel
         const { bg, text, darkBg, darkText, hoverBg, darkHoverBg } = getCategoryColors(category);
         const isSelected = selectedCategory === category;
 
-        // Extract the base color class from the hover color class (e.g., "hover:bg-red-100" -> "bg-red-100")
+        // Light colors for inactive state
         const lightBg = hoverBg.replace('hover:', '');
         const darkLightBg = darkHoverBg.replace('dark:hover:', 'dark:');
 
-        // Create the hover classes that apply the solid color
+        // Solid colors for hover/selected state
         const hoverSolidBg = bg.replace('bg-', 'hover:bg-');
         const darkHoverSolidBg = darkBg.replace('dark:bg-', 'dark:hover:bg-');
+        
+        // Text colors for hover state (to override ghost variant's text color change)
+        const hoverText = text.replace('text-', 'hover:text-');
+        const darkHoverText = darkText.replace('dark:text-', 'dark:hover:text-');
 
         return (
           <Button
@@ -61,16 +65,13 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onSel
             onClick={() => onSelectCategory(category)}
             className={cn(
               "rounded-full px-3 py-1.5 text-xs h-auto border-transparent transition-colors",
-              // Set base colors
-              isSelected ? bg : lightBg,
-              isSelected ? darkBg : darkLightBg,
               text,
               darkText,
-              // Always set the hover color to be the solid color.
-              // For the selected button, this overrides the default and prevents any visual change.
-              // For the inactive button, this creates the desired "light -> solid" effect.
-              hoverSolidBg,
-              darkHoverSolidBg
+              isSelected
+                ? // Selected state: solid, no change on hover
+                  `${bg} ${darkBg} ${hoverSolidBg} ${darkHoverSolidBg} ${hoverText} ${darkHoverText}`
+                : // Inactive state: light, solid on hover
+                  `${lightBg} ${darkLightBg} ${hoverSolidBg} ${darkHoverSolidBg}`
             )}
           >
             {category}
