@@ -9,8 +9,12 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import { SessionProvider, useSessionContext } from "@/components/SessionProvider";
 import { isAdmin } from "@/integrations/supabase/auth";
-import React from "react";
+import React, { useState } from "react";
 import AdminRedirectWrapper from "@/components/AdminRedirectWrapper";
+import FloatingMenu, { InfoPageType } from "@/components/FloatingMenu"; // Import InfoPageType
+import AboutUsPage from "./pages/AboutUsPage"; // Import new info pages
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import TermsAndConditionsPage from "./pages/TermsAndConditionsPage";
 
 const queryClient = new QueryClient();
 
@@ -33,47 +37,67 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <>{children}</>;
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <SessionProvider>
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <AdminRedirectWrapper>
-                  <Index />
-                </AdminRedirectWrapper>
-              }
-            />
-            <Route path="/admin/login" element={<AdminLogin />} />
-            <Route
-              path="/admin/dashboard"
-              element={
-                <ProtectedRoute>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-            {/* Both routes now have the same structure to prevent re-mounting */}
-            <Route
-              path="/confessions/:id/:slug"
-              element={
-                <AdminRedirectWrapper>
-                  <Index />
-                </AdminRedirectWrapper>
-              }
-            />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </SessionProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  const [activeInfoPage, setActiveInfoPage] = useState<InfoPageType>(null);
+
+  const handleMenuItemClick = (page: InfoPageType) => {
+    setActiveInfoPage(page);
+  };
+
+  const handleCloseInfoPage = () => {
+    setActiveInfoPage(null);
+  };
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <SessionProvider>
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  <AdminRedirectWrapper>
+                    <Index />
+                  </AdminRedirectWrapper>
+                }
+              />
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route
+                path="/admin/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              {/* Both routes now have the same structure to prevent re-mounting */}
+              <Route
+                path="/confessions/:id/:slug"
+                element={
+                  <AdminRedirectWrapper>
+                    <Index />
+                  </AdminRedirectWrapper>
+                }
+              />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            {/* Render FloatingMenu outside Routes so it's always visible */}
+            <FloatingMenu onMenuItemClick={handleMenuItemClick} />
+
+            {/* Render the InfoDrawerContent components conditionally */}
+            <AboutUsPage isOpen={activeInfoPage === 'about'} onClose={handleCloseInfoPage} />
+            <PrivacyPolicyPage isOpen={activeInfoPage === 'privacy'} onClose={handleCloseInfoPage} />
+            <TermsAndConditionsPage isOpen={activeInfoPage === 'terms'} onClose={handleCloseInfoPage} />
+
+          </SessionProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

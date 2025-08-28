@@ -4,9 +4,14 @@ import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-interface FloatingMenuProps {}
+// Define the types for the pages that can be opened
+export type InfoPageType = 'about' | 'privacy' | 'terms' | null;
 
-const FloatingMenu: React.FC<FloatingMenuProps> = () => {
+interface FloatingMenuProps {
+  onMenuItemClick: (page: InfoPageType) => void;
+}
+
+const FloatingMenu: React.FC<FloatingMenuProps> = ({ onMenuItemClick }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null); // Ref for the sub-menu container
@@ -76,9 +81,9 @@ const FloatingMenu: React.FC<FloatingMenuProps> = () => {
   }
 
   const menuItems = [
-    { label: "ЗА НАС", delay: 0 },
-    { label: "ПОВЕРИТЕЛНОСТ", delay: 100 },
-    { label: "ПРАВИЛА И УСЛОВИЯ", delay: 200 },
+    { label: "ЗА НАС", key: "about" as InfoPageType, delay: 0 },
+    { label: "ПОВЕРИТЕЛНОСТ", key: "privacy" as InfoPageType, delay: 100 },
+    { label: "ПРАВИЛА И УСЛОВИЯ", key: "terms" as InfoPageType, delay: 200 },
   ];
 
   return (
@@ -111,10 +116,14 @@ const FloatingMenu: React.FC<FloatingMenuProps> = () => {
         >
           {menuItems.map((item) => (
             <Button
-              key={item.label}
+              key={item.key}
+              onClick={() => {
+                onMenuItemClick(item.key);
+                closeMenu(); // Close the floating menu when an item is clicked
+              }}
               variant="secondary"
               className={cn(
-                "inline-flex w-fit justify-start items-center rounded-full px-3 py-1.5 text-[0.7rem] transition-colors min-w-0", // Adjusted padding to px-3 py-1.5
+                "inline-flex w-fit justify-start items-center rounded-full px-3 py-1.5 text-[0.7rem] transition-colors min-w-0",
                 "bg-gray-900/50 text-white hover:bg-gray-700/50",
                 "dark:bg-gray-800/50 dark:text-gray-200 dark:hover:bg-gray-700/50",
                 "backdrop-blur-lg shadow-lg",
