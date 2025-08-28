@@ -47,17 +47,14 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onSel
         return (
           <Button
             key={category}
-            variant="ghost" // Use a base variant with minimal styles to avoid conflicts
+            variant="ghost"
             onClick={() => onSelectCategory(category)}
             className={cn(
-              "rounded-full px-3 py-1.5 text-xs transition-colors h-auto",
+              "rounded-full px-3 py-1.5 text-xs transition-colors h-auto border-transparent",
+              bg, text, darkBg, darkText, // Base solid colors for all buttons
               selectedCategory === category
-                ? cn(bg, text, darkBg, darkText, hoverBg, darkHoverBg) // Active state with its own hover effect
-                : cn(
-                    "border border-gray-300 text-gray-700 dark:border-gray-700 dark:text-gray-300",
-                    hoverBg, // Apply colored hover background
-                    darkHoverBg // Apply colored dark hover background
-                  )
+                ? "" // If active, do nothing more (no hover effect)
+                : cn(hoverBg, darkHoverBg) // If inactive, add the lighter hover effect
             )}
           >
             {category}

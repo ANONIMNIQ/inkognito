@@ -217,7 +217,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const textColor = "text-gray-800 dark:text-gray-200";
   const linkColor = "text-gray-500 dark:text-gray-400";
 
-  const { bg, text, darkBg, darkText } = getCategoryColors(confession.category);
+  const { bg, text, darkBg, darkText, hoverBg, darkHoverBg } = getCategoryColors(confession.category);
 
   return (
     <div
@@ -252,7 +252,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
             size="sm"
             className={cn(
               "absolute top-2 right-2 h-auto px-2 py-0.5 text-xs font-medium rounded-full shadow-sm transition-colors",
-              bg, text, darkBg, darkText, "hover:opacity-80" // Apply category colors
+              bg, text, darkBg, darkText, hoverBg, darkHoverBg
             )}
             onClick={() => onSelectCategory(confession.category)}
           >
