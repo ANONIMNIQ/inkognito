@@ -50,6 +50,7 @@ const AppRoutesAndModals: React.FC = () => {
   };
 
   const activeInfoPage = getActiveInfoPage(location.pathname);
+  const isInfoPageOpen = activeInfoPage !== null; // Determine if any info page is open
 
   const handleMenuItemClick = (pageKey: InfoPageType) => {
     if (pageKey === 'about') navigate('/about-us');
@@ -68,7 +69,7 @@ const AppRoutesAndModals: React.FC = () => {
           path="/"
           element={
             <AdminRedirectWrapper>
-              <Index />
+              <Index isInfoPageOpen={isInfoPageOpen} />
             </AdminRedirectWrapper>
           }
         />
@@ -85,13 +86,13 @@ const AppRoutesAndModals: React.FC = () => {
           path="/confessions/:id/:slug"
           element={
             <AdminRedirectWrapper>
-              <Index />
+              <Index isInfoPageOpen={isInfoPageOpen} />
             </AdminRedirectWrapper>
           }
         />
-        <Route path="/about-us" element={<AdminRedirectWrapper><Index /></AdminRedirectWrapper>} />
-        <Route path="/privacy-policy" element={<AdminRedirectWrapper><Index /></AdminRedirectWrapper>} />
-        <Route path="/terms-and-conditions" element={<AdminRedirectWrapper><Index /></AdminRedirectWrapper>} />
+        <Route path="/about-us" element={<AdminRedirectWrapper><Index isInfoPageOpen={isInfoPageOpen} /></AdminRedirectWrapper>} />
+        <Route path="/privacy-policy" element={<AdminRedirectWrapper><Index isInfoPageOpen={isInfoPageOpen} /></AdminRedirectWrapper>} />
+        <Route path="/terms-and-conditions" element={<AdminRedirectWrapper><Index isInfoPageOpen={isInfoPageOpen} /></AdminRedirectWrapper>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <FloatingMenu onMenuItemClick={handleMenuItemClick} />

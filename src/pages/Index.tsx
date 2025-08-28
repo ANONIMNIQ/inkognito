@@ -35,7 +35,11 @@ interface Confession {
 
 const CONFESSIONS_PER_PAGE = 10;
 
-const Index: React.FC = () => {
+interface IndexProps {
+  isInfoPageOpen: boolean; // New prop to indicate if an info page is open
+}
+
+const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
   const { id: paramId, slug: paramSlug } = useParams<{ id: string; slug: string }>();
   const navigate = useNavigate();
   const location = useLocation();
@@ -64,6 +68,7 @@ const Index: React.FC = () => {
   const loadingMoreRef = useRef(loadingMore); // Ref for loadingMore
   const lastLoadedContextRef = useRef<{ category: string; paramId: string | undefined | null } | null>(null);
   const currentFetchId = useRef(0); // New ref to track the latest fetch request
+  const lastNonInfoPageCategoryRef = useRef<string>("Всички"); // New ref to store the category when info page is NOT open
 
   useEffect(() => {
     hasMoreRef.current = hasMore;
@@ -218,15 +223,24 @@ const Index: React.FC = () => {
       navigate(redirectPath, { replace: true });
       return null;
     }
-  }, [navigate, searchParams, selectedCategory]); // Added selectedCategory to dependencies
+  }, [navigate, searchParams, selectedCategory]);
 
-  // Effect to update selectedCategory from URL search params
+  // Effect to update selectedCategory from URL search params, but only if info page is not open
   useEffect(() => {
     const categoryFromUrl = searchParams.get('category') || "Всички";
-    if (categoryFromUrl !== selectedCategory) {
-      setSelectedCategory(categoryFromUrl);
+    if (!isInfoPageOpen) {
+      if (categoryFromUrl !== selectedCategory) {
+        setSelectedCategory(categoryFromUrl);
+      }
+      lastNonInfoPageCategoryRef.current = categoryFromUrl; // Store the last valid category
+    } else {
+      // If info page is open, ensure selectedCategory reflects the last valid category
+      // This prevents selectedCategory from changing to "Всички" when on /about-us
+      if (selectedCategory !== lastNonInfoPageCategoryRef.current) {
+        setSelectedCategory(lastNonInfoPageCategoryRef.current);
+      }
     }
-  }, [searchParams, selectedCategory]);
+  }, [searchParams, selectedCategory, isInfoPageOpen]); // Add isInfoPageOpen to dependencies
 
   // Main data loading effect
   useEffect(() => {
@@ -236,14 +250,11 @@ const Index: React.FC = () => {
       setExpandedConfessionId(paramId || null);
     }
 
-    const currentCategory = selectedCategory;
+    const currentCategory = selectedCategory; // Use the state, which is now stable
     const currentParamId = paramId;
 
     const isCategoryChanged = lastLoadedContextRef.current?.category !== currentCategory;
     const isNavigatingToNewConfession = currentParamId && !latestConfessionsRef.current.some(c => c.id === currentParamId);
-    // When returning to list from single view, we only need a full refetch if the current confessions list is empty
-    // or if the category has changed. If we already have a list of confessions for the current category,
-    // we should just collapse the card without reloading the entire list.
     const isReturningToListAndListIsEmpty = !currentParamId && lastLoadedContextRef.current?.paramId && confessions.length === 0;
 
     const needsFullRefetch = isCategoryChanged || isNavigatingToNewConfession || isReturningToListAndListIsEmpty;
@@ -320,7 +331,7 @@ const Index: React.FC = () => {
       // Crucially, we do NOT set setLoading(false) here if it was already false,
       // and we do NOT trigger any data fetching.
     }
-  }, [authLoading, selectedCategory, paramId, paramSlug, fetchConfessionsPage, fetchSingleConfession, confessions.length]); // Added confessions.length to dependencies
+  }, [authLoading, selectedCategory, paramId, paramSlug, fetchConfessionsPage, fetchSingleConfession, confessions.length]);
 
   // Effect to handle infinite scroll
   useEffect(() => {
@@ -482,7 +493,7 @@ const Index: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4 max-w-3xl">
-      <FloatingMenu /> {/* Add the FloatingMenu component here */}
+      {/* FloatingMenu is now rendered in App.tsx */}
       <div className="flex justify-center mb-8 opacity-0 animate-fade-zoom-in">
         <svg xmlns="http://www.w3.org/2000/svg" version="1.1" preserveAspectRatio="none" x="0px" y="0px" viewBox="0 0 481 134"
           className={cn("w-64 sm:w-72 md:w-80 lg:w-96 h-auto fill-gray-900 dark:fill-white transition-colors duration-300")}>
