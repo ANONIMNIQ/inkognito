@@ -59,12 +59,20 @@ const AppRoutesAndModals: React.FC = () => {
   };
 
   const handleCloseInfoPage = () => {
-    // If there's more than one entry in history, go back.
-    // Otherwise, navigate to the home page (pushing a new entry) to prevent tab closure.
+    const infoPagePaths = ['/about-us', '/privacy-policy', '/terms-and-conditions'];
+    const isCurrentlyOnInfoPagePath = infoPagePaths.includes(location.pathname);
+
     if (window.history.length > 1) {
+      // If there's history, go back to the previous page
       navigate(-1);
+    } else if (isCurrentlyOnInfoPagePath) {
+      // If it's a direct access to an info page and no other history,
+      // perform a hard redirect to the home page to ensure the tab doesn't close.
+      // This bypasses React Router for this specific edge case.
+      window.location.replace('/');
     } else {
-      navigate('/'); // Push to home, do not replace, to prevent tab closure on direct access
+      // Fallback for any other unexpected history state, just navigate to home (push)
+      navigate('/');
     }
   };
 
