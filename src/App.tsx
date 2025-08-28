@@ -89,23 +89,18 @@ const AppRoutesAndModals: React.FC = () => {
     // Wait for the drawer's closing animation to complete (300ms is the duration from InfoDrawerContent)
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    const historyLength = window.history.length; // Get history length *after* animation wait
+    // Log the action taken
     await logToSupabase("Closing info page.", {
       fromPath: location.pathname,
       toPath: newPath,
-      historyLength: historyLength,
-      actionTaken: historyLength > 1 ? "navigate(-1)" : `navigate(${newPath}, { replace: true })` // Log the specific action
+      historyLength: window.history.length, // Still log for context
+      actionTaken: `navigate(${newPath}, { replace: true })` // Explicitly state the action
     });
 
-    // After logging, decide on navigation
-    if (historyLength > 1) {
-      // Standard case: navigate back
-      navigate(-1);
-    } else {
-      // Edge case: landed directly on info page, navigate to newPath and replace history
-      // This will perform a soft navigation without a full page reload.
-      navigate(newPath, { replace: true });
-    }
+    // Always navigate to the main page, replacing the current history entry.
+    // This ensures the tab stays open and the main page is displayed,
+    // regardless of how the info page was accessed.
+    navigate(newPath, { replace: true });
   };
 
   return (
