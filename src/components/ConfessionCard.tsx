@@ -217,7 +217,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   const textColor = "text-gray-800 dark:text-gray-200";
   const linkColor = "text-gray-500 dark:text-gray-400";
 
-  const { bg, lightBg, text, darkBg, darkLightBg, darkText } = getCategoryColors(confession.category);
+  const { bg, text, darkBg, darkText, hoverLightBg, darkHoverLightBg } = getCategoryColors(confession.category);
 
   return (
     <div
@@ -260,8 +260,8 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
               darkBg,
               darkText,
               // Hover colors (light)
-              lightBg.replace('bg-', 'hover:bg-'),
-              darkLightBg.replace('dark:bg-', 'dark:hover:bg-')
+              hoverLightBg,
+              darkHoverLightBg
             )}
           >
             {confession.category}

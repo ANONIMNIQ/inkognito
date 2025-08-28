@@ -42,7 +42,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onSel
   return (
     <div className="w-full max-w-2xl mx-auto mb-6 flex flex-wrap justify-center gap-1">
       {categories.map((category) => {
-        const { bg, lightBg, text, darkBg, darkLightBg, darkText } = getCategoryColors(category);
+        const { bg, lightBg, text, darkBg, darkLightBg, darkText, hoverBg, darkHoverBg } = getCategoryColors(category);
         const isSelected = selectedCategory === category;
 
         return (
@@ -54,16 +54,11 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onSel
             onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onSelectCategory(category)}
             className={cn(
               "cursor-pointer rounded-full px-3 py-1.5 text-xs h-auto border-transparent transition-colors",
-              // Base text colors
               text,
               darkText,
-              // Conditional background
-              isSelected ? bg : lightBg,
-              isSelected ? darkBg : darkLightBg,
-              // Hover state (always solid for inactive, no change for active)
               isSelected
-                ? '' // No extra hover class for selected, it stays solid
-                : `${bg.replace('bg-', 'hover:bg-')} ${darkBg.replace('dark:bg-', 'dark:hover:bg-')}`
+                ? [bg, darkBg] // Selected: solid, no hover change
+                : [lightBg, darkLightBg, hoverBg, darkHoverBg] // Inactive: light, solid on hover
             )}
           >
             {category}
