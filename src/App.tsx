@@ -78,7 +78,10 @@ const AppRoutesAndModals: React.FC = () => {
   };
 
   const handleCloseInfoPage = () => {
-    console.log("handleCloseInfoPage called. Current history length:", window.history.length);
+    console.log("handleCloseInfoPage called.");
+    console.log("Current location:", location.pathname + location.search);
+    console.log("Current history length:", window.history.length);
+
     // Always trigger the visual closing of the drawer
     setIsInfoDrawerOpen(false);
     setCurrentInfoPageType(null);
@@ -87,17 +90,19 @@ const AppRoutesAndModals: React.FC = () => {
     setTimeout(() => {
       const currentCategoryParam = new URLSearchParams(location.search).get('category');
       const newPath = currentCategoryParam && currentCategoryParam !== "Всички" ? `/?category=${currentCategoryParam}` : '/';
+      console.log("Calculated newPath:", newPath);
 
       if (window.history.length > 1) {
-        console.log("History length > 1. Navigating back.");
+        console.log("History length > 1. Attempting navigate(-1).");
         navigate(-1);
       } else {
         // This is the critical path where the tab might close.
         // Force a full page reload to the main page using window.open with _self.
         // This is the most aggressive form of navigation and should prevent tab closure.
-        console.log("History length is 1. Forcing full page reload with window.open('_self') to:", newPath);
+        console.log("History length is 1. Attempting window.open('_self') to:", newPath);
         window.open(newPath, '_self'); 
       }
+      console.log("Navigation attempt made."); // This log should appear before tab closes
     }, 300); // Match the drawer's closing animation duration
   };
 
