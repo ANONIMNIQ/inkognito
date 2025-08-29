@@ -376,27 +376,23 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
     const currentLength = confessions.length;
     const prevLength = prevConfessionsLengthRef.current;
 
-    if (paramId) {
-      if (visibleConfessionCount !== currentLength) {
-        setVisibleConfessionCount(currentLength);
-      }
-    }
-    else if (currentLength > prevLength && visibleConfessionCount < currentLength) {
+    if (currentLength > prevLength && visibleConfessionCount < currentLength) {
       if (page === 0 && visibleConfessionCount === 0) {
+        // Start the cascade for a new set of confessions
         setVisibleConfessionCount(1);
-      }
-      else if (page > 0 && visibleConfessionCount === prevLength) {
+      } else if (page > 0 && visibleConfessionCount === prevLength) {
+        // Start the cascade for newly loaded confessions from infinite scroll
         setVisibleConfessionCount(prev => prev + 1);
       }
     }
     prevConfessionsLengthRef.current = currentLength;
-  }, [loading, isFormAnimationComplete, paramId, confessions.length, loadingMore, visibleConfessionCount, page]);
+  }, [loading, isFormAnimationComplete, confessions.length, loadingMore, visibleConfessionCount, page]);
 
   const handleAnimationComplete = useCallback(() => {
-    if (!paramId && visibleConfessionCount < confessions.length) {
+    if (visibleConfessionCount < confessions.length) {
       setVisibleConfessionCount(prev => prev + 1);
     }
-  }, [confessions.length, paramId, visibleConfessionCount]);
+  }, [confessions.length, visibleConfessionCount]);
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string, slug: string, email?: string) => {
     const { data, error } = await supabase.from("confessions").insert({ title, content, gender, category, slug, author_email: email }).select('id, slug');
