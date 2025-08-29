@@ -21,19 +21,29 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onSel
   const isMobile = useIsMobile();
 
   if (isMobile) {
+    const { bg, darkBg } = getCategoryColors(selectedCategory);
     return (
       <div className="w-full max-w-2xl mx-auto mb-6">
         <Select value={selectedCategory} onValueChange={onSelectCategory}>
           <SelectTrigger className="w-full bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700">
-            <SelectValue placeholder="Избери категория" />
+            {selectedCategory === "Всички" ? (
+              <SelectValue placeholder="Избери категория" />
+            ) : (
+              <div className="flex items-center">
+                <div className={cn("w-3 h-3 rounded-full mr-2", bg, darkBg)} />
+                <span>{selectedCategory}</span>
+              </div>
+            )}
           </SelectTrigger>
           <SelectContent className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700">
             {categories.map((category) => {
               const { bg, darkBg } = getCategoryColors(category);
               return (
-                <SelectItem key={category} value={category} className="flex items-center">
-                  <div className={cn("w-3 h-3 rounded-full mr-2", bg, darkBg)} />
-                  <span>{category}</span> {/* Wrapped category text in span */}
+                <SelectItem key={category} value={category}>
+                  <div className="flex items-center">
+                    <div className={cn("w-3 h-3 rounded-full mr-2", bg, darkBg)} />
+                    <span>{category}</span>
+                  </div>
                 </SelectItem>
               );
             })}

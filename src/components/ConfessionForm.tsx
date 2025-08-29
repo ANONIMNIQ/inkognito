@@ -141,6 +141,8 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
   const placeholderColor = "placeholder:text-gray-500 dark:placeholder:text-gray-400";
   const borderColor = "border-gray-300 dark:border-gray-700";
 
+  const { bg, darkBg } = getCategoryColors(category); // Get colors for the selected category
+
   return (
     <div className={cn("w-full max-w-2xl mx-auto mb-6 flex items-start", isMobile ? "space-x-0" : "space-x-3")} ref={formRef}>
       {!isMobile && (
@@ -206,15 +208,24 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
                 </Label>
                 <Select value={category} onValueChange={setCategory} onOpenChange={setIsSelectOpen}>
                   <SelectTrigger id="category" className={cn("mt-1 w-full bg-transparent", generalTextColor, borderColor)}>
-                    <SelectValue placeholder="Избери категория" />
+                    {category === "Други" ? ( // Assuming "Други" is the default/placeholder
+                      <SelectValue placeholder="Избери категория" />
+                    ) : (
+                      <div className="flex items-center">
+                        <div className={cn("w-3 h-3 rounded-full mr-2", bg, darkBg)} />
+                        <span>{category}</span>
+                      </div>
+                    )}
                   </SelectTrigger>
                   <SelectContent className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700">
                     {categories.filter(c => c !== "Всички").map((cat) => {
                       const { bg, darkBg } = getCategoryColors(cat);
                       return (
-                        <SelectItem key={cat} value={cat} className="flex items-center">
-                          <div className={cn("w-3 h-3 rounded-full mr-2", bg, darkBg)} />
-                          <span>{cat}</span> {/* Wrapped category text in span */}
+                        <SelectItem key={cat} value={cat}>
+                          <div className="flex items-center">
+                            <div className={cn("w-3 h-3 rounded-full mr-2", bg, darkBg)} />
+                            <span>{cat}</span>
+                          </div>
                         </SelectItem>
                       );
                     })}
