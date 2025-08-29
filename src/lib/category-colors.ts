@@ -11,6 +11,7 @@ export const categoryColorMap: Record<string, {
     darkHoverBg: string;
     hoverLightBg: string;
     darkHoverLightBg: string;
+    floatingText: string;
 }> = {
   "Любов и Секс": { 
       bg: "bg-category-love-sex",
@@ -23,6 +24,7 @@ export const categoryColorMap: Record<string, {
       darkHoverBg: "dark:hover:bg-category-love-sex",
       hoverLightBg: "hover:bg-category-love-sex-light",
       darkHoverLightBg: "dark:hover:bg-category-love-sex-light",
+      floatingText: "text-pink-300",
   },
   "Образование": { 
       bg: "bg-category-education",
@@ -35,6 +37,7 @@ export const categoryColorMap: Record<string, {
       darkHoverBg: "dark:hover:bg-category-education",
       hoverLightBg: "hover:bg-category-education-light",
       darkHoverLightBg: "dark:hover:bg-category-education-light",
+      floatingText: "text-yellow-400",
   },
   "Семейство": { 
       bg: "bg-category-family",
@@ -47,6 +50,7 @@ export const categoryColorMap: Record<string, {
       darkHoverBg: "dark:hover:bg-category-family",
       hoverLightBg: "hover:bg-category-family-light",
       darkHoverLightBg: "dark:hover:bg-category-family-light",
+      floatingText: "text-teal-300",
   },
   "Спорт и Здраве": { 
       bg: "bg-category-sport-health",
@@ -59,6 +63,7 @@ export const categoryColorMap: Record<string, {
       darkHoverBg: "dark:hover:bg-category-sport-health",
       hoverLightBg: "hover:bg-category-sport-health-light",
       darkHoverLightBg: "dark:hover:bg-category-sport-health-light",
+      floatingText: "text-green-400",
   },
   "Тийн": { 
       bg: "bg-category-teen",
@@ -71,6 +76,7 @@ export const categoryColorMap: Record<string, {
       darkHoverBg: "dark:hover:bg-category-teen",
       hoverLightBg: "hover:bg-category-teen-light",
       darkHoverLightBg: "dark:hover:bg-category-teen-light",
+      floatingText: "text-purple-300",
   },
   "Други": { 
       bg: "bg-category-neutral",
@@ -83,6 +89,7 @@ export const categoryColorMap: Record<string, {
       darkHoverBg: "dark:hover:bg-gray-700",
       hoverLightBg: "hover:bg-category-neutral-light",
       darkHoverLightBg: "dark:hover:bg-gray-600",
+      floatingText: "text-gray-400",
   },
   "Всички": { 
       bg: "bg-gray-900",
@@ -95,6 +102,7 @@ export const categoryColorMap: Record<string, {
       darkHoverBg: "dark:hover:bg-white",
       hoverLightBg: "hover:bg-gray-700",
       darkHoverLightBg: "dark:hover:bg-gray-300",
+      floatingText: "text-transparent",
   },
 };
 

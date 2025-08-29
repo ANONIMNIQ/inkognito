@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { useNavigate, useParams, useSearchParams, useLocation } from "react-router-dom";
 import FloatingMenu from "@/components/FloatingMenu"; // Import the new component
 import MetaTags from "@/components/MetaTags"; // Import MetaTags component
+import FloatingCategoryLabel from "@/components/FloatingCategoryLabel";
 
 interface Comment {
   id: string;
@@ -521,6 +522,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
   return (
     <div className="container mx-auto p-4 max-w-3xl">
       <MetaTags title={metaTitle} description={metaDescription} url={metaUrl} />
+      <FloatingCategoryLabel category={selectedCategory} />
       {/* FloatingMenu is now rendered in App.tsx */}
       <div className="flex justify-center mb-8 opacity-0 animate-fade-zoom-in">
         <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 481 134"
