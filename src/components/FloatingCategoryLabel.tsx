@@ -35,10 +35,10 @@ const FloatingCategoryLabel: React.FC<FloatingCategoryLabelProps> = ({ category 
   return (
     <div
       className={cn(
-        'fixed bottom-8 left-[calc(50%+24rem+2rem)] z-0 transform -rotate-90 origin-bottom-left',
-        'transition-opacity duration-300 ease-in-out',
+        'fixed bottom-8 left-[calc(50%+24rem+1rem)] z-0 transform -rotate-90 origin-bottom-left',
+        'transition-all duration-500 ease-in-out', // Updated for smooth transform
         'pointer-events-none',
-        isVisible ? 'opacity-100' : 'opacity-0'
+        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-5' // Added slide effect
       )}
     >
       <h1
