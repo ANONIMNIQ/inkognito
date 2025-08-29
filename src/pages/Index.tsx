@@ -65,7 +65,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
   const confessionFormContainerRef = useRef<HTMLDivElement>(null);
   const observer = useRef<IntersectionObserver>();
   const { lockScroll, unlockScroll } = useScrollLock();
-  const hasScrolledToInitialTarget = useRef(false); // New ref for scrolling
+  const isInitialLoadWithParam = useRef(!!paramId);
 
   const prevConfessionsLengthRef = useRef(0);
   const hasMoreRef = useRef(hasMore);
@@ -273,7 +273,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
       setVisibleConfessionCount(0);
       prevConfessionsLengthRef.current = 0;
       setCurrentConfessionForMeta(null); // Clear meta confession on full refetch
-      hasScrolledToInitialTarget.current = false; // Reset scroll flag here
+      isInitialLoadWithParam.current = !!currentParamId; // Reset scroll flag on full refetch
 
       const loadData = async () => {
         try {
@@ -359,6 +359,35 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
     if (node) observer.current.observe(node);
   }, []);
 
+  // Effect to scroll to expanded confession
+  useEffect(() => {
+    if (loading || !expandedConfessionId) return;
+
+    const doScroll = () => {
+      const scrollToComments = location.hash === '#comments';
+      const targetElementId = scrollToComments ? `comments-section-${expandedConfessionId}` : expandedConfessionId;
+      const elementToScrollTo = document.getElementById(targetElementId);
+      if (elementToScrollTo) {
+        const delay = scrollToComments ? 650 : 350;
+        setTimeout(() => {
+          elementToScrollTo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, delay);
+      }
+    };
+
+    // If it's an initial load with a param, we wait for the animation to reveal the card.
+    if (isInitialLoadWithParam.current) {
+      const targetIndex = confessions.findIndex(c => c.id === expandedConfessionId);
+      if (targetIndex !== -1 && visibleConfessionCount > targetIndex) {
+        doScroll();
+        isInitialLoadWithParam.current = false; // We've handled the initial scroll, don't do it again.
+      }
+    } else {
+      // If it's a subsequent click, scroll without waiting for animation logic.
+      doScroll();
+    }
+  }, [loading, expandedConfessionId, confessions, visibleConfessionCount, location.hash]);
+
   // Effect to manage visible count for cascade animation
   useEffect(() => {
     if (loading || !isFormAnimationComplete) return;
@@ -381,28 +410,11 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
     prevConfessionsLengthRef.current = currentLength;
   }, [loading, isFormAnimationComplete, confessions.length, loadingMore, visibleConfessionCount, page]);
 
-  const handleAnimationComplete = useCallback((completedId: string) => {
-    // Increment visible count for the next card in the cascade
+  const handleAnimationComplete = useCallback(() => {
     if (visibleConfessionCount < confessions.length) {
       setVisibleConfessionCount(prev => prev + 1);
     }
-
-    // Check if the card that just finished animating is our direct-link target
-    if (!hasScrolledToInitialTarget.current && completedId === expandedConfessionId) {
-      const scrollToComments = location.hash === '#comments';
-      const targetElementId = scrollToComments ? `comments-section-${expandedConfessionId}` : expandedConfessionId;
-      const elementToScrollTo = document.getElementById(targetElementId);
-
-      if (elementToScrollTo) {
-        // A short delay ensures the browser has painted the element before scrolling
-        const delay = scrollToComments ? 200 : 100;
-        setTimeout(() => {
-          elementToScrollTo.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          hasScrolledToInitialTarget.current = true; // Prevent re-scrolling
-        }, delay);
-      }
-    }
-  }, [confessions.length, visibleConfessionCount, expandedConfessionId, location.hash]);
+  }, [confessions.length, visibleConfessionCount]);
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string, slug: string, email?: string) => {
     const { data, error } = await supabase.from("confessions").insert({ title, content, gender, category, slug, author_email: email }).select('id, slug');
