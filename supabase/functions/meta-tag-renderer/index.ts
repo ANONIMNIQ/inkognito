@@ -58,9 +58,10 @@ serve(async (req) => {
 
   const serveDefaultPage = async (status: number = 200, errorMessage?: string) => {
     try {
-      const indexResponse = await fetch(`${SITE_ORIGIN}/index.html`);
+      // Fetch the root of the site, which serves the correct built index.html
+      const indexResponse = await fetch(SITE_ORIGIN);
       if (!indexResponse.ok) {
-        throw new Error(`Failed to fetch default index.html: ${indexResponse.status}`);
+        throw new Error(`Failed to fetch default index.html from root: ${indexResponse.status}`);
       }
       const defaultHtml = await indexResponse.text();
       return new Response(defaultHtml, { headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' }, status });
@@ -103,7 +104,8 @@ serve(async (req) => {
     return await serveDefaultPage(404, `Confession not found.`);
   }
 
-  const indexResponse = await fetch(`${SITE_ORIGIN}/index.html`);
+  // Fetch the root of the site to get the correct built index.html
+  const indexResponse = await fetch(SITE_ORIGIN);
   if (!indexResponse.ok) {
     return await serveDefaultPage(500, 'Failed to fetch base HTML for meta tag injection.');
   }
