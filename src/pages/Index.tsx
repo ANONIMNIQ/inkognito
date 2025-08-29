@@ -65,7 +65,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
   const confessionFormContainerRef = useRef<HTMLDivElement>(null);
   const observer = useRef<IntersectionObserver>();
   const { lockScroll, unlockScroll } = useScrollLock();
-  const initialScrollDone = useRef(false);
+  const initialDirectLinkScrollPerformed = useRef(false);
 
   const hasMoreRef = useRef(hasMore);
   const latestConfessionsRef = useRef<Confession[]>([]);
@@ -271,7 +271,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
       setHasMore(true);
       setVisibleConfessionCount(0);
       setCurrentConfessionForMeta(null);
-      initialScrollDone.current = !currentParamId;
+      initialDirectLinkScrollPerformed.current = false;
 
       const loadData = async () => {
         if (currentParamId) {
@@ -351,24 +351,36 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
     if (node) observer.current.observe(node);
   }, []);
 
-  // Effect for the initial, instant scroll on direct link navigation.
+  // This effect resets the scroll flag when the user navigates away from a direct link page.
   useEffect(() => {
-    if (paramId && !initialScrollDone.current && isFormAnimationComplete && confessions.length > 0) {
+    if (!paramId) {
+      initialDirectLinkScrollPerformed.current = false;
+    }
+  }, [paramId]);
+
+  // This is the main, combined scroll effect.
+  useEffect(() => {
+    // Don't scroll until the form animation is done and we have confessions.
+    if (!isFormAnimationComplete || confessions.length === 0) {
+      return;
+    }
+
+    // Case 1: Initial load on a direct link page.
+    if (paramId && !initialDirectLinkScrollPerformed.current) {
       const targetIndex = confessions.findIndex(c => c.id === paramId);
+      // Ensure the target confession is rendered before trying to scroll.
       if (targetIndex !== -1 && visibleConfessionCount > targetIndex) {
         const element = document.getElementById(paramId);
         if (element) {
           element.scrollIntoView({ behavior: 'instant', block: 'start' });
-          initialScrollDone.current = true;
+          initialDirectLinkScrollPerformed.current = true;
         }
       }
+      return; // Exit after handling initial scroll.
     }
-  }, [paramId, isFormAnimationComplete, confessions, visibleConfessionCount]);
 
-  // Effect for smooth scrolling on subsequent user interactions (e.g., clicking to expand/collapse).
-  useEffect(() => {
-    if (initialScrollDone.current && expandedConfessionId && !paramId) {
-      // This case handles user clicking to expand, not initial load
+    // Case 2: User clicks to expand a confession (not an initial direct link load).
+    if (expandedConfessionId && !initialDirectLinkScrollPerformed.current) {
       const element = document.getElementById(expandedConfessionId);
       if (element) {
         setTimeout(() => {
@@ -376,7 +388,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
         }, 350);
       }
     }
-  }, [expandedConfessionId, paramId]);
+  }, [expandedConfessionId, paramId, isFormAnimationComplete, confessions, visibleConfessionCount]);
 
   // Effect to manage visible count for cascade animation
   useEffect(() => {
