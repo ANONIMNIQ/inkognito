@@ -56,7 +56,7 @@ interface ConfessionCardProps {
   onToggleExpand: (confessionId: string, slug: string) => void;
   onSelectCategory: (category: string) => void;
   shouldOpenCommentsOnLoad?: boolean;
-  onAnimationComplete?: (id: string) => void;
+  onAnimationComplete?: () => void;
   currentCategory: string;
 }
 
@@ -98,6 +98,14 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   }, [ref]);
 
   useEffect(() => {
+    if (isContentOpen) {
+      setTimeout(() => {
+        cardRootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300);
+    }
+  }, [isContentOpen]);
+
+  useEffect(() => {
     if (!isContentOpen) {
       setIsCommentsOpen(false);
     }
@@ -107,6 +115,10 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   useEffect(() => {
     if (isContentOpen && shouldOpenCommentsOnLoad && !isCommentsOpen) {
       handleToggleCommentsLocal(true); // Pass true to force open and add hash
+      // Scroll to comments section after it opens
+      setTimeout(() => {
+        document.getElementById(`comments-section-${confession.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 600); // Give time for collapsible to open
     }
   }, [isContentOpen, shouldOpenCommentsOnLoad, isCommentsOpen, confession.id]);
 
@@ -221,7 +233,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
         )}
         <div 
           className={cn("flex-1 p-4 rounded-xl shadow-md relative min-w-0 opacity-0 animate-fade-zoom-in", bubbleBackgroundColor, isMobile ? "ml-0" : "")}
-          onAnimationEnd={() => onAnimationComplete && onAnimationComplete(confession.id)}
+          onAnimationEnd={onAnimationComplete}
         >
           <div
             className={cn(

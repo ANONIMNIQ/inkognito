@@ -16,7 +16,7 @@ import AboutUsPage from "./pages/AboutUsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsAndConditionsPage from "./pages/TermsAndConditionsPage";
 import CookieConsentBanner from "@/components/CookieConsentBanner";
-import ScrollManager from "@/components/ScrollManager"; // New import
+// Removed: import { logToSupabase } from "@/utils/logger";
 
 const queryClient = new QueryClient();
 
@@ -94,6 +94,8 @@ const AppRoutesAndModals: React.FC = () => {
     // React Router typically adds a 'key' to location.state for internal navigations.
     const isDirectAccess = (historyLength <= 1) || (historyLength === 2 && !location.state);
 
+    // Removed: logToSupabase("Closing info page.", { ... });
+
     if (isDirectAccess) {
       // If directly accessed, navigate to the main page and replace the history entry
       navigate(newPath, { replace: true });
@@ -155,7 +157,6 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <SessionProvider>
-            <ScrollManager />
             <AppRoutesAndModals />
           </SessionProvider>
         </BrowserRouter>

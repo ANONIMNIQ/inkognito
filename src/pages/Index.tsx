@@ -65,8 +65,8 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
   const confessionFormContainerRef = useRef<HTMLDivElement>(null);
   const observer = useRef<IntersectionObserver>();
   const { lockScroll, unlockScroll } = useScrollLock();
-  const initialDirectLinkScrollPerformed = useRef(false);
 
+  const prevConfessionsLengthRef = useRef(0);
   const hasMoreRef = useRef(hasMore);
   const latestConfessionsRef = useRef<Confession[]>([]);
   const loadingMoreRef = useRef(loadingMore); // Ref for loadingMore
@@ -253,7 +253,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
       setExpandedConfessionId(paramId || null);
     }
 
-    const currentCategory = selectedCategory;
+    const currentCategory = selectedCategory; // Use the state, which is now stable
     const currentParamId = paramId;
 
     const isCategoryChanged = lastLoadedContextRef.current?.category !== currentCategory;
@@ -270,67 +270,73 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
       setPage(0);
       setHasMore(true);
       setVisibleConfessionCount(0);
-      setCurrentConfessionForMeta(null);
-      initialDirectLinkScrollPerformed.current = false;
+      prevConfessionsLengthRef.current = 0;
+      setCurrentConfessionForMeta(null); // Clear meta confession on full refetch
 
       const loadData = async () => {
-        if (currentParamId) {
-          const targetConf = await fetchSingleConfession(currentParamId, paramSlug!, currentCategory, fetchId);
-          if (!targetConf || fetchId !== currentFetchId.current) return;
+        try {
+          if (currentParamId) {
+            const targetConf = await fetchSingleConfession(currentParamId, paramSlug!, currentCategory, fetchId);
+            if (!targetConf) return;
+            
+            if (fetchId !== currentFetchId.current) return;
 
-          setCurrentConfessionForMeta(targetConf);
+            setCurrentConfessionForMeta(targetConf); // Set for meta tags
 
-          // Fetch ALL confessions newer than the target
-          let newerQuery = supabase.from("confessions").select("*").gt("created_at", targetConf.created_at).order("created_at", { ascending: false });
-          if (currentCategory !== "Всички") newerQuery = newerQuery.eq("category", currentCategory);
-          const { data: newerData, error: newerError } = await newerQuery;
-          if (newerError) throw newerError;
+            // Fetch ALL newer confessions for context
+            let afterQuery = supabase.from("confessions").select("*").gt("created_at", targetConf.created_at).order("created_at", { ascending: true });
+            if (currentCategory !== "Всички") afterQuery = afterQuery.eq("category", currentCategory);
+            const { data: afterData } = await afterQuery; // No limit
 
-          // Fetch ONE PAGE of confessions older than the target
-          let olderQuery = supabase.from("confessions").select("*").lt("created_at", targetConf.created_at).order("created_at", { ascending: false }).limit(CONFESSIONS_PER_PAGE);
-          if (currentCategory !== "Всички") olderQuery = olderQuery.eq("category", currentCategory);
-          const { data: olderData, error: olderError } = await olderQuery;
-          if (olderError) throw olderError;
+            // Fetch a full page of older confessions to enable infinite scroll
+            let beforeQuery = supabase.from("confessions").select("*").lt("created_at", targetConf.created_at).order("created_at", { ascending: false });
+            if (currentCategory !== "Всички") beforeQuery = beforeQuery.eq("category", currentCategory);
+            const { data: beforeData, error: beforeError } = await beforeQuery.limit(CONFESSIONS_PER_PAGE);
+            if (beforeError) throw beforeError;
 
-          if (fetchId !== currentFetchId.current) return;
+            // Correctly set hasMore based on the fetch result
+            const newHasMore = beforeData.length === CONFESSIONS_PER_PAGE;
+            setHasMore(newHasMore);
 
-          setHasMore((olderData?.length || 0) === CONFESSIONS_PER_PAGE);
-          const formatConfession = (c: any) => ({ ...c, comment_count: 0, comments: [] });
-          const newerConfessions = (newerData || []).map(formatConfession);
-          const olderConfessions = (olderData || []).map(formatConfession);
+            const formatConfession = (c: any) => ({ ...c, comment_count: 0, comments: [] });
+            const combinedConfessions = [
+              ...(afterData || []).reverse().map(formatConfession),
+              targetConf,
+              ...(beforeData || []).map(formatConfession)
+            ];
+            
+            const uniqueConfessions = Array.from(new Map(combinedConfessions.map(c => [c.id, c])).values())
+                                          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-          const combined = [
-            ...newerConfessions,
-            targetConf,
-            ...olderConfessions
-          ];
-          
-          const unique = Array.from(new Map(combined.map(c => [c.id, c])).values())
-                                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-          const targetIndex = unique.findIndex(c => c.id === currentParamId);
-          
-          setConfessions(unique);
-          latestConfessionsRef.current = unique;
-          setVisibleConfessionCount(targetIndex + 1);
-          setLoading(false);
-          lastLoadedContextRef.current = { category: currentCategory, paramId: currentParamId };
-
-        } else {
-          // Standard list view loading
-          await fetchConfessionsPage({ category: currentCategory, replace: true, fetchId });
-          setCurrentConfessionForMeta(null);
-          setLoading(false);
-          lastLoadedContextRef.current = { category: currentCategory, paramId: currentParamId };
+            setConfessions(uniqueConfessions);
+            latestConfessionsRef.current = uniqueConfessions;
+          } else {
+            await fetchConfessionsPage({ category: currentCategory, replace: true, fetchId });
+            setCurrentConfessionForMeta(null); // Ensure it's null for list view
+          }
+        } finally {
+          if (fetchId === currentFetchId.current) {
+            setLoading(false);
+            lastLoadedContextRef.current = { category: currentCategory, paramId: currentParamId };
+          }
         }
       };
       loadData();
     } else {
+      // If needsFullRefetch is false, it means:
+      // 1. Category hasn't changed.
+      // 2. We are not navigating to a new, unseen confession.
+      // 3. We are either already on the list view, or collapsing a confession
+      //    and the list is NOT empty (so no full refetch needed).
+      // In this case, we just update the context ref if it's different,
+      // and the UI will react to `expandedConfessionId` changing.
       if (lastLoadedContextRef.current?.category !== currentCategory || lastLoadedContextRef.current?.paramId !== currentParamId) {
         lastLoadedContextRef.current = { category: currentCategory, paramId: currentParamId };
       }
+      // Crucially, we do NOT set setLoading(false) here if it was already false,
+      // and we do NOT trigger any data fetching.
     }
-  }, [authLoading, selectedCategory, paramId, paramSlug, fetchConfessionsPage, fetchSingleConfession]);
+  }, [authLoading, selectedCategory, paramId, paramSlug, fetchConfessionsPage, fetchSingleConfession, confessions.length]);
 
   // Effect to handle infinite scroll
   useEffect(() => {
@@ -351,65 +357,46 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
     if (node) observer.current.observe(node);
   }, []);
 
-  // This effect resets the scroll flag when the user navigates away from a direct link page.
+  // Effect to scroll to expanded confession
   useEffect(() => {
-    if (!paramId) {
-      initialDirectLinkScrollPerformed.current = false;
-    }
-  }, [paramId]);
-
-  // This is the main, combined scroll effect.
-  useEffect(() => {
-    // Don't scroll until the form animation is done and we have confessions.
-    if (!isFormAnimationComplete || confessions.length === 0) {
-      return;
-    }
-
-    // Case 1: Initial load on a direct link page.
-    if (paramId && !initialDirectLinkScrollPerformed.current) {
-      const targetIndex = confessions.findIndex(c => c.id === paramId);
-      // Ensure the target confession is rendered before trying to scroll.
-      if (targetIndex !== -1 && visibleConfessionCount > targetIndex) {
-        const element = document.getElementById(paramId);
-        if (element) {
-          element.scrollIntoView({ behavior: 'instant', block: 'start' });
-          initialDirectLinkScrollPerformed.current = true;
-        }
-      }
-      return; // Exit after handling initial scroll.
-    }
-
-    // Case 2: User clicks to expand a confession (not an initial direct link load).
-    if (expandedConfessionId && !initialDirectLinkScrollPerformed.current) {
-      const element = document.getElementById(expandedConfessionId);
-      if (element) {
+    if (!loading && expandedConfessionId) {
+      const el = document.getElementById(expandedConfessionId);
+      if (el) {
         setTimeout(() => {
-          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 350);
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 300);
       }
     }
-  }, [expandedConfessionId, paramId, isFormAnimationComplete, confessions, visibleConfessionCount]);
+  }, [loading, expandedConfessionId, location.hash]);
 
   // Effect to manage visible count for cascade animation
   useEffect(() => {
     if (loading || !isFormAnimationComplete) return;
 
-    if (visibleConfessionCount < confessions.length) {
-      if (visibleConfessionCount === 0) {
-        setVisibleConfessionCount(1);
+    const currentLength = confessions.length;
+    const prevLength = prevConfessionsLengthRef.current;
+
+    if (paramId) {
+      if (visibleConfessionCount !== currentLength) {
+        setVisibleConfessionCount(currentLength);
       }
     }
-  }, [loading, isFormAnimationComplete, confessions.length, paramId]);
-
-  const handleAnimationComplete = useCallback((id: string) => {
-    const currentLength = latestConfessionsRef.current.length;
-    if (visibleConfessionCount < currentLength) {
-      const lastVisibleItem = latestConfessionsRef.current[visibleConfessionCount - 1];
-      if (lastVisibleItem && lastVisibleItem.id === id) {
+    else if (currentLength > prevLength && visibleConfessionCount < currentLength) {
+      if (page === 0 && visibleConfessionCount === 0) {
+        setVisibleConfessionCount(1);
+      }
+      else if (page > 0 && visibleConfessionCount === prevLength) {
         setVisibleConfessionCount(prev => prev + 1);
       }
     }
-  }, [visibleConfessionCount]);
+    prevConfessionsLengthRef.current = currentLength;
+  }, [loading, isFormAnimationComplete, paramId, confessions.length, loadingMore, visibleConfessionCount, page]);
+
+  const handleAnimationComplete = useCallback(() => {
+    if (!paramId && visibleConfessionCount < confessions.length) {
+      setVisibleConfessionCount(prev => prev + 1);
+    }
+  }, [confessions.length, paramId, visibleConfessionCount]);
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string, slug: string, email?: string) => {
     const { data, error } = await supabase.from("confessions").insert({ title, content, gender, category, slug, author_email: email }).select('id, slug');
@@ -566,7 +553,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
         </div>
       ) : (
         <div className="space-y-6">
-          {confessions.slice(0, visibleConfessionCount).map((conf, index) => (
+          {confessions.slice(0, visibleConfessionCount).map((conf) => (
             <ConfessionCard
               key={conf.id}
               confession={{ ...conf, timestamp: new Date(conf.created_at), comments: conf.comments.map(c => ({ ...c, timestamp: new Date(c.created_at) })) }}
