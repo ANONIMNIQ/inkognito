@@ -384,30 +384,24 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen, updateMetaTags }) => { //
     if (loading || !isFormAnimationComplete) return;
 
     const currentLength = confessions.length;
-    const prevLength = prevConfessionsLengthRef.current;
 
-    if (paramId) {
-      if (visibleConfessionCount !== currentLength) {
-        setVisibleConfessionCount(currentLength);
-      }
+    if (paramId || page > 0) {
+      // If on a specific confession page or loading more pages, show all confessions immediately.
+      setVisibleConfessionCount(currentLength);
+    } else if (page === 0 && currentLength > 0 && visibleConfessionCount === 0) {
+      // On initial load (page 0), start the cascade animation.
+      setVisibleConfessionCount(1);
     }
-    else if (currentLength > prevLength && visibleConfessionCount < currentLength) {
-      if (page === 0 && visibleConfessionCount === 0) {
-        setVisibleConfessionCount(1);
-      }
-      else if (page > 0 && visibleConfessionCount === prevLength) {
-        // FIX: For infinite scroll, immediately show all newly loaded items
-        setVisibleConfessionCount(currentLength); 
-      }
-    }
+    
     prevConfessionsLengthRef.current = currentLength;
-  }, [loading, isFormAnimationComplete, paramId, confessions.length, loadingMore, visibleConfessionCount, page]);
+  }, [loading, isFormAnimationComplete, paramId, confessions, page]);
 
   const handleAnimationComplete = useCallback(() => {
-    if (!paramId && visibleConfessionCount < confessions.length) {
+    // Only continue the cascade animation on the initial page load.
+    if (!paramId && page === 0 && visibleConfessionCount < confessions.length) {
       setVisibleConfessionCount(prev => prev + 1);
     }
-  }, [confessions.length, paramId, visibleConfessionCount]);
+  }, [confessions.length, paramId, visibleConfessionCount, page]);
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string, slug: string, email?: string) => {
     const { data, error } = await supabase.from("confessions").insert({ title, content, gender, category, slug, author_email: email }).select('id, slug');
