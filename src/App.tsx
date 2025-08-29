@@ -9,15 +9,14 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import { SessionProvider, useSessionContext } from "@/components/SessionProvider";
 import { isAdmin } from "@/integrations/supabase/auth";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import AdminRedirectWrapper from "@/components/AdminRedirectWrapper";
 import FloatingMenu, { InfoPageType } from "@/components/FloatingMenu";
 import AboutUsPage from "./pages/AboutUsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsAndConditionsPage from "./pages/TermsAndConditionsPage";
 import CookieConsentBanner from "@/components/CookieConsentBanner";
-import { HelmetProvider } from 'react-helmet-async';
-import MetaTags, { DEFAULT_DESCRIPTION, DEFAULT_IMAGE_URL } from "@/components/MetaTags"; // Import DEFAULT_DESCRIPTION and DEFAULT_IMAGE_URL
+// Removed: import { logToSupabase } from "@/utils/logger";
 
 const queryClient = new QueryClient();
 
@@ -40,15 +39,6 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <>{children}</>;
 };
 
-// Define a type for dynamic meta data
-interface DynamicMeta {
-  title?: string;
-  description?: string;
-  imageUrl?: string;
-  url?: string;
-  type?: string;
-}
-
 // New component to encapsulate routing and modal logic
 const AppRoutesAndModals: React.FC = () => {
   const location = useLocation();
@@ -58,8 +48,6 @@ const AppRoutesAndModals: React.FC = () => {
   const [isInfoDrawerOpen, setIsInfoDrawerOpen] = useState(false);
   // State to store which specific info page is currently open
   const [currentInfoPageType, setCurrentInfoPageType] = useState<InfoPageType>(null);
-  // State for dynamic meta tags
-  const [dynamicMeta, setDynamicMeta] = useState<DynamicMeta>({});
 
   const getInfoPageTypeFromPathname = (pathname: string): InfoPageType => {
     if (pathname === '/about-us') return 'about';
@@ -68,58 +56,18 @@ const AppRoutesAndModals: React.FC = () => {
     return null;
   };
 
-  // Callback to update meta tags from child components
-  const updateMetaTags = useCallback((meta: DynamicMeta) => {
-    setDynamicMeta({
-      ...meta,
-      imageUrl: meta.imageUrl || DEFAULT_IMAGE_URL, // Ensure default image is always set
-      description: meta.description || DEFAULT_DESCRIPTION, // Ensure default description is always set
-    });
-  }, []);
-
-  // Effect to sync the drawer's state with the URL and set info page meta
+  // Effect to sync the drawer's state with the URL
   useEffect(() => {
     const pageType = getInfoPageTypeFromPathname(location.pathname);
     if (pageType) {
       setIsInfoDrawerOpen(true);
       setCurrentInfoPageType(pageType);
-      // Set meta for info pages directly here
-      let infoPageTitle = "";
-      let infoPageDescription = "";
-      switch (pageType) {
-        case 'about':
-          infoPageTitle = "За нас";
-          infoPageDescription = "Научете повече за Инкогнито Online - мястото, където можеш да споделиш своите тайни анонимно.";
-          break;
-        case 'privacy':
-          infoPageTitle = "Политика за поверителност";
-          infoPageDescription = "Прочетете нашата политика за поверителност, за да разберете как събираме, използваме и защитаваме вашата информация.";
-          break;
-        case 'terms':
-          infoPageTitle = "Правила и условия";
-          infoPageDescription = "Запознайте се с правилата и условията за използване на Инкогнито Online.";
-          break;
-      }
-      updateMetaTags({
-        title: infoPageTitle,
-        description: infoPageDescription,
-        url: window.location.href,
-        type: 'article',
-        imageUrl: DEFAULT_IMAGE_URL, // Explicitly set for info pages
-      });
     } else {
       // If the URL is not an info page, ensure the drawer is closed
       setIsInfoDrawerOpen(false);
       setCurrentInfoPageType(null);
-      // Reset dynamic meta if not on a specific content page
-      if (!location.pathname.startsWith('/confessions/')) {
-        updateMetaTags({
-          description: DEFAULT_DESCRIPTION, // Explicitly set default description for main page
-          imageUrl: DEFAULT_IMAGE_URL, // Explicitly set default image for main page
-        });
-      }
     }
-  }, [location.pathname, location.search, updateMetaTags]);
+  }, [location.pathname]);
 
   // This prop is passed to Index to inform it if an info page is visually open
   const isAnyInfoPageVisuallyOpen = isInfoDrawerOpen;
@@ -142,7 +90,11 @@ const AppRoutesAndModals: React.FC = () => {
     await new Promise(resolve => setTimeout(resolve, 300));
 
     const historyLength = window.history.length;
+    // Heuristic: If history length is 1, or if it's 2 and there's no React Router state, assume direct access.
+    // React Router typically adds a 'key' to location.state for internal navigations.
     const isDirectAccess = (historyLength <= 1) || (historyLength === 2 && !location.state);
+
+    // Removed: logToSupabase("Closing info page.", { ... });
 
     if (isDirectAccess) {
       // If directly accessed, navigate to the main page and replace the history entry
@@ -151,21 +103,16 @@ const AppRoutesAndModals: React.FC = () => {
       // If internally navigated, go back one step in history
       navigate(-1);
     }
-    updateMetaTags({
-      description: DEFAULT_DESCRIPTION, // Explicitly set default description after closing info page
-      imageUrl: DEFAULT_IMAGE_URL, // Explicitly set default image after closing info page
-    });
   };
 
   return (
     <>
-      <MetaTags {...dynamicMeta} /> {/* Use the dynamic meta tags */}
       <Routes>
         <Route
           path="/"
           element={
             <AdminRedirectWrapper>
-              <Index isInfoPageOpen={isAnyInfoPageVisuallyOpen} updateMetaTags={updateMetaTags} />
+              <Index isInfoPageOpen={isAnyInfoPageVisuallyOpen} />
             </AdminRedirectWrapper>
           }
         />
@@ -182,14 +129,14 @@ const AppRoutesAndModals: React.FC = () => {
           path="/confessions/:id/:slug"
           element={
             <AdminRedirectWrapper>
-              <Index isInfoPageOpen={isAnyInfoPageVisuallyOpen} updateMetaTags={updateMetaTags} />
+              <Index isInfoPageOpen={isAnyInfoPageVisuallyOpen} />
             </AdminRedirectWrapper>
           }
         />
         {/* These routes now just ensure the Index page is rendered behind the drawer */}
-        <Route path="/about-us" element={<AdminRedirectWrapper><Index isInfoPageOpen={isAnyInfoPageVisuallyOpen} updateMetaTags={updateMetaTags} /></AdminRedirectWrapper>} />
-        <Route path="/privacy-policy" element={<AdminRedirectWrapper><Index isInfoPageOpen={isAnyInfoPageVisuallyOpen} updateMetaTags={updateMetaTags} /></AdminRedirectWrapper>} />
-        <Route path="/terms-and-conditions" element={<AdminRedirectWrapper><Index isInfoPageOpen={isAnyInfoPageVisuallyOpen} updateMetaTags={updateMetaTags} /></AdminRedirectWrapper>} />
+        <Route path="/about-us" element={<AdminRedirectWrapper><Index isInfoPageOpen={isAnyInfoPageVisuallyOpen} /></AdminRedirectWrapper>} />
+        <Route path="/privacy-policy" element={<AdminRedirectWrapper><Index isInfoPageOpen={isAnyInfoPageVisuallyOpen} /></AdminRedirectWrapper>} />
+        <Route path="/terms-and-conditions" element={<AdminRedirectWrapper><Index isInfoPageOpen={isAnyInfoPageVisuallyOpen} /></AdminRedirectWrapper>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <FloatingMenu onMenuItemClick={handleMenuItemClick} />
@@ -210,9 +157,7 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <SessionProvider>
-            <HelmetProvider> {/* Wrap with HelmetProvider */}
-              <AppRoutesAndModals />
-            </HelmetProvider>
+            <AppRoutesAndModals />
           </SessionProvider>
         </BrowserRouter>
       </TooltipProvider>
