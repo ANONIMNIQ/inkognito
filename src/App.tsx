@@ -17,7 +17,7 @@ import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsAndConditionsPage from "./pages/TermsAndConditionsPage";
 import CookieConsentBanner from "@/components/CookieConsentBanner";
 import { HelmetProvider } from 'react-helmet-async';
-import MetaTags from "@/components/MetaTags"; // Removed DEFAULT_IMAGE_URL import
+import MetaTags, { DEFAULT_DESCRIPTION, DEFAULT_IMAGE_URL } from "@/components/MetaTags"; // Import DEFAULT_DESCRIPTION and DEFAULT_IMAGE_URL
 
 const queryClient = new QueryClient();
 
@@ -70,8 +70,11 @@ const AppRoutesAndModals: React.FC = () => {
 
   // Callback to update meta tags from child components
   const updateMetaTags = useCallback((meta: DynamicMeta) => {
-    // MetaTags component will handle its own default imageUrl if not provided
-    setDynamicMeta(meta);
+    setDynamicMeta({
+      ...meta,
+      imageUrl: meta.imageUrl || DEFAULT_IMAGE_URL, // Ensure default image is always set
+      description: meta.description || DEFAULT_DESCRIPTION, // Ensure default description is always set
+    });
   }, []);
 
   // Effect to sync the drawer's state with the URL and set info page meta
@@ -102,7 +105,7 @@ const AppRoutesAndModals: React.FC = () => {
         description: infoPageDescription,
         url: window.location.href,
         type: 'article',
-        // imageUrl is now handled by MetaTags component's internal default
+        imageUrl: DEFAULT_IMAGE_URL, // Explicitly set for info pages
       });
     } else {
       // If the URL is not an info page, ensure the drawer is closed
@@ -110,7 +113,10 @@ const AppRoutesAndModals: React.FC = () => {
       setCurrentInfoPageType(null);
       // Reset dynamic meta if not on a specific content page
       if (!location.pathname.startsWith('/confessions/')) {
-        updateMetaTags({}); // This will now correctly default to DEFAULT_IMAGE_URL due to the useCallback modification
+        updateMetaTags({
+          description: DEFAULT_DESCRIPTION, // Explicitly set default description for main page
+          imageUrl: DEFAULT_IMAGE_URL, // Explicitly set default image for main page
+        });
       }
     }
   }, [location.pathname, location.search, updateMetaTags]);
@@ -145,7 +151,10 @@ const AppRoutesAndModals: React.FC = () => {
       // If internally navigated, go back one step in history
       navigate(-1);
     }
-    updateMetaTags({}); // Reset meta tags to default after closing info page
+    updateMetaTags({
+      description: DEFAULT_DESCRIPTION, // Explicitly set default description after closing info page
+      imageUrl: DEFAULT_IMAGE_URL, // Explicitly set default image after closing info page
+    });
   };
 
   return (

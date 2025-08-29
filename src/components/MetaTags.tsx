@@ -9,10 +9,10 @@ interface MetaTagsProps {
   type?: string; // e.g., 'website', 'article'
 }
 
-const DEFAULT_TITLE = "Инкогнито Online";
-const DEFAULT_DESCRIPTION = "Сподели своите тайни анонимно. Място за откровения, подкрепа и разбиране.";
-const DEFAULT_IMAGE_URL = `${window.location.origin}/images/logomini.png`; // No longer exported
-const DEFAULT_TYPE = "website";
+export const DEFAULT_TITLE = "Инкогнито Online";
+export const DEFAULT_DESCRIPTION = "Сподели своите тайни анонимно. Място за откровения, подкрепа и разбиране.";
+export const DEFAULT_IMAGE_URL = `${window.location.origin}/images/logomini.png`;
+export const DEFAULT_TYPE = "website";
 
 const MetaTags: React.FC<MetaTagsProps> = ({
   title,
