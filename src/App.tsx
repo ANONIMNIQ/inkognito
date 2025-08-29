@@ -16,8 +16,8 @@ import AboutUsPage from "./pages/AboutUsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsAndConditionsPage from "./pages/TermsAndConditionsPage";
 import CookieConsentBanner from "@/components/CookieConsentBanner";
-import { HelmetProvider } from 'react-helmet-async'; // Import HelmetProvider
-import MetaTags from "@/components/MetaTags"; // Import MetaTags component
+import { HelmetProvider } from 'react-helmet-async';
+import MetaTags, { DEFAULT_IMAGE_URL } from "@/components/MetaTags"; // Import DEFAULT_IMAGE_URL
 
 const queryClient = new QueryClient();
 
@@ -70,7 +70,7 @@ const AppRoutesAndModals: React.FC = () => {
 
   // Callback to update meta tags from child components
   const updateMetaTags = useCallback((meta: DynamicMeta) => {
-    setDynamicMeta(meta);
+    setDynamicMeta({ ...meta, imageUrl: meta.imageUrl || DEFAULT_IMAGE_URL }); // Ensure default image is always set
   }, []);
 
   // Effect to sync the drawer's state with the URL and set info page meta
@@ -101,6 +101,7 @@ const AppRoutesAndModals: React.FC = () => {
         description: infoPageDescription,
         url: window.location.href,
         type: 'article',
+        imageUrl: DEFAULT_IMAGE_URL, // Explicitly set for info pages
       });
     } else {
       // If the URL is not an info page, ensure the drawer is closed
@@ -108,7 +109,7 @@ const AppRoutesAndModals: React.FC = () => {
       setCurrentInfoPageType(null);
       // Reset dynamic meta if not on a specific content page
       if (!location.pathname.startsWith('/confessions/')) {
-        updateMetaTags({}); // Reset to default
+        updateMetaTags({}); // This will now correctly default to DEFAULT_IMAGE_URL due to the useCallback modification
       }
     }
   }, [location.pathname, location.search, updateMetaTags]);
