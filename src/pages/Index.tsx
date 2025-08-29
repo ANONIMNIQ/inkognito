@@ -376,27 +376,32 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
     const currentLength = confessions.length;
     const prevLength = prevConfessionsLengthRef.current;
 
-    if (paramId) {
-      if (visibleConfessionCount !== currentLength) {
+    // This condition is key: only act when new confessions have been loaded.
+    if (currentLength > prevLength) {
+      if (paramId && page === 0) {
+        // Direct link initial load: show all at once.
         setVisibleConfessionCount(currentLength);
+      } else {
+        // Main page initial load OR any infinite scroll: start the cascade from the first new item.
+        if (visibleConfessionCount === prevLength) {
+          setVisibleConfessionCount(prev => prev + 1);
+        }
       }
+    } 
+    // This handles a rare edge case where the component re-renders on a direct link page
+    // without confessions changing, ensuring they stay visible.
+    else if (paramId && page === 0 && visibleConfessionCount !== currentLength) {
+      setVisibleConfessionCount(currentLength);
     }
-    else if (currentLength > prevLength && visibleConfessionCount < currentLength) {
-      if (page === 0 && visibleConfessionCount === 0) {
-        setVisibleConfessionCount(1);
-      }
-      else if (page > 0 && visibleConfessionCount === prevLength) {
-        setVisibleConfessionCount(prev => prev + 1);
-      }
-    }
+
     prevConfessionsLengthRef.current = currentLength;
-  }, [loading, isFormAnimationComplete, paramId, confessions.length, loadingMore, visibleConfessionCount, page]);
+  }, [loading, isFormAnimationComplete, paramId, confessions.length, visibleConfessionCount, page]);
 
   const handleAnimationComplete = useCallback(() => {
-    if (!paramId && visibleConfessionCount < confessions.length) {
+    if (visibleConfessionCount < confessions.length) {
       setVisibleConfessionCount(prev => prev + 1);
     }
-  }, [confessions.length, paramId, visibleConfessionCount]);
+  }, [confessions.length, visibleConfessionCount]);
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string, slug: string, email?: string) => {
     const { data, error } = await supabase.from("confessions").insert({ title, content, gender, category, slug, author_email: email }).select('id, slug');
