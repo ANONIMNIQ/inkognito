@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useLayoutEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import ConfessionForm from "@/components/ConfessionForm";
 import ConfessionCard from "@/components/ConfessionCard";
@@ -350,33 +350,37 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
     if (node) observer.current.observe(node);
   }, []);
 
-  // Synchronous effect to prevent scroll jump when loading surrounding confessions
-  useLayoutEffect(() => {
-    if (isInitialLoadWithParam.current && expandedConfessionId) {
-      const element = document.getElementById(expandedConfessionId);
-      if (element) {
-        // Use 'instant' to avoid competing with other animations
-        element.scrollIntoView({ behavior: 'instant', block: 'start' });
-        // Only mark as "scrolled" once we have the full context, preventing future auto-scrolls
-        if (confessions.length > 1) {
-          isInitialLoadWithParam.current = false;
-        }
-      }
-    }
-  }, [confessions, expandedConfessionId]);
-
-  // Asynchronous effect for smooth scrolling on subsequent user interactions
+  // Effect for the initial, instant scroll on direct link navigation.
   useEffect(() => {
-    if (!isInitialLoadWithParam.current && expandedConfessionId) {
-      const scrollToComments = location.hash === '#comments';
-      const targetElementId = scrollToComments ? `comments-section-${expandedConfessionId}` : expandedConfessionId;
-      const elementToScrollTo = document.getElementById(targetElementId);
-      if (elementToScrollTo) {
-        const delay = scrollToComments ? 650 : 350;
-        setTimeout(() => {
-          elementToScrollTo.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, delay);
-      }
+    // This effect should only run once on initial load when a specific confession is targeted.
+    if (!isInitialLoadWithParam.current || !expandedConfessionId || !isFormAnimationComplete) {
+      return;
+    }
+
+    const element = document.getElementById(expandedConfessionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'instant', block: 'start' });
+      // We've performed the initial scroll, so we disable this logic for subsequent renders.
+      isInitialLoadWithParam.current = false;
+    }
+  }, [expandedConfessionId, isFormAnimationComplete, confessions]); // Re-run if dependencies change before scroll happens
+
+  // Effect for smooth scrolling on subsequent user interactions (e.g., clicking to expand/collapse).
+  useEffect(() => {
+    // Don't run this on the initial load; the other effect handles that.
+    if (isInitialLoadWithParam.current || !expandedConfessionId) {
+      return;
+    }
+
+    const scrollToComments = location.hash === '#comments';
+    const targetElementId = scrollToComments ? `comments-section-${expandedConfessionId}` : expandedConfessionId;
+    const elementToScrollTo = document.getElementById(targetElementId);
+    
+    if (elementToScrollTo) {
+      const delay = scrollToComments ? 650 : 350;
+      setTimeout(() => {
+        elementToScrollTo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, delay);
     }
   }, [expandedConfessionId, location.hash]);
 
