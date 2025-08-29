@@ -1,1 +1,2 @@
+/test-proxy https://yyhlligskuppqmlzpobp.supabase.co/functions/v1/test-proxy 200
 /confessions/:splat https://yyhlligskuppqmlzpobp.supabase.co/functions/v1/meta-tag-renderer?fullPath=confessions/:splat 200
