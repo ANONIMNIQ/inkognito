@@ -8,9 +8,16 @@ const ScrollManager = () => {
   useEffect(() => {
     const lastLocation = lastLocationRef.current;
 
-    // Check if it's a significant navigation change (pathname or search params).
-    // We ignore hash changes, as they are for in-page navigation (like opening comments).
-    if (location.pathname !== lastLocation.pathname || location.search !== lastLocation.search) {
+    // Check if the new path is a confession detail page.
+    // We want the Index page to handle scrolling in this specific case.
+    const isNavigatingToConfession = /^\/confessions\/.+/.test(location.pathname);
+
+    // If it's a significant navigation change (pathname or search params) AND we are NOT navigating
+    // to a specific confession, then scroll to the top of the page.
+    if (
+      (location.pathname !== lastLocation.pathname || location.search !== lastLocation.search) &&
+      !isNavigatingToConfession
+    ) {
       window.scrollTo(0, 0);
     }
 
