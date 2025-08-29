@@ -13,22 +13,18 @@ const FloatingCategoryLabel: React.FC<FloatingCategoryLabelProps> = ({ category 
   const [displayCategory, setDisplayCategory] = useState(category);
 
   useEffect(() => {
-    if (category === 'Всички') {
+    // If the category changes, fade out, update, then fade in
+    if (category !== displayCategory) {
       setIsVisible(false);
-    } else {
-      // If the category changes, fade out, update, then fade in
-      if (category !== displayCategory) {
-        setIsVisible(false);
-        setTimeout(() => {
-          setDisplayCategory(category);
-          setIsVisible(true);
-        }, 300); // duration of fade out
-      } else {
-        // If it's the first render with a valid category
+      setTimeout(() => {
+        setDisplayCategory(category);
         setIsVisible(true);
-      }
+      }, 300); // duration of fade out
+    } else if (!isVisible) {
+      // If it's the first render, just make it visible
+      setIsVisible(true);
     }
-  }, [category, displayCategory]);
+  }, [category, displayCategory, isVisible]);
 
   if (isMobile) {
     return null;
@@ -39,7 +35,7 @@ const FloatingCategoryLabel: React.FC<FloatingCategoryLabelProps> = ({ category 
   return (
     <div
       className={cn(
-        'fixed bottom-24 right-[calc((100vw-48rem)/2-2rem)] z-0 transform -rotate-90 origin-bottom-right',
+        'fixed bottom-8 left-[calc(50%+24rem+2rem)] z-0 transform -rotate-90 origin-bottom-left',
         'transition-opacity duration-300 ease-in-out',
         'pointer-events-none',
         isVisible ? 'opacity-100' : 'opacity-0'

@@ -102,7 +102,7 @@ export const categoryColorMap: Record<string, {
       darkHoverBg: "dark:hover:bg-white",
       hoverLightBg: "hover:bg-gray-700",
       darkHoverLightBg: "dark:hover:bg-gray-300",
-      floatingText: "text-transparent",
+      floatingText: "text-gray-400",
   },
 };
 
