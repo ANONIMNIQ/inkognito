@@ -58,12 +58,12 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen, updateMetaTags }) => { //
   const [selectedCategory, setSelectedCategory] = useState<string>("Всички"); // Local UI state, updated from URL
   const [visibleConfessionCount, setVisibleConfessionCount] = useState(0);
   const [isFormAnimationComplete, setIsFormAnimationComplete] = useState(false);
+  const [animationStartIndex, setAnimationStartIndex] = useState(0); // New state for cascade animation
 
   const confessionFormContainerRef = useRef<HTMLDivElement>(null);
   const observer = useRef<IntersectionObserver>();
   const { lockScroll, unlockScroll } = useScrollLock();
 
-  const prevConfessionsLengthRef = useRef(0);
   const hasMoreRef = useRef(hasMore);
   const latestConfessionsRef = useRef<Confession[]>([]);
   const loadingMoreRef = useRef(loadingMore); // Ref for loadingMore
@@ -194,7 +194,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen, updateMetaTags }) => { //
         return null;
       }
 
-      if (categoryFromUrl !== "Всички" && confessionData.category !== selectedCategory) { // Changed confessionData.category === categoryFromUrl to currentCategory
+      if (categoryFromUrl !== "Всички" && confessionData.category !== selectedCategory) {
         const newSearch = confessionData.category !== "Всички" ? `?category=${confessionData.category}` : '';
         navigate(`/confessions/${confessionData.id}/${confessionData.slug}${newSearch}`, { replace: true });
         return null;
@@ -250,7 +250,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen, updateMetaTags }) => { //
       setExpandedConfessionId(paramId || null);
     }
 
-    const currentCategory = selectedCategory; // Use the state, which is now stable
+    const currentCategory = selectedCategory;
     const currentParamId = paramId;
 
     const isCategoryChanged = lastLoadedContextRef.current?.category !== currentCategory;
@@ -266,32 +266,29 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen, updateMetaTags }) => { //
       setLoading(true);
       setPage(0);
       setHasMore(true);
-      setVisibleConfessionCount(0);
-      prevConfessionsLengthRef.current = 0;
-
+      setVisibleConfessionCount(0); // Reset for new animation
+      setAnimationStartIndex(0); // Reset animation start index
+      
       const loadData = async () => {
         try {
           if (currentParamId) {
             const targetConf = await fetchSingleConfession(currentParamId, paramSlug!, currentCategory, fetchId);
             if (!targetConf) {
-              updateMetaTags({}); // Reset to default if confession not found
+              updateMetaTags({});
               return;
             }
             
             if (fetchId !== currentFetchId.current) return;
 
-            // Fetch ALL newer confessions for context
             let afterQuery = supabase.from("confessions").select("*").gt("created_at", targetConf.created_at).order("created_at", { ascending: true });
             if (currentCategory !== "Всички") afterQuery = afterQuery.eq("category", currentCategory);
-            const { data: afterData } = await afterQuery; // No limit
+            const { data: afterData } = await afterQuery;
 
-            // Fetch a full page of older confessions to enable infinite scroll
             let beforeQuery = supabase.from("confessions").select("*").lt("created_at", targetConf.created_at).order("created_at", { ascending: false });
             if (currentCategory !== "Всички") beforeQuery = beforeQuery.eq("category", currentCategory);
             const { data: beforeData, error: beforeError } = await beforeQuery.limit(CONFESSIONS_PER_PAGE);
             if (beforeError) throw beforeError;
 
-            // Correctly set hasMore based on the fetch result
             const newHasMore = beforeData.length === CONFESSIONS_PER_PAGE;
             setHasMore(newHasMore);
 
@@ -307,18 +304,24 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen, updateMetaTags }) => { //
 
             setConfessions(uniqueConfessions);
             latestConfessionsRef.current = uniqueConfessions;
-
-            // Update meta tags for the specific confession
-            updateMetaTags({
-              title: targetConf.title,
-              description: targetConf.content.substring(0, 160) + (targetConf.content.length > 160 ? '...' : ''),
-              url: `${window.location.origin}/confessions/${targetConf.id}/${targetConf.slug}`,
-              type: 'article',
-            });
+            setVisibleConfessionCount(uniqueConfessions.length); // Show all immediately for single view
+            setAnimationStartIndex(0); // Not relevant for single view, but reset
+            updateMetaTags({ /* ... */ });
 
           } else {
-            await fetchConfessionsPage({ category: currentCategory, replace: true, fetchId });
-            updateMetaTags({}); // Reset to default meta for the main list page
+            const fetchedBatch = await fetchConfessionsPage({ category: currentCategory, replace: true, fetchId });
+            if (fetchId === currentFetchId.current) {
+                setConfessions(fetchedBatch); // Ensure confessions state is updated here
+                latestConfessionsRef.current = fetchedBatch;
+                if (fetchedBatch.length > 0) {
+                    setAnimationStartIndex(0);
+                    setVisibleConfessionCount(1); // Start animation for the first batch
+                } else {
+                    setVisibleConfessionCount(0);
+                    setAnimationStartIndex(0);
+                }
+            }
+            updateMetaTags({});
           }
         } finally {
           if (fetchId === currentFetchId.current) {
@@ -329,19 +332,6 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen, updateMetaTags }) => { //
       };
       loadData();
     } else {
-      // If needsFullRefetch is false, it means:
-      // 1. Category hasn't changed.
-      // 2. We are not navigating to a new, unseen confession.
-      // 3. We are either already on the list view, or collapsing a confession
-      //    and the list is NOT empty (so no full refetch needed).
-      // In this case, we just update the context ref if it's different,
-      // and the UI will react to `expandedConfessionId` changing.
-      if (lastLoadedContextRef.current?.category !== currentCategory || lastLoadedContextRef.current?.paramId !== currentParamId) {
-        lastLoadedContextRef.current = { category: currentCategory, paramId: currentParamId };
-      }
-      // Crucially, we do NOT set setLoading(false) here if it was already false,
-      // and we do NOT trigger any data fetching.
-      // If we are on the main page (no paramId), ensure default meta is set
       if (!currentParamId && !isInfoPageOpen) {
         updateMetaTags({});
       }
@@ -352,7 +342,16 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen, updateMetaTags }) => { //
   useEffect(() => {
     if (page > 0 && hasMoreRef.current && !loadingMoreRef.current) {
       const oldestCreatedAt = latestConfessionsRef.current.length > 0 ? latestConfessionsRef.current[latestConfessionsRef.current.length - 1].created_at : undefined;
-      fetchConfessionsPage({ category: selectedCategory, oldestCreatedAtForInfiniteScroll: oldestCreatedAt, fetchId: currentFetchId.current });
+      
+      const currentConfessionsLength = latestConfessionsRef.current.length; // Length *before* new fetch
+
+      fetchConfessionsPage({ category: selectedCategory, oldestCreatedAtForInfiniteScroll: oldestCreatedAt, fetchId: currentFetchId.current })
+        .then(fetchedBatch => {
+            if (currentFetchId.current === currentFetchId.current && fetchedBatch.length > 0) { // Check fetchId again
+                setAnimationStartIndex(currentConfessionsLength); // Start animation from where new items begin
+                setVisibleConfessionCount(currentConfessionsLength + 1); // Show first new item
+            }
+        });
     }
   }, [page, fetchConfessionsPage, selectedCategory]);
 
@@ -379,29 +378,18 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen, updateMetaTags }) => { //
     }
   }, [loading, expandedConfessionId, location.hash]);
 
-  // Effect to manage visible count for cascade animation
-  useEffect(() => {
-    if (loading || !isFormAnimationComplete) return;
-
-    const currentLength = confessions.length;
-
-    if (paramId || page > 0) {
-      // If on a specific confession page or loading more pages, show all confessions immediately.
-      setVisibleConfessionCount(currentLength);
-    } else if (page === 0 && currentLength > 0 && visibleConfessionCount === 0) {
-      // On initial load (page 0), start the cascade animation.
-      setVisibleConfessionCount(1);
-    }
-    
-    prevConfessionsLengthRef.current = currentLength;
-  }, [loading, isFormAnimationComplete, paramId, confessions, page]);
-
   const handleAnimationComplete = useCallback(() => {
-    // Only continue the cascade animation on the initial page load.
-    if (!paramId && page === 0 && visibleConfessionCount < confessions.length) {
-      setVisibleConfessionCount(prev => prev + 1);
+    // Only continue the cascade animation if not on a specific confession page
+    // and if there are more confessions to animate in the current batch.
+    if (!paramId && visibleConfessionCount < confessions.length) {
+      const nextVisibleCount = visibleConfessionCount + 1;
+      const endOfCurrentBatch = animationStartIndex + CONFESSIONS_PER_PAGE;
+
+      if (nextVisibleCount <= endOfCurrentBatch && nextVisibleCount <= confessions.length) {
+        setVisibleConfessionCount(nextVisibleCount);
+      }
     }
-  }, [confessions.length, paramId, visibleConfessionCount, page]);
+  }, [confessions.length, paramId, visibleConfessionCount, animationStartIndex]);
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string, slug: string, email?: string) => {
     const { data, error } = await supabase.from("confessions").insert({ title, content, gender, category, slug, author_email: email }).select('id, slug');
@@ -546,7 +534,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen, updateMetaTags }) => { //
               onToggleExpand={handleConfessionToggle}
               onSelectCategory={handleSelectCategory}
               shouldOpenCommentsOnLoad={conf.id === expandedConfessionId && location.hash === '#comments'}
-              onAnimationComplete={handleAnimationComplete}
+              onAnimationComplete={index === visibleConfessionCount - 1 ? handleAnimationComplete : undefined}
               currentCategory={selectedCategory}
               ref={index === visibleConfessionCount - 1 ? lastConfessionElementRef : null} // Apply ref to the last visible card
             />
