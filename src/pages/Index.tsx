@@ -348,8 +348,13 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen, updateMetaTags }) => { //
       fetchConfessionsPage({ category: selectedCategory, oldestCreatedAtForInfiniteScroll: oldestCreatedAt, fetchId: currentFetchId.current })
         .then(fetchedBatch => {
             if (currentFetchId.current === currentFetchId.current && fetchedBatch.length > 0) { // Check fetchId again
-                setAnimationStartIndex(currentConfessionsLength); // Start animation from where new items begin
-                setVisibleConfessionCount(currentConfessionsLength + 1); // Show first new item
+                // When a new batch is fetched, the animation should start from the first item of this new batch.
+                // The `confessions` state will have already been updated by `setConfessions` inside `fetchConfessionsPage`.
+                // So, `latestConfessionsRef.current.length` will now include the new batch.
+                // We need to find the index where the new batch *starts*.
+                const newBatchStartIndex = latestConfessionsRef.current.length - fetchedBatch.length;
+                setAnimationStartIndex(newBatchStartIndex);
+                setVisibleConfessionCount(newBatchStartIndex + 1); // Start cascade for the first item of the new batch
             }
         });
     }
@@ -358,13 +363,17 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen, updateMetaTags }) => { //
   // Intersection Observer for infinite scroll
   const lastConfessionElementRef = useCallback(node => {
     if (observer.current) observer.current.disconnect();
-    observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMoreRef.current && !loadingMoreRef.current) {
-        setPage(prev => prev + 1);
-      }
-    }, { rootMargin: '0px 0px 200px 0px' });
-    if (node) observer.current.observe(node);
-  }, []);
+
+    // Only set up observer if we are in the main list view, not loading initially, and there might be more data
+    if (!paramId && !loading && hasMoreRef.current) {
+      observer.current = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting && hasMoreRef.current && !loadingMoreRef.current) {
+          setPage(prev => prev + 1);
+        }
+      }, { rootMargin: '0px 0px 200px 0px' });
+      if (node) observer.current.observe(node);
+    }
+  }, [loading, paramId, hasMore]); // Dependencies for useCallback
 
   // Effect to scroll to expanded confession
   useEffect(() => {
@@ -379,13 +388,13 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen, updateMetaTags }) => { //
   }, [loading, expandedConfessionId, location.hash]);
 
   const handleAnimationComplete = useCallback(() => {
-    // Only continue the cascade animation if not on a specific confession page
-    // and if there are more confessions to animate in the current batch.
+    // Only continue the cascade animation if not on a specific confession page (`paramId`)
+    // and if the current visible count is within the current animating batch.
     if (!paramId && visibleConfessionCount < confessions.length) {
       const nextVisibleCount = visibleConfessionCount + 1;
-      const endOfCurrentBatch = animationStartIndex + CONFESSIONS_PER_PAGE;
+      const endOfCurrentAnimatingBatch = animationStartIndex + CONFESSIONS_PER_PAGE;
 
-      if (nextVisibleCount <= endOfCurrentBatch && nextVisibleCount <= confessions.length) {
+      if (nextVisibleCount <= endOfCurrentAnimatingBatch && nextVisibleCount <= confessions.length) {
         setVisibleConfessionCount(nextVisibleCount);
       }
     }
