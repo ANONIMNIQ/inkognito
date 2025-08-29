@@ -65,6 +65,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
   const confessionFormContainerRef = useRef<HTMLDivElement>(null);
   const observer = useRef<IntersectionObserver>();
   const { lockScroll, unlockScroll } = useScrollLock();
+  const hasScrolledToInitialTarget = useRef(false); // New ref for scrolling
 
   const prevConfessionsLengthRef = useRef(0);
   const hasMoreRef = useRef(hasMore);
@@ -272,6 +273,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
       setVisibleConfessionCount(0);
       prevConfessionsLengthRef.current = 0;
       setCurrentConfessionForMeta(null); // Clear meta confession on full refetch
+      hasScrolledToInitialTarget.current = false; // Reset scroll flag here
 
       const loadData = async () => {
         try {
@@ -359,15 +361,28 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
 
   // Effect to scroll to expanded confession
   useEffect(() => {
-    if (!loading && expandedConfessionId) {
-      const el = document.getElementById(expandedConfessionId);
-      if (el) {
+    if (loading || !expandedConfessionId || hasScrolledToInitialTarget.current) {
+      return;
+    }
+
+    const targetIndex = confessions.findIndex(c => c.id === expandedConfessionId);
+
+    // Check if the target confession is now rendered by the cascade animation
+    if (targetIndex !== -1 && visibleConfessionCount > targetIndex) {
+      const scrollToComments = location.hash === '#comments';
+      const targetElementId = scrollToComments ? `comments-section-${expandedConfessionId}` : expandedConfessionId;
+      const elementToScrollTo = document.getElementById(targetElementId);
+
+      if (elementToScrollTo) {
+        // The delay should be long enough for the card to animate in and for the comments section to open if needed.
+        const delay = scrollToComments ? 650 : 350;
         setTimeout(() => {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 300);
+          elementToScrollTo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          hasScrolledToInitialTarget.current = true; // Set flag to prevent re-scrolling
+        }, delay);
       }
     }
-  }, [loading, expandedConfessionId, location.hash]);
+  }, [loading, expandedConfessionId, confessions, visibleConfessionCount, location.hash]);
 
   // Effect to manage visible count for cascade animation
   useEffect(() => {
@@ -384,6 +399,9 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
         // Start the cascade for newly loaded confessions from infinite scroll
         setVisibleConfessionCount(prev => prev + 1);
       }
+    } else if (currentLength > 0 && visibleConfessionCount === 0) {
+      // This handles the case for direct link navigation where confessions are loaded at once
+      setVisibleConfessionCount(1);
     }
     prevConfessionsLengthRef.current = currentLength;
   }, [loading, isFormAnimationComplete, confessions.length, loadingMore, visibleConfessionCount, page]);

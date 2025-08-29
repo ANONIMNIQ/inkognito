@@ -115,10 +115,6 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
   useEffect(() => {
     if (isContentOpen && shouldOpenCommentsOnLoad && !isCommentsOpen) {
       handleToggleCommentsLocal(true); // Pass true to force open and add hash
-      // Scroll to comments section after it opens
-      setTimeout(() => {
-        document.getElementById(`comments-section-${confession.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 600); // Give time for collapsible to open
     }
   }, [isContentOpen, shouldOpenCommentsOnLoad, isCommentsOpen, confession.id]);
 
