@@ -1,1 +1,1 @@
-/confessions/:id/:slug https://yyhlligskuppqmlzpobp.supabase.co/functions/v1/meta-tag-renderer?path=/confessions/:id/:slug 200
+/confessions/* https://yyhlligskuppqmlzpobp.supabase.co/functions/v1/meta-tag-renderer 200

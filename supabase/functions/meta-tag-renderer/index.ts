@@ -83,9 +83,21 @@ serve(async (req) => {
   };
 
   try {
-    const url = new URL(req.url);
-    const path = url.searchParams.get('path'); // e.g., /confessions/uuid/slug
-    console.log(`Received path parameter: ${path}`);
+    // Cloudflare Pages passes the original request URL in the X-Original-URL header
+    const originalUrlHeader = req.headers.get('X-Original-URL');
+    let path: string | null = null;
+
+    if (originalUrlHeader) {
+      const originalUrl = new URL(originalUrlHeader);
+      path = originalUrl.pathname;
+      console.log(`Received original path from X-Original-URL header: ${path}`);
+    } else {
+      // Fallback if header is not present (e.g., direct invocation or different proxy)
+      // In this scenario, req.url would be the function's URL, so we'd need to parse its query params
+      const url = new URL(req.url);
+      path = url.searchParams.get('path'); // This was the previous method
+      console.log(`Received path from query parameter (fallback): ${path}`);
+    }
 
     // If the path isn't for a specific confession, serve the default page
     if (!path || !path.startsWith('/confessions/')) {
