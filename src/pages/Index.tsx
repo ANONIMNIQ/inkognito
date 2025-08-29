@@ -11,6 +11,7 @@ import CategoryFilter from "@/components/CategoryFilter";
 import { cn } from "@/lib/utils";
 import { useNavigate, useParams, useSearchParams, useLocation } from "react-router-dom";
 import FloatingMenu from "@/components/FloatingMenu"; // Import the new component
+import MetaTags from "@/components/MetaTags"; // Import MetaTags component
 
 interface Comment {
   id: string;
@@ -34,6 +35,8 @@ interface Confession {
 }
 
 const CONFESSIONS_PER_PAGE = 10;
+const SITE_TITLE = "Инкогнито Online";
+const DEFAULT_DESCRIPTION = "Сподели своите тайни анонимно. Място за откровения, подкрепа и разбиране.";
 
 interface IndexProps {
   isInfoPageOpen: boolean; // New prop to indicate if an info page is open
@@ -57,6 +60,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
   const [selectedCategory, setSelectedCategory] = useState<string>("Всички"); // Local UI state, updated from URL
   const [visibleConfessionCount, setVisibleConfessionCount] = useState(0);
   const [isFormAnimationComplete, setIsFormAnimationComplete] = useState(false);
+  const [currentConfessionForMeta, setCurrentConfessionForMeta] = useState<Confession | null>(null); // State for meta tags
 
   const confessionFormContainerRef = useRef<HTMLDivElement>(null);
   const observer = useRef<IntersectionObserver>();
@@ -267,6 +271,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
       setHasMore(true);
       setVisibleConfessionCount(0);
       prevConfessionsLengthRef.current = 0;
+      setCurrentConfessionForMeta(null); // Clear meta confession on full refetch
 
       const loadData = async () => {
         try {
@@ -275,6 +280,8 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
             if (!targetConf) return;
             
             if (fetchId !== currentFetchId.current) return;
+
+            setCurrentConfessionForMeta(targetConf); // Set for meta tags
 
             // Fetch ALL newer confessions for context
             let afterQuery = supabase.from("confessions").select("*").gt("created_at", targetConf.created_at).order("created_at", { ascending: true });
@@ -305,6 +312,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
             latestConfessionsRef.current = uniqueConfessions;
           } else {
             await fetchConfessionsPage({ category: currentCategory, replace: true, fetchId });
+            setCurrentConfessionForMeta(null); // Ensure it's null for list view
           }
         } finally {
           if (fetchId === currentFetchId.current) {
@@ -488,8 +496,26 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
     setForceExpandForm(true);
   };
 
+  // Determine meta tags based on current route and data
+  let metaTitle = SITE_TITLE;
+  let metaDescription = DEFAULT_DESCRIPTION;
+  let metaUrl = window.location.href;
+
+  if (paramId && currentConfessionForMeta) {
+    metaTitle = `${SITE_TITLE} - ${currentConfessionForMeta.title}`;
+    metaDescription = currentConfessionForMeta.content.substring(0, 160) + (currentConfessionForMeta.content.length > 160 ? '...' : '');
+    metaUrl = `${window.location.origin}/confessions/${currentConfessionForMeta.id}/${currentConfessionForMeta.slug}`;
+    if (searchParams.get('category') && searchParams.get('category') !== "Всички") {
+      metaUrl += `?category=${searchParams.get('category')}`;
+    }
+  } else if (selectedCategory !== "Всички") {
+    metaTitle = `${SITE_TITLE} - Категория: ${selectedCategory}`;
+    metaUrl = `${window.location.origin}/?category=${selectedCategory}`;
+  }
+
   return (
     <div className="container mx-auto p-4 max-w-3xl">
+      <MetaTags title={metaTitle} description={metaDescription} url={metaUrl} />
       {/* FloatingMenu is now rendered in App.tsx */}
       <div className="flex justify-center mb-8 opacity-0 animate-fade-zoom-in">
         <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 481 134"
