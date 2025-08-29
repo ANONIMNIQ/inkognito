@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useLayoutEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import ConfessionForm from "@/components/ConfessionForm";
 import ConfessionCard from "@/components/ConfessionCard";
@@ -67,7 +67,6 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
   const { lockScroll, unlockScroll } = useScrollLock();
   const isInitialLoadWithParam = useRef(!!paramId);
 
-  const prevConfessionsLengthRef = useRef(0);
   const hasMoreRef = useRef(hasMore);
   const latestConfessionsRef = useRef<Confession[]>([]);
   const loadingMoreRef = useRef(loadingMore); // Ref for loadingMore
@@ -271,7 +270,6 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
       setPage(0);
       setHasMore(true);
       setVisibleConfessionCount(0);
-      prevConfessionsLengthRef.current = 0;
       setCurrentConfessionForMeta(null);
       isInitialLoadWithParam.current = !!currentParamId;
 
@@ -284,6 +282,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
           setCurrentConfessionForMeta(targetConf);
           setConfessions([targetConf]);
           setExpandedConfessionId(currentParamId);
+          setVisibleConfessionCount(1); // Show the one confession
           latestConfessionsRef.current = [targetConf];
           setLoading(false); // Show the single card immediately
           lastLoadedContextRef.current = { category: currentCategory, paramId: currentParamId };
@@ -310,10 +309,11 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
           const unique = Array.from(new Map(combined.map(c => [c.id, c])).values())
                                 .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
+          const targetIndex = unique.findIndex(c => c.id === currentParamId);
+          
           setConfessions(unique);
           latestConfessionsRef.current = unique;
-          setVisibleConfessionCount(0); // Reset to restart cascade
-          prevConfessionsLengthRef.current = 1; // Set to 1 to ensure cascade logic runs correctly
+          setVisibleConfessionCount(targetIndex + 1); // Show target and all before it instantly
 
         } else {
           // Standard list view loading
@@ -350,64 +350,57 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
     if (node) observer.current.observe(node);
   }, []);
 
-  // Effect to scroll to expanded confession
-  useEffect(() => {
-    if (!expandedConfessionId) return;
+  // Synchronous effect to prevent scroll jump when loading surrounding confessions
+  useLayoutEffect(() => {
+    if (isInitialLoadWithParam.current && expandedConfessionId) {
+      const element = document.getElementById(expandedConfessionId);
+      if (element) {
+        // Use 'instant' to avoid competing with other animations
+        element.scrollIntoView({ behavior: 'instant', block: 'start' });
+        // Only mark as "scrolled" once we have the full context, preventing future auto-scrolls
+        if (confessions.length > 1) {
+          isInitialLoadWithParam.current = false;
+        }
+      }
+    }
+  }, [confessions, expandedConfessionId]);
 
-    const doScroll = () => {
+  // Asynchronous effect for smooth scrolling on subsequent user interactions
+  useEffect(() => {
+    if (!isInitialLoadWithParam.current && expandedConfessionId) {
       const scrollToComments = location.hash === '#comments';
       const targetElementId = scrollToComments ? `comments-section-${expandedConfessionId}` : expandedConfessionId;
       const elementToScrollTo = document.getElementById(targetElementId);
-      
       if (elementToScrollTo) {
         const delay = scrollToComments ? 650 : 350;
         setTimeout(() => {
           elementToScrollTo.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, delay);
       }
-    };
-
-    if (isInitialLoadWithParam.current) {
-      if (loading || confessions.length <= 1) return; // Wait for surrounding confessions to load
-
-      const targetIndex = confessions.findIndex(c => c.id === expandedConfessionId);
-      if (targetIndex === -1) return;
-
-      const requiredVisibleCount = Math.min(targetIndex + 3, confessions.length);
-      if (visibleConfessionCount >= requiredVisibleCount) {
-        doScroll();
-        isInitialLoadWithParam.current = false;
-      }
-    } else {
-      if (loading) return; // Don't scroll subsequent clicks while a category change is loading
-      doScroll();
     }
-  }, [expandedConfessionId, confessions, visibleConfessionCount, location.hash, loading]);
+  }, [expandedConfessionId, location.hash]);
 
   // Effect to manage visible count for cascade animation
   useEffect(() => {
     if (loading || !isFormAnimationComplete) return;
 
-    const currentLength = confessions.length;
-    const prevLength = prevConfessionsLengthRef.current;
-
-    if (currentLength > prevLength && visibleConfessionCount < currentLength) {
+    // For list view, start the cascade from the beginning
+    if (!paramId && visibleConfessionCount < confessions.length) {
       if (visibleConfessionCount === 0) {
         setVisibleConfessionCount(1);
-      } else if (page > 0 && visibleConfessionCount === prevLength) {
+      }
+    }
+  }, [loading, isFormAnimationComplete, confessions.length, paramId]);
+
+  const handleAnimationComplete = useCallback((id: string) => {
+    const currentLength = latestConfessionsRef.current.length;
+    if (visibleConfessionCount < currentLength) {
+      const lastVisibleItem = latestConfessionsRef.current[visibleConfessionCount - 1];
+      if (lastVisibleItem && lastVisibleItem.id === id) {
         setVisibleConfessionCount(prev => prev + 1);
       }
-    } else if (currentLength > 0 && visibleConfessionCount === 0) {
-      setVisibleConfessionCount(1);
     }
-    prevConfessionsLengthRef.current = currentLength;
-  }, [loading, isFormAnimationComplete, confessions.length, loadingMore, visibleConfessionCount, page]);
-
-  const handleAnimationComplete = useCallback(() => {
-    if (visibleConfessionCount < confessions.length) {
-      setVisibleConfessionCount(prev => prev + 1);
-    }
-  }, [confessions.length, visibleConfessionCount]);
+  }, [visibleConfessionCount]);
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string, slug: string, email?: string) => {
     const { data, error } = await supabase.from("confessions").insert({ title, content, gender, category, slug, author_email: email }).select('id, slug');
@@ -564,7 +557,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
         </div>
       ) : (
         <div className="space-y-6">
-          {confessions.slice(0, visibleConfessionCount).map((conf) => (
+          {confessions.slice(0, visibleConfessionCount).map((conf, index) => (
             <ConfessionCard
               key={conf.id}
               confession={{ ...conf, timestamp: new Date(conf.created_at), comments: conf.comments.map(c => ({ ...c, timestamp: new Date(c.created_at) })) }}
