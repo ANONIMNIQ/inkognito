@@ -396,7 +396,8 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen, updateMetaTags }) => { //
         setVisibleConfessionCount(1);
       }
       else if (page > 0 && visibleConfessionCount === prevLength) {
-        setVisibleConfessionCount(prev => prev + 1);
+        // FIX: For infinite scroll, immediately show all newly loaded items
+        setVisibleConfessionCount(currentLength); 
       }
     }
     prevConfessionsLengthRef.current = currentLength;
@@ -511,7 +512,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen, updateMetaTags }) => { //
       {/* FloatingMenu is now rendered in App.tsx */}
       <div className="flex justify-center mb-8 opacity-0 animate-fade-zoom-in">
         <img
-          src="/images/logo.svg"
+          src="/images/logo-main.png"
           alt="Инкогнито Online Logo"
           className={cn("w-64 sm:w-72 md:w-80 lg:w-96 h-auto dark:invert transition-colors duration-300")}
         />
@@ -539,7 +540,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen, updateMetaTags }) => { //
         </div>
       ) : (
         <div className="space-y-6">
-          {confessions.slice(0, visibleConfessionCount).map((conf) => (
+          {confessions.slice(0, visibleConfessionCount).map((conf, index) => (
             <ConfessionCard
               key={conf.id}
               confession={{ ...conf, timestamp: new Date(conf.created_at), comments: conf.comments.map(c => ({ ...c, timestamp: new Date(c.created_at) })) }}
@@ -553,6 +554,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen, updateMetaTags }) => { //
               shouldOpenCommentsOnLoad={conf.id === expandedConfessionId && location.hash === '#comments'}
               onAnimationComplete={handleAnimationComplete}
               currentCategory={selectedCategory}
+              ref={index === visibleConfessionCount - 1 ? lastConfessionElementRef : null} // Apply ref to the last visible card
             />
           ))}
         </div>
