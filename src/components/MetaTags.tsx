@@ -11,7 +11,7 @@ interface MetaTagsProps {
 
 const DEFAULT_TITLE = "Инкогнито Online";
 const DEFAULT_DESCRIPTION = "Сподели своите тайни анонимно. Място за откровения, подкрепа и разбиране.";
-export const DEFAULT_IMAGE_URL = `${window.location.origin}/images/logomini.png`; // Exported this constant
+const DEFAULT_IMAGE_URL = `${window.location.origin}/images/logomini.png`; // No longer exported
 const DEFAULT_TYPE = "website";
 
 const MetaTags: React.FC<MetaTagsProps> = ({

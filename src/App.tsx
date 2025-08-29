@@ -17,7 +17,7 @@ import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsAndConditionsPage from "./pages/TermsAndConditionsPage";
 import CookieConsentBanner from "@/components/CookieConsentBanner";
 import { HelmetProvider } from 'react-helmet-async';
-import MetaTags, { DEFAULT_IMAGE_URL } from "@/components/MetaTags"; // Import DEFAULT_IMAGE_URL
+import MetaTags from "@/components/MetaTags"; // Removed DEFAULT_IMAGE_URL import
 
 const queryClient = new QueryClient();
 
@@ -70,7 +70,8 @@ const AppRoutesAndModals: React.FC = () => {
 
   // Callback to update meta tags from child components
   const updateMetaTags = useCallback((meta: DynamicMeta) => {
-    setDynamicMeta({ ...meta, imageUrl: meta.imageUrl || DEFAULT_IMAGE_URL }); // Ensure default image is always set
+    // MetaTags component will handle its own default imageUrl if not provided
+    setDynamicMeta(meta);
   }, []);
 
   // Effect to sync the drawer's state with the URL and set info page meta
@@ -101,7 +102,7 @@ const AppRoutesAndModals: React.FC = () => {
         description: infoPageDescription,
         url: window.location.href,
         type: 'article',
-        imageUrl: DEFAULT_IMAGE_URL, // Explicitly set for info pages
+        // imageUrl is now handled by MetaTags component's internal default
       });
     } else {
       // If the URL is not an info page, ensure the drawer is closed
