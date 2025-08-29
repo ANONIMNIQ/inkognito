@@ -5,20 +5,29 @@ export async function onRequest(context) {
   const originalUrl = new URL(context.request.url);
 
   // The path and query string from the original URL.
-  // e.g., "/confessions/some-id/some-slug?param=1"
   const originalPathWithQuery = originalUrl.pathname + originalUrl.search;
 
   // Create the URL for the Supabase function.
   const destinationUrl = new URL(SUPABASE_FUNCTION_URL);
 
   // Append the original path as a query parameter.
-  // This is a robust way to pass the path info.
   destinationUrl.searchParams.set('path', originalPathWithQuery);
 
-  // We create a new request object to forward.
-  // We use the new URL but keep the method, headers, and body of the original request.
   const newRequest = new Request(destinationUrl.toString(), context.request);
 
-  // Forward the new request to the Supabase Edge Function.
-  return await fetch(newRequest);
+  // Fetch the response from the Supabase function
+  const supabaseResponse = await fetch(newRequest);
+
+  // Create a new response to send back to the client,
+  // ensuring we copy the body, status, and headers.
+  const response = new Response(supabaseResponse.body, {
+    status: supabaseResponse.status,
+    statusText: supabaseResponse.statusText,
+    headers: supabaseResponse.headers,
+  });
+
+  // Explicitly set the Content-Type header to ensure it's correct for the browser.
+  response.headers.set('Content-Type', 'text/html; charset=utf-8');
+
+  return response;
 }
