@@ -37,9 +37,10 @@ const CONFESSIONS_PER_PAGE = 10;
 
 interface IndexProps {
   isInfoPageOpen: boolean; // New prop to indicate if an info page is open
+  updateMetaTags: (meta: { title?: string; description?: string; url?: string; type?: string }) => void; // New prop for meta tags
 }
 
-const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
+const Index: React.FC<IndexProps> = ({ isInfoPageOpen, updateMetaTags }) => { // Receive prop
   const { id: paramId, slug: paramSlug } = useParams<{ id: string; slug: string }>();
   const navigate = useNavigate();
   const location = useLocation();
@@ -272,7 +273,10 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
         try {
           if (currentParamId) {
             const targetConf = await fetchSingleConfession(currentParamId, paramSlug!, currentCategory, fetchId);
-            if (!targetConf) return;
+            if (!targetConf) {
+              updateMetaTags({}); // Reset to default if confession not found
+              return;
+            }
             
             if (fetchId !== currentFetchId.current) return;
 
@@ -303,8 +307,18 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
 
             setConfessions(uniqueConfessions);
             latestConfessionsRef.current = uniqueConfessions;
+
+            // Update meta tags for the specific confession
+            updateMetaTags({
+              title: targetConf.title,
+              description: targetConf.content.substring(0, 160) + (targetConf.content.length > 160 ? '...' : ''),
+              url: `${window.location.origin}/confessions/${targetConf.id}/${targetConf.slug}`,
+              type: 'article',
+            });
+
           } else {
             await fetchConfessionsPage({ category: currentCategory, replace: true, fetchId });
+            updateMetaTags({}); // Reset to default meta for the main list page
           }
         } finally {
           if (fetchId === currentFetchId.current) {
@@ -327,8 +341,12 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
       }
       // Crucially, we do NOT set setLoading(false) here if it was already false,
       // and we do NOT trigger any data fetching.
+      // If we are on the main page (no paramId), ensure default meta is set
+      if (!currentParamId && !isInfoPageOpen) {
+        updateMetaTags({});
+      }
     }
-  }, [authLoading, selectedCategory, paramId, paramSlug, fetchConfessionsPage, fetchSingleConfession, confessions.length]);
+  }, [authLoading, selectedCategory, paramId, paramSlug, fetchConfessionsPage, fetchSingleConfession, confessions.length, isInfoPageOpen, updateMetaTags]);
 
   // Effect to handle infinite scroll
   useEffect(() => {
@@ -547,10 +565,6 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
       )}
       {loadingMore && <div className="space-y-6 mt-8"><ConfessionCardSkeleton /><ConfessionCardSkeleton /></div>}
       
-      {!loading && !loadingMore && hasMore && (visibleConfessionCount === confessions.length) && (
-        <div ref={lastConfessionElementRef} style={{ height: "1px" }} />
-      )}
-
       {!hasMore && confessions.length > 0 && <p className="text-center text-gray-500 dark:text-gray-400 mt-8">Това са всички изповеди.</p>}
       <ComposeButton isVisible={isComposeButtonVisible} onClick={handleComposeClick} />
     </div>
