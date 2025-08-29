@@ -33,7 +33,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onSel
               return (
                 <SelectItem key={category} value={category} className="flex items-center">
                   <div className={cn("w-3 h-3 rounded-full mr-2", bg, darkBg)} />
-                  {category}
+                  <span>{category}</span> {/* Wrapped category text in span */}
                 </SelectItem>
               );
             })}

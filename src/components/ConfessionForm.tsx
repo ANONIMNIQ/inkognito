@@ -214,7 +214,7 @@ const ConfessionForm: React.FC<ConfessionFormProps> = ({ onSubmit, onFormFocus, 
                       return (
                         <SelectItem key={cat} value={cat} className="flex items-center">
                           <div className={cn("w-3 h-3 rounded-full mr-2", bg, darkBg)} />
-                          {cat}
+                          <span>{cat}</span> {/* Wrapped category text in span */}
                         </SelectItem>
                       );
                     })}
