@@ -287,33 +287,36 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
           setLoading(false); // Show the single card immediately
           lastLoadedContextRef.current = { category: currentCategory, paramId: currentParamId };
 
-          // STAGE 2: Fetch surrounding confessions in the background
-          let afterQuery = supabase.from("confessions").select("*").gt("created_at", targetConf.created_at).order("created_at", { ascending: true });
+          // STAGE 2: Fetch a LIMITED set of surrounding confessions in the background
+          const CONFESSIONS_ABOVE_TO_LOAD = 5;
+          let afterQuery = supabase.from("confessions").select("*").gt("created_at", targetConf.created_at).order("created_at", { ascending: true }).limit(CONFESSIONS_ABOVE_TO_LOAD);
           if (currentCategory !== "Всички") afterQuery = afterQuery.eq("category", currentCategory);
           const { data: afterData } = await afterQuery;
 
-          let beforeQuery = supabase.from("confessions").select("*").lt("created_at", targetConf.created_at).order("created_at", { ascending: false });
+          let beforeQuery = supabase.from("confessions").select("*").lt("created_at", targetConf.created_at).order("created_at", { ascending: false }).limit(CONFESSIONS_PER_PAGE);
           if (currentCategory !== "Всички") beforeQuery = beforeQuery.eq("category", currentCategory);
-          const { data: beforeData, error: beforeError } = await beforeQuery.limit(CONFESSIONS_PER_PAGE);
+          const { data: beforeData, error: beforeError } = await beforeQuery;
           if (beforeError) throw beforeError;
 
           if (fetchId !== currentFetchId.current) return;
 
           setHasMore(beforeData.length === CONFESSIONS_PER_PAGE);
           const formatConfession = (c: any) => ({ ...c, comment_count: 0, comments: [] });
+          const afterConfessions = (afterData || []).reverse().map(formatConfession);
+          const beforeConfessions = (beforeData || []).map(formatConfession);
+
           const combined = [
-            ...(afterData || []).reverse().map(formatConfession),
+            ...afterConfessions,
             targetConf,
-            ...(beforeData || []).map(formatConfession)
+            ...beforeConfessions
           ];
           const unique = Array.from(new Map(combined.map(c => [c.id, c])).values())
                                 .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-          const targetIndex = unique.findIndex(c => c.id === currentParamId);
           
           setConfessions(unique);
           latestConfessionsRef.current = unique;
-          setVisibleConfessionCount(targetIndex + 1); // Show target and all before it instantly
+          // Make the target and everything above it visible instantly
+          setVisibleConfessionCount(afterConfessions.length + 1);
 
         } else {
           // Standard list view loading
@@ -352,8 +355,11 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
 
   // Effect for the initial, instant scroll on direct link navigation.
   useEffect(() => {
-    // This effect should only run once on initial load when a specific confession is targeted.
     if (!isInitialLoadWithParam.current || !expandedConfessionId || !isFormAnimationComplete) {
+      return;
+    }
+    // Wait until surrounding confessions are loaded (confessions.length > 1)
+    if (confessions.length <= 1 && paramId) {
       return;
     }
 
@@ -363,7 +369,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
       // We've performed the initial scroll, so we disable this logic for subsequent renders.
       isInitialLoadWithParam.current = false;
     }
-  }, [expandedConfessionId, isFormAnimationComplete, confessions]); // Re-run if dependencies change before scroll happens
+  }, [expandedConfessionId, isFormAnimationComplete, confessions, paramId]);
 
   // Effect for smooth scrolling on subsequent user interactions (e.g., clicking to expand/collapse).
   useEffect(() => {
