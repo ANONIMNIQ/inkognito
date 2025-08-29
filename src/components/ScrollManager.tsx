@@ -8,15 +8,19 @@ const ScrollManager = () => {
   useEffect(() => {
     const lastLocation = lastLocationRef.current;
 
-    // Check if the new path is a confession detail page.
-    // We want the Index page to handle scrolling in this specific case.
+    // Check if the navigation is from a confession page back to the root list.
+    const wasOnConfessionPage = /^\/confessions\/.+/.test(lastLocation.pathname);
+    const isNowOnRootPage = location.pathname === '/';
+    const isCollapsingConfession = wasOnConfessionPage && isNowOnRootPage;
+
+    // Check if we are navigating TO a confession page.
     const isNavigatingToConfession = /^\/confessions\/.+/.test(location.pathname);
 
-    // If it's a significant navigation change (pathname or search params) AND we are NOT navigating
-    // to a specific confession, then scroll to the top of the page.
+    // Scroll to top only on significant page changes, but NOT when expanding or collapsing a confession.
     if (
       (location.pathname !== lastLocation.pathname || location.search !== lastLocation.search) &&
-      !isNavigatingToConfession
+      !isNavigatingToConfession &&
+      !isCollapsingConfession
     ) {
       window.scrollTo(0, 0);
     }
