@@ -8,7 +8,7 @@ interface MetaTagsProps {
 }
 
 const SITE_NAME = "Инкогнито Online";
-const DEFAULT_IMAGE = `${window.location.origin}/images/logo-main.jpg`; // Use absolute URL for social sharing
+const DEFAULT_IMAGE = `${window.location.origin}/images/logo-main.jpg?v=2`; // Cache bust
 
 const MetaTags: React.FC<MetaTagsProps> = ({
   title,
