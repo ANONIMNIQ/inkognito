@@ -27,7 +27,7 @@ export async function onRequest(context) {
     // Initialize Supabase client with public key.
     const supabase = createClient(
       'https://yyhlligskuppqmlzpobp.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5aGxsaWdza3VwcHFtbHpwb2JwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4NjU5NzYsImV4cCI6MjA3MTQ0MTk3Nn0.2rm63LXJfv0b-ewieqE040aNbX_LOoIX19g7ALCJl3Y'
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5aGxsaWdza3VwcHFtbHpwb2JwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4NjU3NzYsImV4cCI6MjA3MTQ0MTc3Nn0.2rm63LXJfv0b-ewieqE040aNbX_LOoIX19g7ALCJl3Y'
     );
 
     // Fetch the specific confession.
