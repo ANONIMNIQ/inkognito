@@ -361,29 +361,43 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
 
   // Effect to scroll to expanded confession
   useEffect(() => {
+    // No scrolling until data is loaded and a confession is targeted
     if (loading || !expandedConfessionId) return;
 
     const doScroll = () => {
       const scrollToComments = location.hash === '#comments';
       const targetElementId = scrollToComments ? `comments-section-${expandedConfessionId}` : expandedConfessionId;
       const elementToScrollTo = document.getElementById(targetElementId);
+      
       if (elementToScrollTo) {
+        // A short delay helps ensure the element is fully painted before scrolling begins.
         const delay = scrollToComments ? 650 : 350;
+        
         setTimeout(() => {
           elementToScrollTo.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, delay);
       }
     };
 
-    // If it's an initial load with a param, we wait for the animation to reveal the card.
+    // This is a direct navigation to a confession URL on page load
     if (isInitialLoadWithParam.current) {
       const targetIndex = confessions.findIndex(c => c.id === expandedConfessionId);
-      if (targetIndex !== -1 && visibleConfessionCount > targetIndex) {
+      if (targetIndex === -1) return;
+
+      // To prevent a jarring scroll, we wait for the cascade animation to "settle"
+      // around the target confession. We'll wait for the target itself and two
+      // subsequent confessions to finish animating before we trigger the scroll.
+      const requiredVisibleCount = Math.min(targetIndex + 3, confessions.length);
+
+      if (visibleConfessionCount >= requiredVisibleCount) {
         doScroll();
-        isInitialLoadWithParam.current = false; // We've handled the initial scroll, don't do it again.
+        // We've handled the initial scroll, so we set the ref to false
+        // to prevent this logic from running on subsequent interactions.
+        isInitialLoadWithParam.current = false;
       }
     } else {
-      // If it's a subsequent click, scroll without waiting for animation logic.
+      // This handles subsequent clicks to expand a confession after the page has loaded.
+      // We can scroll immediately without waiting for animations.
       doScroll();
     }
   }, [loading, expandedConfessionId, confessions, visibleConfessionCount, location.hash]);
