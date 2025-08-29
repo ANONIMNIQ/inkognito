@@ -11,7 +11,7 @@ interface MetaTagsProps {
 
 const DEFAULT_TITLE = "Инкогнито Online";
 const DEFAULT_DESCRIPTION = "Сподели своите тайни анонимно. Място за откровения, подкрепа и разбиране.";
-const DEFAULT_OG_IMAGE = "https://inkognito.online/images/logo-main.png"; // Using logo-main.png as the default
+const DEFAULT_OG_IMAGE = "https://inkognito.online/images/logo-main.jpg"; // Using logo-main.jpg as the default
 const DEFAULT_OG_URL = "https://inkognito.online";
 
 const MetaTags: React.FC<MetaTagsProps> = ({
