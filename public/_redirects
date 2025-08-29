@@ -1,1 +1,1 @@
-/confessions/* https://yyhlligskuppqmlzpobp.supabase.co/functions/v1/meta-tag-renderer 200
+/confessions/:splat https://yyhlligskuppqmlzpobp.supabase.co/functions/v1/meta-tag-renderer?fullPath=confessions/:splat 200

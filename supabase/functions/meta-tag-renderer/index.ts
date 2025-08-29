@@ -82,92 +82,108 @@ serve(async (req) => {
     }
   };
 
-  try {
-    // Cloudflare Pages passes the original request URL in the X-Original-URL header
-    const originalUrlHeader = req.headers.get('X-Original-URL');
-    let path: string | null = null;
+  let requestPath: string | null = null;
 
-    if (originalUrlHeader) {
+  // 1. Try X-Original-URL (Cloudflare Pages specific)
+  const originalUrlHeader = req.headers.get('X-Original-URL');
+  if (originalUrlHeader) {
+    try {
       const originalUrl = new URL(originalUrlHeader);
-      path = originalUrl.pathname;
-      console.log(`Received original path from X-Original-URL header: ${path}`);
-    } else {
-      // Fallback if header is not present (e.g., direct invocation or different proxy)
-      // In this scenario, req.url would be the function's URL, so we'd need to parse its query params
-      const url = new URL(req.url);
-      path = url.searchParams.get('path'); // This was the previous method
-      console.log(`Received path from query parameter (fallback): ${path}`);
+      requestPath = originalUrl.pathname + originalUrl.search; // Include search params
+      console.log(`Path from X-Original-URL header: ${requestPath}`);
+    } catch (e: any) {
+      console.error(`Error parsing X-Original-URL: ${e.message}`);
     }
-
-    // If the path isn't for a specific confession, serve the default page
-    if (!path || !path.startsWith('/confessions/')) {
-      console.log("Path is not a confession URL, serving default page.");
-      return await serveDefaultPage();
-    }
-
-    const pathParts = path.split('/');
-    const confessionId = pathParts[2];
-    console.log(`Extracted confessionId: ${confessionId}`);
-
-    // If there's no ID in the path, serve the default page
-    if (!confessionId) {
-      console.log("No confession ID found in path, serving default page.");
-      return await serveDefaultPage();
-    }
-
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    console.log(`Fetching confession ${confessionId} from Supabase.`);
-    const { data: confession, error } = await supabaseAdmin
-      .from('confessions')
-      .select('title, content, id, slug')
-      .eq('id', confessionId)
-      .single();
-
-    if (error) {
-      console.error(`Supabase error fetching confession ${confessionId}: ${error.message}`);
-      return await serveDefaultPage(404, `Confession with ID ${confessionId} not found in DB.`);
-    }
-    if (!confession) {
-      console.log(`Confession ${confessionId} not found, serving default page.`);
-      return await serveDefaultPage(404, `Confession with ID ${confessionId} not found.`);
-    }
-    console.log(`Successfully fetched confession: ${JSON.stringify(confession)}`);
-
-    // Fetch the base HTML to inject our tags into
-    console.log(`Fetching base index.html from ${SITE_ORIGIN}/index.html`);
-    const indexResponse = await fetch(`${SITE_ORIGIN}/index.html`);
-    if (!indexResponse.ok) {
-      console.error(`Failed to fetch base index.html: ${indexResponse.status} ${indexResponse.statusText}`);
-      return await serveDefaultPage(500, 'Failed to fetch base index.html for meta tag injection.');
-    }
-    let indexHtml = await indexResponse.text();
-    console.log("Successfully fetched base index.html.");
-
-    // Create the dynamic meta tags
-    const metaTags = {
-      'og:title': `Инкогнито Online - ${confession.title}`,
-      'og:description': confession.content.substring(0, 160) + (confession.content.length > 160 ? '...' : ''),
-      'og:url': `${SITE_ORIGIN}/confessions/${confession.id}/${confession.slug}`,
-      'og:image': DEFAULT_IMAGE,
-      'twitter:image': DEFAULT_IMAGE,
-    };
-    console.log(`Generated meta tags: ${JSON.stringify(metaTags)}`);
-
-    // Replace the default tags with our new dynamic ones
-    const finalHtml = replaceMetaTags(indexHtml, metaTags);
-    console.log("Meta tags replaced. Returning final HTML.");
-
-    return new Response(finalHtml, {
-      headers: { ...corsHeaders, 'Content-Type': 'text/html' },
-      status: 200,
-    });
-
-  } catch (error: any) {
-    console.error(`Unexpected error in meta-tag-renderer: ${error.message}`);
-    return await serveDefaultPage(500, `Unexpected error in meta-tag-renderer: ${error.message}`);
   }
+
+  // 2. Fallback to 'fullPath' query parameter (from custom redirect rule)
+  if (!requestPath) {
+    const url = new URL(req.url);
+    const fullPathParameter = url.searchParams.get('fullPath');
+    if (fullPathParameter) {
+      requestPath = `/${fullPathParameter}`; // Prepend '/' as fullPath might not have it
+      console.log(`Path from 'fullPath' query parameter: ${requestPath}`);
+    }
+  }
+
+  // 3. Fallback to 'path' query parameter (older redirect rule, for backward compatibility if needed)
+  if (!requestPath) {
+    const url = new URL(req.url);
+    const pathParameter = url.searchParams.get('path');
+    if (pathParameter) {
+      requestPath = pathParameter;
+      console.log(`Path from 'path' query parameter (fallback): ${requestPath}`);
+    }
+  }
+
+  // If no valid path found, serve default
+  if (!requestPath || !requestPath.startsWith('/confessions/')) {
+    console.log("No valid confession path found, serving default page.");
+    return await serveDefaultPage();
+  }
+
+  // Now, parse confessionId and slug from requestPath
+  const pathUrl = new URL(requestPath, SITE_ORIGIN); // Use SITE_ORIGIN as base for parsing relative path
+  const pathParts = pathUrl.pathname.split('/');
+  const confessionId = pathParts[2];
+  const slug = pathParts[3]; // Also extract slug for consistency
+
+  console.log(`Extracted confessionId: ${confessionId}, slug: ${slug}`);
+
+  // If there's no ID in the path, serve the default page
+  if (!confessionId) {
+    console.log("No confession ID found in path, serving default page.");
+    return await serveDefaultPage();
+  }
+
+  const supabaseAdmin = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  );
+
+  console.log(`Fetching confession ${confessionId} from Supabase.`);
+  const { data: confession, error } = await supabaseAdmin
+    .from('confessions')
+    .select('title, content, id, slug')
+    .eq('id', confessionId)
+    .single();
+
+  if (error) {
+    console.error(`Supabase error fetching confession ${confessionId}: ${error.message}`);
+    return await serveDefaultPage(404, `Confession with ID ${confessionId} not found in DB.`);
+  }
+  if (!confession) {
+    console.log(`Confession ${confessionId} not found, serving default page.`);
+    return await serveDefaultPage(404, `Confession with ID ${confessionId} not found.`);
+  }
+  console.log(`Successfully fetched confession: ${JSON.stringify(confession)}`);
+
+  // Fetch the base HTML to inject our tags into
+  console.log(`Fetching base index.html from ${SITE_ORIGIN}/index.html`);
+  const indexResponse = await fetch(`${SITE_ORIGIN}/index.html`);
+  if (!indexResponse.ok) {
+    console.error(`Failed to fetch base index.html: ${indexResponse.status} ${indexResponse.statusText}`);
+    return await serveDefaultPage(500, 'Failed to fetch base index.html for meta tag injection.');
+  }
+  let indexHtml = await indexResponse.text();
+  console.log("Successfully fetched base index.html.");
+
+  // Create the dynamic meta tags
+  const metaTags = {
+    'og:title': `Инкогнито Online - ${confession.title}`,
+    'og:description': confession.content.substring(0, 160) + (confession.content.length > 160 ? '...' : ''),
+    'og:url': `${SITE_ORIGIN}${requestPath}`, // Use the full requestPath here
+    'og:image': DEFAULT_IMAGE,
+    'twitter:image': DEFAULT_IMAGE,
+  };
+  console.log(`Generated meta tags: ${JSON.stringify(metaTags)}`);
+
+  // Replace the default tags with our new dynamic ones
+  const finalHtml = replaceMetaTags(indexHtml, metaTags);
+  console.log("Meta tags replaced. Returning final HTML.");
+
+  return new Response(finalHtml, {
+    headers: { ...corsHeaders, 'Content-Type': 'text/html' },
+    status: 200,
+  });
 });
