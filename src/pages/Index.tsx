@@ -65,7 +65,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
   const confessionFormContainerRef = useRef<HTMLDivElement>(null);
   const observer = useRef<IntersectionObserver>();
   const { lockScroll, unlockScroll } = useScrollLock();
-  const isInitialLoadWithParam = useRef(!!paramId);
+  const initialScrollDone = useRef(false);
 
   const hasMoreRef = useRef(hasMore);
   const latestConfessionsRef = useRef<Confession[]>([]);
@@ -271,52 +271,50 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
       setHasMore(true);
       setVisibleConfessionCount(0);
       setCurrentConfessionForMeta(null);
-      isInitialLoadWithParam.current = !!currentParamId;
+      initialScrollDone.current = !currentParamId;
 
       const loadData = async () => {
         if (currentParamId) {
-          // STAGE 1: Fetch and display ONLY the target confession
           const targetConf = await fetchSingleConfession(currentParamId, paramSlug!, currentCategory, fetchId);
           if (!targetConf || fetchId !== currentFetchId.current) return;
 
           setCurrentConfessionForMeta(targetConf);
-          setConfessions([targetConf]);
-          setExpandedConfessionId(currentParamId);
-          setVisibleConfessionCount(1); // Show the one confession
-          latestConfessionsRef.current = [targetConf];
-          setLoading(false); // Show the single card immediately
-          lastLoadedContextRef.current = { category: currentCategory, paramId: currentParamId };
 
-          // STAGE 2: Fetch a LIMITED set of surrounding confessions in the background
-          const CONFESSIONS_ABOVE_TO_LOAD = 5;
-          let afterQuery = supabase.from("confessions").select("*").gt("created_at", targetConf.created_at).order("created_at", { ascending: true }).limit(CONFESSIONS_ABOVE_TO_LOAD);
-          if (currentCategory !== "Всички") afterQuery = afterQuery.eq("category", currentCategory);
-          const { data: afterData } = await afterQuery;
+          // Fetch ALL confessions newer than the target
+          let newerQuery = supabase.from("confessions").select("*").gt("created_at", targetConf.created_at).order("created_at", { ascending: false });
+          if (currentCategory !== "Всички") newerQuery = newerQuery.eq("category", currentCategory);
+          const { data: newerData, error: newerError } = await newerQuery;
+          if (newerError) throw newerError;
 
-          let beforeQuery = supabase.from("confessions").select("*").lt("created_at", targetConf.created_at).order("created_at", { ascending: false }).limit(CONFESSIONS_PER_PAGE);
-          if (currentCategory !== "Всички") beforeQuery = beforeQuery.eq("category", currentCategory);
-          const { data: beforeData, error: beforeError } = await beforeQuery;
-          if (beforeError) throw beforeError;
+          // Fetch ONE PAGE of confessions older than the target
+          let olderQuery = supabase.from("confessions").select("*").lt("created_at", targetConf.created_at).order("created_at", { ascending: false }).limit(CONFESSIONS_PER_PAGE);
+          if (currentCategory !== "Всички") olderQuery = olderQuery.eq("category", currentCategory);
+          const { data: olderData, error: olderError } = await olderQuery;
+          if (olderError) throw olderError;
 
           if (fetchId !== currentFetchId.current) return;
 
-          setHasMore(beforeData.length === CONFESSIONS_PER_PAGE);
+          setHasMore((olderData?.length || 0) === CONFESSIONS_PER_PAGE);
           const formatConfession = (c: any) => ({ ...c, comment_count: 0, comments: [] });
-          const afterConfessions = (afterData || []).reverse().map(formatConfession);
-          const beforeConfessions = (beforeData || []).map(formatConfession);
+          const newerConfessions = (newerData || []).map(formatConfession);
+          const olderConfessions = (olderData || []).map(formatConfession);
 
           const combined = [
-            ...afterConfessions,
+            ...newerConfessions,
             targetConf,
-            ...beforeConfessions
+            ...olderConfessions
           ];
+          
           const unique = Array.from(new Map(combined.map(c => [c.id, c])).values())
                                 .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+          const targetIndex = unique.findIndex(c => c.id === currentParamId);
           
           setConfessions(unique);
           latestConfessionsRef.current = unique;
-          // Make the target and everything above it visible instantly
-          setVisibleConfessionCount(afterConfessions.length + 1);
+          setVisibleConfessionCount(targetIndex + 1);
+          setLoading(false);
+          lastLoadedContextRef.current = { category: currentCategory, paramId: currentParamId };
 
         } else {
           // Standard list view loading
@@ -355,47 +353,36 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
 
   // Effect for the initial, instant scroll on direct link navigation.
   useEffect(() => {
-    if (!isInitialLoadWithParam.current || !expandedConfessionId || !isFormAnimationComplete) {
-      return;
+    if (paramId && !initialScrollDone.current && isFormAnimationComplete && confessions.length > 0) {
+      const targetIndex = confessions.findIndex(c => c.id === paramId);
+      if (targetIndex !== -1 && visibleConfessionCount > targetIndex) {
+        const element = document.getElementById(paramId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'instant', block: 'start' });
+          initialScrollDone.current = true;
+        }
+      }
     }
-    // Wait until surrounding confessions are loaded (confessions.length > 1)
-    if (confessions.length <= 1 && paramId) {
-      return;
-    }
-
-    const element = document.getElementById(expandedConfessionId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'instant', block: 'start' });
-      // We've performed the initial scroll, so we disable this logic for subsequent renders.
-      isInitialLoadWithParam.current = false;
-    }
-  }, [expandedConfessionId, isFormAnimationComplete, confessions, paramId]);
+  }, [paramId, isFormAnimationComplete, confessions, visibleConfessionCount]);
 
   // Effect for smooth scrolling on subsequent user interactions (e.g., clicking to expand/collapse).
   useEffect(() => {
-    // Don't run this on the initial load; the other effect handles that.
-    if (isInitialLoadWithParam.current || !expandedConfessionId) {
-      return;
+    if (initialScrollDone.current && expandedConfessionId && !paramId) {
+      // This case handles user clicking to expand, not initial load
+      const element = document.getElementById(expandedConfessionId);
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 350);
+      }
     }
-
-    const scrollToComments = location.hash === '#comments';
-    const targetElementId = scrollToComments ? `comments-section-${expandedConfessionId}` : expandedConfessionId;
-    const elementToScrollTo = document.getElementById(targetElementId);
-    
-    if (elementToScrollTo) {
-      const delay = scrollToComments ? 650 : 350;
-      setTimeout(() => {
-        elementToScrollTo.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, delay);
-    }
-  }, [expandedConfessionId, location.hash]);
+  }, [expandedConfessionId, paramId]);
 
   // Effect to manage visible count for cascade animation
   useEffect(() => {
     if (loading || !isFormAnimationComplete) return;
 
-    // For list view, start the cascade from the beginning
-    if (!paramId && visibleConfessionCount < confessions.length) {
+    if (visibleConfessionCount < confessions.length) {
       if (visibleConfessionCount === 0) {
         setVisibleConfessionCount(1);
       }
