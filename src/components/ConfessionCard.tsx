@@ -56,7 +56,7 @@ interface ConfessionCardProps {
   onToggleExpand: (confessionId: string, slug: string) => void;
   onSelectCategory: (category: string) => void;
   shouldOpenCommentsOnLoad?: boolean;
-  onAnimationComplete?: () => void;
+  onAnimationComplete?: (id: string) => void;
   currentCategory: string;
 }
 
@@ -96,14 +96,6 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
       }
     }
   }, [ref]);
-
-  useEffect(() => {
-    if (isContentOpen) {
-      setTimeout(() => {
-        cardRootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 300);
-    }
-  }, [isContentOpen]);
 
   useEffect(() => {
     if (!isContentOpen) {
@@ -229,7 +221,7 @@ const ConfessionCard = forwardRef<HTMLDivElement, ConfessionCardProps>(({
         )}
         <div 
           className={cn("flex-1 p-4 rounded-xl shadow-md relative min-w-0 opacity-0 animate-fade-zoom-in", bubbleBackgroundColor, isMobile ? "ml-0" : "")}
-          onAnimationEnd={onAnimationComplete}
+          onAnimationEnd={() => onAnimationComplete && onAnimationComplete(confession.id)}
         >
           <div
             className={cn(

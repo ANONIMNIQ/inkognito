@@ -359,31 +359,6 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
     if (node) observer.current.observe(node);
   }, []);
 
-  // Effect to scroll to expanded confession
-  useEffect(() => {
-    if (loading || !expandedConfessionId || hasScrolledToInitialTarget.current) {
-      return;
-    }
-
-    const targetIndex = confessions.findIndex(c => c.id === expandedConfessionId);
-
-    // Check if the target confession is now rendered by the cascade animation
-    if (targetIndex !== -1 && visibleConfessionCount > targetIndex) {
-      const scrollToComments = location.hash === '#comments';
-      const targetElementId = scrollToComments ? `comments-section-${expandedConfessionId}` : expandedConfessionId;
-      const elementToScrollTo = document.getElementById(targetElementId);
-
-      if (elementToScrollTo) {
-        // The delay should be long enough for the card to animate in and for the comments section to open if needed.
-        const delay = scrollToComments ? 650 : 350;
-        setTimeout(() => {
-          elementToScrollTo.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          hasScrolledToInitialTarget.current = true; // Set flag to prevent re-scrolling
-        }, delay);
-      }
-    }
-  }, [loading, expandedConfessionId, confessions, visibleConfessionCount, location.hash]);
-
   // Effect to manage visible count for cascade animation
   useEffect(() => {
     if (loading || !isFormAnimationComplete) return;
@@ -406,11 +381,28 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
     prevConfessionsLengthRef.current = currentLength;
   }, [loading, isFormAnimationComplete, confessions.length, loadingMore, visibleConfessionCount, page]);
 
-  const handleAnimationComplete = useCallback(() => {
+  const handleAnimationComplete = useCallback((completedId: string) => {
+    // Increment visible count for the next card in the cascade
     if (visibleConfessionCount < confessions.length) {
       setVisibleConfessionCount(prev => prev + 1);
     }
-  }, [confessions.length, visibleConfessionCount]);
+
+    // Check if the card that just finished animating is our direct-link target
+    if (!hasScrolledToInitialTarget.current && completedId === expandedConfessionId) {
+      const scrollToComments = location.hash === '#comments';
+      const targetElementId = scrollToComments ? `comments-section-${expandedConfessionId}` : expandedConfessionId;
+      const elementToScrollTo = document.getElementById(targetElementId);
+
+      if (elementToScrollTo) {
+        // A short delay ensures the browser has painted the element before scrolling
+        const delay = scrollToComments ? 200 : 100;
+        setTimeout(() => {
+          elementToScrollTo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          hasScrolledToInitialTarget.current = true; // Prevent re-scrolling
+        }, delay);
+      }
+    }
+  }, [confessions.length, visibleConfessionCount, expandedConfessionId, location.hash]);
 
   const handleAddConfession = async (title: string, content: string, gender: "male" | "female" | "incognito", category: string, slug: string, email?: string) => {
     const { data, error } = await supabase.from("confessions").insert({ title, content, gender, category, slug, author_email: email }).select('id, slug');
