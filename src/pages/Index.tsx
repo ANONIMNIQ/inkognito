@@ -11,7 +11,6 @@ import CategoryFilter from "@/components/CategoryFilter";
 import { cn } from "@/lib/utils";
 import { useNavigate, useParams, useSearchParams, useLocation } from "react-router-dom";
 import FloatingMenu from "@/components/FloatingMenu"; // Import the new component
-import MetaTags from "@/components/MetaTags"; // Import MetaTags
 
 interface Comment {
   id: string;
@@ -58,7 +57,6 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
   const [selectedCategory, setSelectedCategory] = useState<string>("Всички"); // Local UI state, updated from URL
   const [visibleConfessionCount, setVisibleConfessionCount] = useState(0);
   const [isFormAnimationComplete, setIsFormAnimationComplete] = useState(false);
-  const [currentConfession, setCurrentConfession] = useState<Confession | null>(null); // State to hold the currently viewed confession for meta tags
 
   const confessionFormContainerRef = useRef<HTMLDivElement>(null);
   const observer = useRef<IntersectionObserver>();
@@ -269,7 +267,6 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
       setHasMore(true);
       setVisibleConfessionCount(0);
       prevConfessionsLengthRef.current = 0;
-      setCurrentConfession(null); // Clear current confession when refetching
 
       const loadData = async () => {
         try {
@@ -278,8 +275,6 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
             if (!targetConf) return;
             
             if (fetchId !== currentFetchId.current) return;
-
-            setCurrentConfession(targetConf); // Set current confession for meta tags
 
             // Fetch ALL newer confessions for context
             let afterQuery = supabase.from("confessions").select("*").gt("created_at", targetConf.created_at).order("created_at", { ascending: true });
@@ -310,7 +305,6 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
             latestConfessionsRef.current = uniqueConfessions;
           } else {
             await fetchConfessionsPage({ category: currentCategory, replace: true, fetchId });
-            setCurrentConfession(null); // No specific confession selected
           }
         } finally {
           if (fetchId === currentFetchId.current) {
@@ -494,27 +488,8 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
     setForceExpandForm(true);
   };
 
-  // Determine meta tags based on current route and data
-  let metaTitle = "";
-  let metaDescription = "";
-  let metaOgUrl = window.location.href;
-
-  if (paramId && currentConfession) {
-    metaTitle = currentConfession.title;
-    metaDescription = currentConfession.content.substring(0, 160) + (currentConfession.content.length > 160 ? "..." : "");
-  } else {
-    metaTitle = "Начало"; // Default title for the main list page
-    metaDescription = "Сподели своите тайни анонимно. Място за откровения, подкрепа и разбиране.";
-  }
-
   return (
     <div className="container mx-auto p-4 max-w-3xl">
-      <MetaTags
-        title={metaTitle}
-        description={metaDescription}
-        ogUrl={metaOgUrl}
-        ogType={paramId ? "article" : "website"}
-      />
       {/* FloatingMenu is now rendered in App.tsx */}
       <div className="flex justify-center mb-8 opacity-0 animate-fade-zoom-in">
         <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 481 134"
@@ -572,6 +547,10 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
       )}
       {loadingMore && <div className="space-y-6 mt-8"><ConfessionCardSkeleton /><ConfessionCardSkeleton /></div>}
       
+      {!loading && !loadingMore && hasMore && (visibleConfessionCount === confessions.length) && (
+        <div ref={lastConfessionElementRef} style={{ height: "1px" }} />
+      )}
+
       {!hasMore && confessions.length > 0 && <p className="text-center text-gray-500 dark:text-gray-400 mt-8">Това са всички изповеди.</p>}
       <ComposeButton isVisible={isComposeButtonVisible} onClick={handleComposeClick} />
     </div>

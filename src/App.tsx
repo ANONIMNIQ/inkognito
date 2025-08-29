@@ -16,7 +16,6 @@ import AboutUsPage from "./pages/AboutUsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsAndConditionsPage from "./pages/TermsAndConditionsPage";
 import CookieConsentBanner from "@/components/CookieConsentBanner";
-import { HelmetProvider } from 'react-helmet-async'; // Import HelmetProvider
 // Removed: import { logToSupabase } from "@/utils/logger";
 
 const queryClient = new QueryClient();
@@ -158,9 +157,7 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <SessionProvider>
-            <HelmetProvider> {/* Wrap with HelmetProvider */}
-              <AppRoutesAndModals />
-            </HelmetProvider>
+            <AppRoutesAndModals />
           </SessionProvider>
         </BrowserRouter>
       </TooltipProvider>
