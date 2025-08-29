@@ -15,19 +15,7 @@ export async function onRequest(context) {
 
   const newRequest = new Request(destinationUrl.toString(), context.request);
 
-  // Fetch the response from the Supabase function
-  const supabaseResponse = await fetch(newRequest);
-
-  // Create a new response to send back to the client,
-  // ensuring we copy the body, status, and headers.
-  const response = new Response(supabaseResponse.body, {
-    status: supabaseResponse.status,
-    statusText: supabaseResponse.statusText,
-    headers: supabaseResponse.headers,
-  });
-
-  // Explicitly set the Content-Type header to ensure it's correct for the browser.
-  response.headers.set('Content-Type', 'text/html; charset=utf-8');
-
-  return response;
+  // Directly return the response from the Supabase function.
+  // We are now relying on the Supabase function to set all headers correctly.
+  return await fetch(newRequest);
 }
