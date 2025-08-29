@@ -512,7 +512,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen, updateMetaTags }) => { //
       {/* FloatingMenu is now rendered in App.tsx */}
       <div className="flex justify-center mb-8 opacity-0 animate-fade-zoom-in">
         <img
-          src="/images/logo-main.png"
+          src="/images/logo.svg" {/* Reverted to logo.svg */}
           alt="Инкогнито Online Logo"
           className={cn("w-64 sm:w-72 md:w-80 lg:w-96 h-auto dark:invert transition-colors duration-300")}
         />
