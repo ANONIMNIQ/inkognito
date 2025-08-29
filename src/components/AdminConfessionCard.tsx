@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { categories } from "./CategoryFilter"; // Import categories
+import { getCategoryColors } from "@/lib/category-colors"; // Import getCategoryColors
 
 interface Comment {
   id: string;
@@ -215,11 +216,15 @@ const AdminConfessionCard: React.FC<AdminConfessionCardProps> = ({
                         <SelectValue placeholder="Избери категория" />
                       </SelectTrigger>
                       <SelectContent className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700">
-                        {categories.filter(c => c !== "Всички").map((cat) => (
-                          <SelectItem key={cat} value={cat}>
-                            {cat}
-                          </SelectItem>
-                        ))}
+                        {categories.filter(c => c !== "Всички").map((cat) => {
+                          const { bg, darkBg } = getCategoryColors(cat);
+                          return (
+                            <SelectItem key={cat} value={cat} className="flex items-center">
+                              <div className={cn("w-3 h-3 rounded-full mr-2", bg, darkBg)} />
+                              {cat}
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </div>

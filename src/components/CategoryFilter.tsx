@@ -28,11 +28,15 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onSel
             <SelectValue placeholder="Избери категория" />
           </SelectTrigger>
           <SelectContent className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700">
-            {categories.map((category) => (
-              <SelectItem key={category} value={category}>
-                {category}
-              </SelectItem>
-            ))}
+            {categories.map((category) => {
+              const { bg, darkBg } = getCategoryColors(category);
+              return (
+                <SelectItem key={category} value={category} className="flex items-center">
+                  <div className={cn("w-3 h-3 rounded-full mr-2", bg, darkBg)} />
+                  {category}
+                </SelectItem>
+              );
+            })}
           </SelectContent>
         </Select>
       </div>
