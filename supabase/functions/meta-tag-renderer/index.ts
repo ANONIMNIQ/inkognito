@@ -31,7 +31,6 @@ const replaceMetaTags = (html: string, metaTags: { [key: string]: string }): str
       return doc.replace(regex, newTag);
     } else {
       // If tag doesn't exist, try to insert it before </head>
-      // This is a simple heuristic; a more robust solution might parse the HTML
       return doc.replace('</head>', `  ${newTag}\n</head>`);
     }
   };
@@ -50,7 +49,10 @@ const replaceMetaTags = (html: string, metaTags: { [key: string]: string }): str
 };
 
 serve(async (req) => {
+  console.log("meta-tag-renderer function invoked."); // Log invocation
+
   if (req.method === 'OPTIONS') {
+    console.log("OPTIONS request received.");
     return new Response(null, { headers: corsHeaders })
   }
 
@@ -59,10 +61,11 @@ serve(async (req) => {
 
   // Helper function to serve the default index.html page
   const serveDefaultPage = async (status: number = 200, errorMessage?: string) => {
+    console.log(`Serving default page with status ${status}. Error: ${errorMessage || 'None'}`);
     try {
       const indexResponse = await fetch(`${SITE_ORIGIN}/index.html`);
       if (!indexResponse.ok) {
-        // Fallback if fetching default index.html fails
+        console.error(`Failed to fetch default index.html: ${indexResponse.status} ${indexResponse.statusText}`);
         return new Response(`<!DOCTYPE html><html><head><title>Инкогнито Online</title><meta name="description" content="Сподели своите тайни анонимно. Място за откровения, подкрепа и разбиране."></head><body><h1>Error loading page.</h1><p>${errorMessage || 'Could not fetch base HTML.'}</p></body></html>`, {
           headers: { ...corsHeaders, 'Content-Type': 'text/html' },
           status: 500,
@@ -71,7 +74,7 @@ serve(async (req) => {
       const defaultHtml = await indexResponse.text();
       return new Response(defaultHtml, { headers: { ...corsHeaders, 'Content-Type': 'text/html' }, status });
     } catch (e: any) {
-      // Ultimate fallback if even fetching default page fails
+      console.error(`Critical error serving default page: ${e.message}`);
       return new Response(`<!DOCTYPE html><html><head><title>Инкогнито Online</title><meta name="description" content="Сподели своите тайni анонимно. Място за откровения, подкрепа и разбиране."></head><body><h1>Error loading page.</h1><p>Critical error: ${e.message}</p></body></html>`, {
         headers: { ...corsHeaders, 'Content-Type': 'text/html' },
         status: 500,
@@ -82,17 +85,21 @@ serve(async (req) => {
   try {
     const url = new URL(req.url);
     const path = url.searchParams.get('path'); // e.g., /confessions/uuid/slug
+    console.log(`Received path parameter: ${path}`);
 
     // If the path isn't for a specific confession, serve the default page
     if (!path || !path.startsWith('/confessions/')) {
+      console.log("Path is not a confession URL, serving default page.");
       return await serveDefaultPage();
     }
 
     const pathParts = path.split('/');
     const confessionId = pathParts[2];
+    console.log(`Extracted confessionId: ${confessionId}`);
 
     // If there's no ID in the path, serve the default page
     if (!confessionId) {
+      console.log("No confession ID found in path, serving default page.");
       return await serveDefaultPage();
     }
 
@@ -101,23 +108,32 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    console.log(`Fetching confession ${confessionId} from Supabase.`);
     const { data: confession, error } = await supabaseAdmin
       .from('confessions')
       .select('title, content, id, slug')
       .eq('id', confessionId)
       .single();
 
+    if (error) {
+      console.error(`Supabase error fetching confession ${confessionId}: ${error.message}`);
+      return await serveDefaultPage(404, `Confession with ID ${confessionId} not found in DB.`);
+    }
+    if (!confession) {
+      console.log(`Confession ${confessionId} not found, serving default page.`);
+      return await serveDefaultPage(404, `Confession with ID ${confessionId} not found.`);
+    }
+    console.log(`Successfully fetched confession: ${JSON.stringify(confession)}`);
+
     // Fetch the base HTML to inject our tags into
+    console.log(`Fetching base index.html from ${SITE_ORIGIN}/index.html`);
     const indexResponse = await fetch(`${SITE_ORIGIN}/index.html`);
     if (!indexResponse.ok) {
+      console.error(`Failed to fetch base index.html: ${indexResponse.status} ${indexResponse.statusText}`);
       return await serveDefaultPage(500, 'Failed to fetch base index.html for meta tag injection.');
     }
     let indexHtml = await indexResponse.text();
-
-    // If the confession isn't found or there's an error, serve the default page
-    if (error || !confession) {
-      return await serveDefaultPage(404, `Confession with ID ${confessionId} not found.`);
-    }
+    console.log("Successfully fetched base index.html.");
 
     // Create the dynamic meta tags
     const metaTags = {
@@ -127,9 +143,11 @@ serve(async (req) => {
       'og:image': DEFAULT_IMAGE,
       'twitter:image': DEFAULT_IMAGE,
     };
+    console.log(`Generated meta tags: ${JSON.stringify(metaTags)}`);
 
     // Replace the default tags with our new dynamic ones
     const finalHtml = replaceMetaTags(indexHtml, metaTags);
+    console.log("Meta tags replaced. Returning final HTML.");
 
     return new Response(finalHtml, {
       headers: { ...corsHeaders, 'Content-Type': 'text/html' },
@@ -137,7 +155,7 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
-    // If any other unexpected error occurs, safely serve the default page
+    console.error(`Unexpected error in meta-tag-renderer: ${error.message}`);
     return await serveDefaultPage(500, `Unexpected error in meta-tag-renderer: ${error.message}`);
   }
 });

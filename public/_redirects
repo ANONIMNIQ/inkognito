@@ -1,7 +1,7 @@
 # Netlify redirects
 
 # Bot/Crawler redirection for social sharing previews
-/confessions/:id/:slug /?path=/confessions/:id/:slug 200! Function=/meta-tag-renderer
+/confessions/:id/:slug https://yyhlligskuppqmlzpobp.supabase.co/functions/v1/meta-tag-renderer?path=/confessions/:id/:slug 200
 
 # Fallback for all other routes to the main app
 /* /index.html 200
