@@ -38,23 +38,28 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
+  // Helper function to serve the default index.html page
+  const serveDefaultPage = async () => {
+    const indexResponse = await fetch('https://inkognito.online/index.html');
+    const defaultHtml = await indexResponse.text();
+    return new Response(defaultHtml, { headers: { ...corsHeaders, 'Content-Type': 'text/html' } });
+  };
+
   try {
     const url = new URL(req.url);
-    const path = url.searchParams.get('path'); // e.g., /confessions/uuid/slug
+    const path = url.searchParams.get('path');
 
+    // If the path isn't for a specific confession, serve the default page
     if (!path || !path.startsWith('/confessions/')) {
-      const indexResponse = await fetch('https://inkognito.online/index.html');
-      const defaultHtml = await indexResponse.text();
-      return new Response(defaultHtml, { headers: { ...corsHeaders, 'Content-Type': 'text/html' } });
+      return await serveDefaultPage();
     }
 
     const pathParts = path.split('/');
     const confessionId = pathParts[2];
 
+    // If there's no ID in the path, serve the default page
     if (!confessionId) {
-      const indexResponse = await fetch('https://inkognito.online/index.html');
-      const defaultHtml = await indexResponse.text();
-      return new Response(defaultHtml, { headers: { ...corsHeaders, 'Content-Type': 'text/html' } });
+      return await serveDefaultPage();
     }
 
     const supabaseAdmin = createClient(
@@ -68,19 +73,23 @@ serve(async (req) => {
       .eq('id', confessionId)
       .single();
 
+    // If the confession isn't found or there's an error, serve the default page
+    if (error || !confession) {
+      return await serveDefaultPage();
+    }
+
+    // Fetch the base HTML to inject our tags into
     const indexResponse = await fetch('https://inkognito.online/index.html');
     let indexHtml = await indexResponse.text();
 
-    if (error || !confession) {
-      return new Response(indexHtml, { headers: { ...corsHeaders, 'Content-Type': 'text/html' } });
-    }
-
+    // Create the dynamic meta tags
     const metaTags = {
       'og:title': `Инкогнито Online - ${confession.title}`,
       'og:description': confession.content.substring(0, 160) + (confession.content.length > 160 ? '...' : ''),
       'og:url': `https://inkognito.online/confessions/${confession.id}/${confession.slug}`,
     };
 
+    // Replace the default tags with our new dynamic ones
     const finalHtml = replaceMetaTags(indexHtml, metaTags);
 
     return new Response(finalHtml, {
@@ -89,11 +98,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    const indexResponse = await fetch('https://inkognito.online/index.html');
-    const defaultHtml = await indexResponse.text();
-    return new Response(defaultHtml, {
-      headers: { ...corsHeaders, 'Content-Type': 'text/html' },
-      status: 500,
-    });
+    // If any other unexpected error occurs, safely serve the default page
+    return await serveDefaultPage();
   }
 });
