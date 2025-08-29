@@ -1,38 +1,85 @@
-const SUPABASE_FUNCTION_URL = "https://yyhlligskuppqmlzpobp.supabase.co/functions/v1/meta-tag-renderer";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 export async function onRequest(context) {
-  // The original URL visited by the user.
-  const originalUrl = new URL(context.request.url);
+  const { request, next } = context;
+  const url = new URL(request.url);
 
-  // The path and query string from the original URL.
-  const originalPathWithQuery = originalUrl.pathname + originalUrl.search;
+  // For social media crawlers, we generate meta tags. For users, we serve the standard app.
+  // A simple way to check is by looking at the User-Agent header.
+  const userAgent = request.headers.get('User-Agent') || '';
+  const isCrawler = /bot|facebook|embed|got|meta|discord|preview|link|slack|spider|telegram|twitter|whatsapp/i.test(userAgent);
 
-  // Create the URL for the Supabase function.
-  const destinationUrl = new URL(SUPABASE_FUNCTION_URL);
+  // If it's not a crawler, just serve the normal single-page application.
+  // The client-side React app will handle rendering the correct confession.
+  if (!isCrawler) {
+    return next();
+  }
 
-  // Append the original path as a query parameter.
-  destinationUrl.searchParams.set('path', originalPathWithQuery);
+  // If it IS a crawler, proceed with server-side tag injection.
+  const pathParts = url.pathname.split('/');
+  const confessionId = pathParts[2];
 
-  const newRequest = new Request(destinationUrl.toString(), context.request);
+  if (!confessionId) {
+    return next(); // Not a valid confession path, serve the app.
+  }
 
-  // Fetch the response from the Supabase function.
-  const supabaseResponse = await fetch(newRequest);
+  try {
+    // Initialize Supabase client with public key.
+    const supabase = createClient(
+      'https://yyhlligskuppqmlzpobp.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5aGxsaWdza3VwcHFtbHpwb2JwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4NjU3NzYsImV4cCI6MjA3MTQ0MTc3Nn0.2rm63LXJfv0b-ewieqE040aNbX_LOoIX19g7ALCJl3Y'
+    );
 
-  // Read the entire response body as text. This is a more robust method
-  // than trying to pipe the stream, which caused the previous "blank page" issue.
-  const body = await supabaseResponse.text();
+    // Fetch the specific confession.
+    const { data: confession, error } = await supabase
+      .from('confessions')
+      .select('title, content, id, slug')
+      .eq('id', confessionId)
+      .single();
 
-  // Create a mutable copy of the headers from the Supabase response.
-  const headers = new Headers(supabaseResponse.headers);
-  
-  // **Crucially, set the correct Content-Type header.** This tells the browser
-  // to render the content as an HTML page with correct character encoding.
-  headers.set('Content-Type', 'text/html; charset=utf-8');
+    if (error || !confession) {
+      return next(); // Confession not found, serve the app which will show a 404.
+    }
 
-  // Return a new response built from the buffered body and our corrected headers.
-  return new Response(body, {
-    status: supabaseResponse.status,
-    statusText: supabaseResponse.statusText,
-    headers: headers,
-  });
+    // Fetch the original index.html page.
+    const response = await next();
+    let html = await response.text();
+
+    // Prepare meta tag values.
+    const SITE_ORIGIN = 'https://inkognito.online';
+    const DEFAULT_IMAGE = `${SITE_ORIGIN}/images/logo-main.jpg?v=2`;
+    const title = `Инкогнито Online - ${confession.title}`;
+    const description = confession.content.substring(0, 160) + (confession.content.length > 160 ? '...' : '');
+    const pageUrl = `${SITE_ORIGIN}${url.pathname}`;
+
+    // Function to escape HTML characters in content.
+    const escapeHtml = (unsafe) => {
+      return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    };
+
+    // Replace the default meta tags with confession-specific ones.
+    html = html.replace(/<title>.*?<\/title>/, `<title>${escapeHtml(title)}</title>`);
+    html = html.replace(/<meta name="description" content=".*?"\s*\/?>/, `<meta name="description" content="${escapeHtml(description)}">`);
+    html = html.replace(/<meta property="og:title" content=".*?"\s*\/?>/, `<meta property="og:title" content="${escapeHtml(title)}">`);
+    html = html.replace(/<meta property="og:description" content=".*?"\s*\/?>/, `<meta property="og:description" content="${escapeHtml(description)}">`);
+    html = html.replace(/<meta property="og:url" content=".*?"\s*\/?>/, `<meta property="og:url" content="${escapeHtml(pageUrl)}">`);
+    html = html.replace(/<meta property="og:image" content=".*?"\s*\/?>/, `<meta property="og:image" content="${escapeHtml(DEFAULT_IMAGE)}">`);
+    html = html.replace(/<meta name="twitter:title" content=".*?"\s*\/?>/, `<meta name="twitter:title" content="${escapeHtml(title)}">`);
+    html = html.replace(/<meta name="twitter:description" content=".*?"\s*\/?>/, `<meta name="twitter:description" content="${escapeHtml(description)}">`);
+    html = html.replace(/<meta name="twitter:image" content=".*?"\s*\/?>/, `<meta name="twitter:image" content="${escapeHtml(DEFAULT_IMAGE)}">`);
+
+    // Return the modified HTML.
+    return new Response(html, {
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    });
+
+  } catch (e) {
+    // If anything goes wrong, just serve the default app.
+    return next();
+  }
 }
