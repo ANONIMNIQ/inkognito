@@ -498,8 +498,23 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
   }, []);
 
   const handleComposeClick = () => {
-    confessionFormContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    setForceExpandForm(true);
+    // If a confession is expanded, collapse it first.
+    if (expandedConfessionId) {
+      // This navigation collapses the card by changing the URL, which removes the :id and :slug params.
+      // The main useEffect then sets expandedConfessionId to null.
+      navigate(`/${location.search}`, { replace: true });
+  
+      // Wait for the card's collapse animation (which is 0.2s) to finish.
+      // We'll wait 300ms to be safe, allowing time for both comments and content to close.
+      setTimeout(() => {
+        confessionFormContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setForceExpandForm(true);
+      }, 300);
+    } else {
+      // If no card is open, proceed as before.
+      confessionFormContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setForceExpandForm(true);
+    }
   };
 
   // Determine meta tags based on current route and data
