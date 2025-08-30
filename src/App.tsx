@@ -16,7 +16,6 @@ import AboutUsPage from "./pages/AboutUsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsAndConditionsPage from "./pages/TermsAndConditionsPage";
 import CookieConsentBanner from "@/components/CookieConsentBanner";
-import FloatingLogo from "@/components/FloatingLogo";
 // Removed: import { logToSupabase } from "@/utils/logger";
 
 const queryClient = new QueryClient();
@@ -141,7 +140,6 @@ const AppRoutesAndModals: React.FC = () => {
         <Route path="*" element={<NotFound />} />
       </Routes>
       <FloatingMenu onMenuItemClick={handleMenuItemClick} />
-      <FloatingLogo />
 
       <AboutUsPage isOpen={isInfoDrawerOpen && currentInfoPageType === 'about'} onClose={handleCloseInfoPage} />
       <PrivacyPolicyPage isOpen={isInfoDrawerOpen && currentInfoPageType === 'privacy'} onClose={handleCloseInfoPage} />

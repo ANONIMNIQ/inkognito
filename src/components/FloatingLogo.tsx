@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
-const SCROLL_THRESHOLD = 200; // Pixels to scroll before the logo appears
+const SCROLL_THRESHOLD = 200;
 
-const FloatingLogo: React.FC = () => {
+interface FloatingLogoProps {
+  onClick: () => void;
+}
+
+const FloatingLogo: React.FC<FloatingLogoProps> = ({ onClick }) => {
   const [isVisible, setIsVisible] = useState(false);
   const isMobile = useIsMobile();
-  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -25,18 +27,13 @@ const FloatingLogo: React.FC = () => {
     };
   }, []);
 
-  const handleClick = () => {
-    navigate('/');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   if (isMobile) {
     return null;
   }
 
   return (
     <button
-      onClick={handleClick}
+      onClick={onClick}
       className={cn(
         'fixed top-8 right-8 z-50 h-12 w-12 transition-all duration-300 ease-in-out cursor-pointer',
         'hover:scale-110 active:scale-95',

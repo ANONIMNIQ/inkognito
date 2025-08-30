@@ -13,6 +13,7 @@ import { useNavigate, useParams, useSearchParams, useLocation } from "react-rout
 import FloatingMenu from "@/components/FloatingMenu"; // Import the new component
 import MetaTags from "@/components/MetaTags"; // Import MetaTags component
 import FloatingCategoryLabel from "@/components/FloatingCategoryLabel";
+import FloatingLogo from "@/components/FloatingLogo";
 
 interface Comment {
   id: string;
@@ -517,6 +518,20 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
     }
   };
 
+  const handleLogoClick = () => {
+    if (expandedConfessionId) {
+      // If a confession is expanded, navigate to collapse it
+      navigate(`/${location.search}`, { replace: true });
+      // Wait for collapse animation to finish before scrolling
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 300); // 300ms should be safe for the animation
+    } else {
+      // If no confession is expanded, just scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   // Determine meta tags based on current route and data
   let metaTitle = SITE_TITLE;
   let metaDescription = DEFAULT_DESCRIPTION;
@@ -538,6 +553,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => { // Receive prop
     <div className="container mx-auto p-4 max-w-3xl">
       <MetaTags title={metaTitle} description={metaDescription} url={metaUrl} />
       <FloatingCategoryLabel category={selectedCategory} />
+      <FloatingLogo onClick={handleLogoClick} />
       {/* FloatingMenu is now rendered in App.tsx */}
       <div className="flex justify-center mb-8 opacity-0 animate-fade-zoom-in">
         <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 481 134"
