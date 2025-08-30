@@ -38,13 +38,13 @@ const FloatingLogo: React.FC = () => {
     <button
       onClick={handleClick}
       className={cn(
-        'fixed top-8 right-8 z-50 h-12 w-12 rounded-full bg-white/50 dark:bg-gray-800/50 backdrop-blur-lg shadow-lg transition-all duration-300 ease-in-out',
+        'fixed top-8 right-8 z-50 h-12 w-12 transition-all duration-300 ease-in-out cursor-pointer',
         'hover:scale-110 active:scale-95',
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-16 pointer-events-none'
       )}
       aria-label="Go to homepage"
     >
-      <img src="/images/logo2.png" alt="Floating Logo" className="h-full w-full object-cover rounded-full dark:invert" />
+      <img src="/images/logo2.png" alt="Floating Logo" className="h-full w-full object-contain dark:invert" />
     </button>
   );
 };
