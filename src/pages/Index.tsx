@@ -474,10 +474,10 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => {
           <g transform="matrix( 1, 0, 0, 1, 0,0) "><use href="#Layer0_0_FILL"/></g>
         </svg>
       </div>
+      <SearchBar onSearch={handleSearch} initialQuery={searchQuery} />
       <div className={cn("transition-opacity duration-300", searchQuery ? "opacity-50 pointer-events-none" : "opacity-100")}>
         <CategoryFilter selectedCategory={selectedCategory} onSelectCategory={handleSelectCategory} />
       </div>
-      <SearchBar onSearch={handleSearch} initialQuery={searchQuery} />
       <div ref={confessionFormContainerRef}>
         <ConfessionForm onSubmit={handleAddConfession} onFormFocus={() => { if (expandedConfessionId) navigate(`/${location.search}`, { replace: true }); }} forceExpand={forceExpandForm} onFormExpanded={() => setForceExpandForm(false)} onAnimationComplete={() => { if (!isFormAnimationComplete) setIsFormAnimationComplete(true); }} />
       </div>
