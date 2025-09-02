@@ -76,6 +76,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => {
   const lastLoadedContextRef = useRef<{ category: string; paramId: string | undefined | null; searchQuery: string } | null>(null);
   const currentFetchId = useRef(0);
   const lastNonInfoPageCategoryRef = useRef<string>("Всички");
+  const preSearchCategoryRef = useRef<string>("Всички");
 
   useEffect(() => {
     hasMoreRef.current = hasMore;
@@ -391,12 +392,24 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => {
   };
 
   const handleSearch = (query: string) => {
+    const currentQuery = searchParams.get('q') || '';
+    // If starting a new search (previous query was empty, new one is not), store the current category.
+    if (query && !currentQuery) {
+      preSearchCategoryRef.current = selectedCategory;
+    }
+  
     const params = new URLSearchParams(location.search);
     if (query) {
       params.set('q', query);
-      params.delete('category'); // Search overrides category
+      params.delete('category'); // Search always overrides category
     } else {
       params.delete('q');
+      // When clearing the search, restore the previous category
+      if (preSearchCategoryRef.current && preSearchCategoryRef.current !== 'Всички') {
+        params.set('category', preSearchCategoryRef.current);
+      } else {
+        params.delete('category'); // Or clear it if it was 'All'
+      }
     }
     navigate(`/?${params.toString()}`, { replace: true });
   };
@@ -453,7 +466,7 @@ const Index: React.FC<IndexProps> = ({ isInfoPageOpen }) => {
   return (
     <div className="container mx-auto p-4 max-w-3xl">
       <MetaTags title={metaTitle} description={metaDescription} url={metaUrl} />
-      <FloatingCategoryLabel category={selectedCategory} />
+      <FloatingCategoryLabel category={searchQuery ? "ТЪРСЕНЕ" : selectedCategory} />
       <FloatingLogo onClick={handleLogoClick} />
       <div className="flex justify-center mb-8 opacity-0 animate-fade-zoom-in">
         <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 481 134" className={cn("w-64 sm:w-72 md:w-80 lg:w-96 h-auto fill-gray-900 dark:fill-white transition-colors duration-300")}>

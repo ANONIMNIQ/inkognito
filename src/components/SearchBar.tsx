@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, X } from 'lucide-react';
@@ -9,22 +9,54 @@ interface SearchBarProps {
   initialQuery: string;
 }
 
+const DEBOUNCE_DELAY = 300; // 300ms delay
+
 const SearchBar: React.FC<SearchBarProps> = ({ onSearch, initialQuery }) => {
   const [inputValue, setInputValue] = useState(initialQuery);
   const isMobile = useIsMobile();
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Sync local input value if the initialQuery from URL changes
   useEffect(() => {
     setInputValue(initialQuery);
   }, [initialQuery]);
 
+  // Debounce effect for real-time search
+  useEffect(() => {
+    // Clear the previous timeout if the user is still typing
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+
+    // Set a new timeout to trigger the search after the user stops typing
+    debounceTimeoutRef.current = setTimeout(() => {
+      // Only trigger search if the debounced value is different from the initial prop
+      // This prevents re-triggering a search on component mount
+      if (inputValue !== initialQuery) {
+        onSearch(inputValue.trim());
+      }
+    }, DEBOUNCE_DELAY);
+
+    // Cleanup function to clear the timeout if the component unmounts
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, [inputValue, initialQuery, onSearch]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Clear any pending debounce and trigger search immediately
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
     onSearch(inputValue.trim());
   };
 
   const handleClear = () => {
     setInputValue('');
-    onSearch('');
+    // The useEffect will trigger the debounced onSearch('') call
   };
 
   if (isMobile) {

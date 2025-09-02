@@ -104,6 +104,19 @@ export const categoryColorMap: Record<string, {
       darkHoverLightBg: "dark:hover:bg-gray-300",
       floatingText: "text-gray-400",
   },
+  "ТЪРСЕНЕ": { // New entry for search
+      bg: "bg-category-neutral",
+      lightBg: "bg-category-neutral-light",
+      text: "text-gray-900", 
+      darkBg: "dark:bg-gray-700",
+      darkLightBg: "dark:bg-gray-600",
+      darkText: "dark:text-gray-200", 
+      hoverBg: "hover:bg-category-neutral",
+      darkHoverBg: "dark:hover:bg-gray-700",
+      hoverLightBg: "hover:bg-category-neutral-light",
+      darkHoverLightBg: "dark:hover:bg-gray-600",
+      floatingText: "text-gray-400",
+  },
 };
 
 export const getCategoryColors = (category: string) => {
